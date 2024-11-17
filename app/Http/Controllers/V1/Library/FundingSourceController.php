@@ -5,7 +5,7 @@ namespace App\Http\Controllers\V1\Library;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class SectionController extends Controller
+class FundingSourceController extends Controller
 {
     /**
      * Display a listing of the resource.

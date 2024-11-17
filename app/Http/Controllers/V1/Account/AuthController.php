@@ -67,7 +67,7 @@ class AuthController extends Controller
         // Generate a token for the user
         $abilities = auth()->user()->permissions();
         $token = auth()->user()
-            ->createToken('procsysToken', $abilities, now()->addDay())
+            ->createToken('authToken', $abilities, now()->addDay())
             ->plainTextToken;
 
         return response()->json([

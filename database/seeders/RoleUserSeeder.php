@@ -18,7 +18,7 @@ class RoleUserSeeder extends Seeder
     {
         $user = User::where('firstname', 'System')->first();
         $roles = DB::table('roles')
-            ->whereIn('role_name', ['Administrator', 'End User'])
+            ->whereIn('role_name', ['Administrator'])
             ->get();
 
         foreach ($roles as $role) {

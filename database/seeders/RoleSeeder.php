@@ -13,6 +13,10 @@ class RoleSeeder extends Seeder
             'role_name' => 'Agency Head',
             'permissions' => [
                 'head:*',
+                'account-user:view',
+                'account-role:view',
+                'account-department:view',
+                'account-section:view',
                 'pr:view,approve,disapprove,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -20,7 +24,10 @@ class RoleSeeder extends Seeder
                 'iar:view,print',
                 'ors:view,print',
                 'dv:view,print',
-                'inventory:view,print'
+                'inventory:view,print',
+                'lib-fund-source:view',
+                'lib-paper-size:*',
+                'lib-unit-issue:*'
             ]
         ],
         [
@@ -40,6 +47,10 @@ class RoleSeeder extends Seeder
             'role_name' => 'Administrator',
             'permissions' => [
                 'super:*',
+                'account-user:*',
+                'account-role:*',
+                'account-department:*',
+                'account-section:*',
                 'pr:*',
                 'rfq:*',
                 'aoq:*',
@@ -48,7 +59,16 @@ class RoleSeeder extends Seeder
                 'ors:*',
                 'dv:*',
                 'inventory:*',
-                'payment:*'
+                'payment:*',
+                'lib-fund-source:*',
+                'lib-inv-class:*',
+                'lib-item-class:*',
+                'lib-mfo-pap:*',
+                'lib-mode-proc:*',
+                'lib-paper-size:*',
+                'lib-supplier:*',
+                'lib-uacs-code:*',
+                'lib-unit-issue:*'
             ]
         ],
         [
@@ -62,7 +82,14 @@ class RoleSeeder extends Seeder
                 'iar:*',
                 'ors:create,update,delete,submit,print',
                 'dv:create,update,delete,submit,print',
-                'inventory:*'
+                'inventory:*',
+                'lib-fund-source:*',
+                'lib-inv-class:*',
+                'lib-item-class:*',
+                'lib-mode-proc:*',
+                'lib-paper-size:*',
+                'lib-supplier:*',
+                'lib-unit-issue:*'
             ]
         ],
         [
@@ -75,7 +102,12 @@ class RoleSeeder extends Seeder
                 'po:view,print',
                 'iar:view,print',
                 'ors:*',
-                'dv:view,print'
+                'dv:view,print',
+                'lib-fund-source:*',
+                'lib-mfo-pap:*',
+                'lib-paper-size:*',
+                'lib-uacs-code:*',
+                'lib-unit-issue:*'
             ]
         ],
         [
@@ -88,7 +120,12 @@ class RoleSeeder extends Seeder
                 'po:view,print',
                 'iar:view,print',
                 'ors:view,print',
-                'dv:*'
+                'dv:*',
+                'lib-fund-source:*',
+                'lib-mfo-pap:*',
+                'lib-paper-size:*',
+                'lib-uacs-code:*',
+                'lib-unit-issue:*'
             ]
         ],
         [
@@ -102,7 +139,10 @@ class RoleSeeder extends Seeder
                 'iar:view,print',
                 'ors:view,print',
                 'dv:view,print',
-                'payment:*'
+                'payment:*',
+                'lib-fund-source:*',
+                'lib-mfo-pap:*',
+                'lib-uacs-code:*'
             ]
         ]
     ];

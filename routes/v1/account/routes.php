@@ -17,5 +17,39 @@ Route::middleware('auth:sanctum')->group(function() {
             ->name('me');
     });
 
-    Route::apiResource('/users', 'App\Http\Controllers\V1\Account\UserController');
+    Route::name('users.')->prefix('/accounts/users')->group(function () {
+        Route::get('/', [AccountControllers\UserController::class, 'index'])
+            ->middleware('ability:super:*,account-user:*,account-user:view')
+            ->name('index');
+        Route::post('/', [AccountControllers\UserController::class, 'store'])
+            ->middleware('ability:super:*,account-user:*,account-user:create')
+            ->name('store');
+        Route::get('/{user}', [AccountControllers\UserController::class, 'show'])
+            ->middleware('ability:super:*,account-user:*,account-user:view')
+            ->name('show');
+        Route::put('/{user}', [AccountControllers\UserController::class, 'update'])
+            ->middleware('ability:super:*,account-user:*,account-user:update')
+            ->name('update');
+        Route::delete('/{user}', [AccountControllers\UserController::class, 'delete'])
+            ->middleware('ability:super:*,account-user:*,account-user:delete')
+            ->name('delete');
+    });
+
+    Route::name('roles.')->prefix('/accounts/roles')->group(function () {
+        Route::get('/', [AccountControllers\RoleController::class, 'index'])
+            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->name('index');
+        Route::post('/', [AccountControllers\RoleController::class, 'store'])
+            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->name('store');
+        Route::get('/{role}', [AccountControllers\RoleController::class, 'show'])
+            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->name('show');
+        Route::put('/{role}', [AccountControllers\RoleController::class, 'update'])
+            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->name('update');
+        Route::delete('/{role}', [AccountControllers\RoleController::class, 'delete'])
+            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->name('delete');
+    });
 });

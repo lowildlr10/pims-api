@@ -193,9 +193,10 @@ class UserController extends Controller
 
             case 'signature':
                 $validated = $request->validate([
-                    'allow_signature' => 'required|boolean',
+                    'allow_signature' => 'required|in:true,false',
                     'signature' => 'nullable|string',
                 ]);
+                $allowSignature = filter_var($validated['allow_signature'], FILTER_VALIDATE_BOOLEAN);
                 break;
 
             default:

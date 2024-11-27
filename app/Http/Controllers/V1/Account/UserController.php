@@ -217,7 +217,7 @@ class UserController extends Controller
                 break;
         }
 
-
+        try {
             if ($updateType === 'account-management' || $updateType === 'profile') {
                 $position = Position::updateOrCreate([
                     'position_name' => $validated['position'],
@@ -264,14 +264,16 @@ class UserController extends Controller
 
             switch ($updateType) {
                 case 'profile':
+                    $password = $validated['password'];
+                    unset($validated['password']);
                     $updateData = array_merge(
                         $validated,
                         [
                             'position_id' => $position->id,
                             'designation_id' => $designation->id,
                         ],
-                        !is_null(trim($validated['password']))
-                            ? ['password' => bcrypt($validated['password'])]
+                        !empty(trim($password))
+                            ? ['password' => bcrypt($password)]
                             : []
                     );
                     break;
@@ -295,6 +297,8 @@ class UserController extends Controller
                     break;
 
                 default:
+                    $password = $validated['password'];
+                    unset($validated['password']);
                     $updateData = array_merge(
                         $validated,
                         [
@@ -303,14 +307,14 @@ class UserController extends Controller
                             'department_id' => $section->department_id,
                             'section_id' => $section->id
                         ],
-                        !is_null(trim($validated['password']))
-                            ? ['password' => bcrypt($validated['password'])]
+                        !empty(trim($password))
+                            ? ['password' => bcrypt($password)]
                             : []
                     );
                     break;
             }
 
-            $user->update($updateData);try {
+            $user->update($updateData);
         } catch (\Throwable $th) {
             if ($updateType === 'avatar') {
                 $errorMessage = 'Avatar update failed. Please try again.';

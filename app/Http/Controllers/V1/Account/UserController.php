@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 use Intervention\Image\Drivers\Gd\Driver;
 
@@ -166,86 +167,176 @@ class UserController extends Controller
      */
     public function update(Request $request, User $user): JsonResponse
     {
-        $validated = $request->validate([
-            'firstname' => 'required|string',
-            'middlename' => 'nullable|string',
-            'lastname' => 'required|string',
-            'sex' => 'required|string|in:male,female',
-            'section' => 'required',
-            'position' => 'required',
-            'designation' => 'nullable',
-            'username' => 'required|unique:users,username,' . $user->id,
-            'email' => 'email|unique:users,email,' . $user->id . '|nullable',
-            'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
-            'password' => 'nullable|min:6',
-            'avatar' => 'nullable|string',
-            'signature' => 'nullable|string',
-            'restricted' => 'required|boolean',
-            'allow_signature' => 'required|boolean',
-            'roles' => 'required|array'
-        ]);
+        $updateType = $request->get('update_type', 'account-management');
 
-        try {
-            $position = Position::updateOrCreate([
-                'position_name' => $validated['position'],
-            ], [
-                'position_name' => $validated['position']
-            ]);
+        switch ($updateType) {
+            case 'profile':
+                $validated = $request->validate([
+                    'firstname' => 'required|string',
+                    'middlename' => 'nullable|string',
+                    'lastname' => 'required|string',
+                    'sex' => 'required|string|in:male,female',
+                    'position' => 'required',
+                    'designation' => 'nullable',
+                    'username' => 'required|unique:users,username,' . $user->id,
+                    'email' => 'email|unique:users,email,' . $user->id . '|nullable',
+                    'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
+                    'password' => 'nullable|min:6',
+                ]);
+                break;
 
-            $designation = Designation::updateOrCreate([
-                'designation_name' => $validated['designation'],
-            ], [
-                'designation_name' => $validated['designation']
-            ]);
+            case 'avatar':
+                $validated = $request->validate([
+                    'avatar' => 'nullable|string',
+                ]);
+                break;
 
-            $section = Section::find($validated['section']);
+            case 'signature':
+                $validated = $request->validate([
+                    'allow_signature' => 'required|boolean',
+                    'signature' => 'nullable|string',
+                ]);
+                break;
 
-            $user->roles()->sync($validated['roles']);
+            default:
+                $validated = $request->validate([
+                    'firstname' => 'required|string',
+                    'middlename' => 'nullable|string',
+                    'lastname' => 'required|string',
+                    'sex' => 'required|string|in:male,female',
+                    'section_id' => 'required',
+                    'position' => 'required',
+                    'designation' => 'nullable',
+                    'username' => 'required|unique:users,username,' . $user->id,
+                    'email' => 'email|unique:users,email,' . $user->id . '|nullable',
+                    'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
+                    'password' => 'nullable|min:6',
+                    'restricted' => 'required|boolean',
+                    'roles' => 'required|array'
+                ]);
+                break;
+        }
 
-            if ($request->avatar !== $user->avatar && !empty($request->avatar)) {
-                $avatar = $this->processAndSaveImage($request->avatar, $id);
-            } else {
-                if (!empty($request->avatar)) {
-                    $avatar = $request->avatar;
+
+            if ($updateType === 'account-management' || $updateType === 'profile') {
+                $position = Position::updateOrCreate([
+                    'position_name' => $validated['position'],
+                ], [
+                    'position_name' => $validated['position']
+                ]);
+
+                $designation = Designation::updateOrCreate([
+                    'designation_name' => $validated['designation'],
+                ], [
+                    'designation_name' => $validated['designation']
+                ]);
+            }
+
+            if ($updateType === 'account-management') {
+                $section = Section::find($validated['section_id']);
+
+                $user->roles()->sync($validated['roles']);
+            }
+
+            if ($updateType === 'avatar') {
+                if ($request->avatar !== $user->avatar && !empty($request->avatar)) {
+                    $avatar = $this->processAndSaveImage($request->avatar, $user->id, 'avatars');
                 } else {
-                    $avatar = null;
+                    if (!empty($request->avatar)) {
+                        $avatar = $request->avatar;
+                    } else {
+                        $avatar = null;
+                    }
                 }
             }
 
-            if ($request->signature !== $user->signature && !empty($request->signature)) {
-                $signature = $this->processAndSaveImage($request->signature, $id);
-            } else {
-                if (!empty($request->signature)) {
-                    $signature = $request->signature;
+            if ($updateType === 'signature') {
+                if ($request->signature !== $user->signature && !empty($request->signature)) {
+                    $signature = $this->processAndSaveImage($request->signature, $user->id, 'signatures');
                 } else {
-                    $signature = null;
+                    if (!empty($request->signature)) {
+                        $signature = $request->signature;
+                    } else {
+                        $signature = null;
+                    }
                 }
             }
 
-            $user->update(array_merge(
-                $validated,
-                [
-                    'position_id' => $position->id,
-                    'designation_id' => $designation->id,
-                    'department_id' => $section->department_id,
-                    'section_id' => $section->id,
-                    'avatar' => $avatar,
-                    'signature' => $signature,
-                ],
-                !empty(trim($request->password))
-                    ? ['password' => bcrypt($request->password)]
-                    : []
-            ));
+            switch ($updateType) {
+                case 'profile':
+                    $updateData = array_merge(
+                        $validated,
+                        [
+                            'position_id' => $position->id,
+                            'designation_id' => $designation->id,
+                        ],
+                        !is_null(trim($validated['password']))
+                            ? ['password' => bcrypt($validated['password'])]
+                            : []
+                    );
+                    break;
+
+                case 'avatar':
+                    $updateData = array_merge(
+                        $validated,
+                        [
+                            'avatar' => $avatar,
+                        ]
+                    );
+                    break;
+
+                case 'signature':
+                    $updateData = array_merge(
+                        $validated,
+                        [
+                            'signature' => $signature,
+                        ]
+                    );
+                    break;
+
+                default:
+                    $updateData = array_merge(
+                        $validated,
+                        [
+                            'position_id' => $position->id,
+                            'designation_id' => $designation->id,
+                            'department_id' => $section->department_id,
+                            'section_id' => $section->id
+                        ],
+                        !is_null(trim($validated['password']))
+                            ? ['password' => bcrypt($validated['password'])]
+                            : []
+                    );
+                    break;
+            }
+
+            $user->update($updateData);try {
         } catch (\Throwable $th) {
+            if ($updateType === 'avatar') {
+                $errorMessage = 'Avatar update failed. Please try again.';
+            } else if ($updateType === 'signature') {
+                $errorMessage = 'Signature update failed. Please try again.';
+            } else {
+                $errorMessage = 'User update failed. Please try again.';
+            }
+
             return response()->json([
-                'message' => 'User update failed. Please try again.'
+                'message' => $errorMessage
             ], 422);
+        }
+
+        if ($updateType === 'avatar') {
+            $successMessage = 'Avatar updated successfully.';
+        } else if ($updateType === 'signature') {
+            $successMessage = 'Signature updated successfully.';
+        } else {
+            $successMessage = 'User updated successfully.';
         }
 
         return response()->json([
             'data' => [
                 'data' => $request->except('password'),
-                'message' => 'User updated successfully.'
+                'message' => $successMessage
             ]
         ]);
     }
@@ -285,9 +376,11 @@ class UserController extends Controller
         $image = Image::read($base64Data)->scale($width);
 
         $filename = "{$imageName}.png";
-        $relativeFileDirectory = !empty($imageDirectory) ? "{$imageDirectory}/{$fileName}" : $fileName;
+        $relativeFileDirectory = !empty($imageDirectory) ? "{$imageDirectory}/{$filename}" : $filename;
         $publicDirectory = "public/images/{$imageDirectory}";
         $directory = "{$appUrl}/storage/images/{$relativeFileDirectory}";
+
+        Storage::delete("{$publicDirectory}/{$filename}");
 
         if (!Storage::exists($publicDirectory)) {
             Storage::makeDirectory($publicDirectory);
@@ -295,7 +388,7 @@ class UserController extends Controller
 
         $image->encodeByExtension('png', progressive: true, quality: 10)
             ->save(public_path(
-                "storage/images/{$relativeFileDirectory}"
+                "/storage/images/{$relativeFileDirectory}"
             ));
 
         return $directory;

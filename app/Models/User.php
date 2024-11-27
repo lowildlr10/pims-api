@@ -74,7 +74,7 @@ class User extends Authenticatable
         return Attribute::make(
             get: fn ($value, $attributes)
                 => !empty($attributes['middlename'])
-                    ? "{$attributes['firstname']} {$attributes['lastname'][0]}. {$attributes['lastname']}"
+                    ? "{$attributes['firstname']} {$attributes['middlename'][0]}. {$attributes['lastname']}"
                     : "{$attributes['firstname']} {$attributes['lastname']}",
         );
     }

@@ -71,12 +71,12 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handling QueryException (SQL query errors, e.g. database issues)
-        $exceptions->render(function (QueryException $e, Request $request) {
-            return response()->json([
-                'message' => 'Database query error.',
-                'error' => $e->getMessage(),
-            ], 500);
-        });
+        // $exceptions->render(function (QueryException $e, Request $request) {
+        //     return response()->json([
+        //         'message' => 'Database query error.',
+        //         'error' => $e->getMessage(),
+        //     ], 500);
+        // });
 
         // Handling ModelNotFoundException (for models not found)
         $exceptions->render(function (ModelNotFoundException $e, Request $request) {
@@ -115,10 +115,10 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handling general Exception (500 Internal Server Error)
-        $exceptions->render(function (Exception $e, Request $request) {
-            return response()->json([
-                'message' => 'Something went wrong.',
-                'error' => $e->getMessage(),
-            ], 500);
-        });
+        // $exceptions->render(function (Exception $e, Request $request) {
+        //     return response()->json([
+        //         'message' => 'Something went wrong.',
+        //         'error' => $e->getMessage(),
+        //     ], 500);
+        // });
     })->create();

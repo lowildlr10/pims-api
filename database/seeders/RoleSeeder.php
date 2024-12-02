@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
                 'account-role:view',
                 'account-department:view',
                 'account-section:view',
+                'company:*',
                 'pr:view,approve,disapprove,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -34,6 +35,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'End User',
             'permissions' => [
                 'user:*',
+                'comapny:view',
                 'pr:view,create,update,submit,cancel,delete,print',
                 'rfq:view,receive,submit,print',
                 'aoq:view,print',
@@ -51,6 +53,7 @@ class RoleSeeder extends Seeder
                 'account-role:*',
                 'account-department:*',
                 'account-section:*',
+                'company:*',
                 'pr:*',
                 'rfq:*',
                 'aoq:*',
@@ -75,6 +78,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Supply Officer',
             'permissions' => [
                 'supply:*',
+                'comapny:view',
                 'pr:view,create,update,cancel,delete,print',
                 'rfq:*',
                 'aoq:*',
@@ -96,6 +100,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Budget',
             'permissions' => [
                 'budget:*',
+                'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -114,6 +119,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Accounting',
             'permissions' => [
                 'accounting:*',
+                'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -132,6 +138,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Cashier',
             'permissions' => [
                 'cashier:*',
+                'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
                 'aoq:view,print',

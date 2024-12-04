@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 use Intervention\Image\Drivers\Gd\Driver;
 
-class UserController extends Controller
+class MediaController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -25,7 +25,6 @@ class UserController extends Controller
         $perPage = $request->get('per_page', 50);
         $columnSort = $request->get('column_sort', 'firstname');
         $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $users = User::with([
             'department:id,department_name',
@@ -56,11 +55,7 @@ class UserController extends Controller
             $users = $users->orderBy($columnSort, $sortDirection);
         }
 
-        if ($paginated) {
-            $users = $users->paginate($perPage);
-        } else {
-            $users = $users->limit($perPage)->get();
-        }
+        $users = $users->paginate($perPage);
 
         return response()->json([
             'data' => $users
@@ -86,11 +81,10 @@ class UserController extends Controller
             'password' => 'required|min:6',
             'avatar' => 'nullable|string',
             'signature' => 'nullable|string',
-            'restricted' => 'required|in:true,false',
+            'restricted' => 'required|boolean',
             'allow_signature' => 'required|boolean',
             'roles' => 'required|array'
         ]);
-        $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $position = Position::updateOrCreate([
@@ -218,10 +212,9 @@ class UserController extends Controller
                     'email' => 'email|unique:users,email,' . $user->id . '|nullable',
                     'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
                     'password' => 'nullable|min:6',
-                    'restricted' => 'required|in:true,false',
+                    'restricted' => 'required|boolean',
                     'roles' => 'required|array'
                 ]);
-                $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
                 break;
         }
 

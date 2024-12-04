@@ -16,8 +16,9 @@ class RoleController extends Controller
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
-        $columnSort = $request->get('column_sort', 'firstname');
+        $columnSort = $request->get('column_sort', 'role_name');
         $sortDirection = $request->get('sort_direction', 'desc');
+        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $roles = Role::query();
 
@@ -31,7 +32,11 @@ class RoleController extends Controller
             $roles = $roles->orderBy($columnSort, $sortDirection);
         }
 
-        $roles = $roles->paginate($perPage);
+        if ($paginated) {
+            $roles = $roles->paginate($perPage);
+        } else {
+            $roles = $roles->limit($perPage)->get();
+        }
 
         return response()->json([
             'data' => $roles
@@ -44,9 +49,12 @@ class RoleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'role_name' => 'required|unique|string',
-            'permissions' => 'required|array'
+            'role_name' => 'required|unique:roles,role_name',
+            'permissions' => 'required|array',
+            'active' => 'required|in:true,false'
         ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $role = Role::create($validated);
@@ -83,8 +91,11 @@ class RoleController extends Controller
     {
         $validated = $request->validate([
             'role_name' => 'required|unique:roles,role_name,' . $role->id,
-            'permissions' => 'required|array'
+            'permissions' => 'required|array',
+            'active' => 'required|in:true,false'
         ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $role->update($validated);
@@ -105,7 +116,7 @@ class RoleController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Role $role): JsonResponse
+    public function delete(Role $role): JsonResponse
     {
         try {
             $role->delete();

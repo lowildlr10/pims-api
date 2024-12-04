@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -127,7 +128,7 @@ class User extends Authenticatable
     /**
      * The position that belong to the user.
      */
-    public function position()
+    public function position(): HasOne
     {
         return $this->hasOne(Position::class, 'id', 'position_id');
     }
@@ -135,7 +136,7 @@ class User extends Authenticatable
     /**
      * The designation that belong to the user.
      */
-    public function designation()
+    public function designation(): HasOne
     {
         return $this->hasOne(Designation::class, 'id', 'designation_id');
     }
@@ -143,7 +144,7 @@ class User extends Authenticatable
     /**
      * The department that belong to the user.
      */
-    public function department()
+    public function department(): HasOne
     {
         return $this->hasOne(Department::class, 'id', 'department_id');
     }
@@ -151,7 +152,7 @@ class User extends Authenticatable
     /**
      * The section that belong to the user.
      */
-    public function section()
+    public function section(): HasOne
     {
         return $this->hasOne(Section::class, 'id', 'section_id');
     }

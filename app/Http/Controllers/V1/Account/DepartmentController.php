@@ -6,21 +6,26 @@ use App\Http\Controllers\Controller;
 use App\Models\Department;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class DepartmentController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
+        $perPage = $request->get('per_page', 5);
         $columnSort = $request->get('column_sort', 'department_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $departments = Department::query();
+        $departments = Department::query()->with([
+            'sections:id,section_name,department_id,active',
+            'sections.head:id,firstname,lastname',
+            'head:id,firstname,lastname'
+        ]);
 
         if (!empty($search)) {
             $departments = $departments->where(function($query) use ($search){
@@ -33,14 +38,14 @@ class DepartmentController extends Controller
         }
 
         if ($paginated) {
-            $departments = $departments->paginate($perPage);
+            return $departments->paginate($perPage);
         } else {
             $departments = $departments->limit($perPage)->get();
-        }
 
-        return response()->json([
-            'data' => $departments
-        ]);
+            return response()->json([
+                'data' => $departments
+            ]);
+        }
     }
 
     /**

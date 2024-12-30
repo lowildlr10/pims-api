@@ -23,9 +23,6 @@ class UserSeeder extends Seeder
         $designation = DB::table('designations')
             ->where('designation_name', 'System Administrator')
             ->first();
-        $role = DB::table('roles')
-            ->where('role_name', 'Administrator')
-            ->first();
         $section = DB::table('sections')
             ->where('section_name', 'Section Test 0')
             ->first();

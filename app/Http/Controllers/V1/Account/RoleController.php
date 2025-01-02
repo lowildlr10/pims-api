@@ -6,13 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Role;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class RoleController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -33,14 +34,14 @@ class RoleController extends Controller
         }
 
         if ($paginated) {
-            $roles = $roles->paginate($perPage);
+            return $roles->paginate($perPage);
         } else {
             $roles = $roles->limit($perPage)->get();
-        }
 
-        return response()->json([
-            'data' => $roles
-        ]);
+             return response()->json([
+                'data' => $roles
+            ]);
+        }
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,6 +22,20 @@ class Department extends Model
         'department_head_id',
         'active'
     ];
+
+    protected $appends = [
+        'headfullname',
+    ];
+
+    public function headfullname(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->head)
+                    ? $this->head->fullname
+                    : "-",
+        );
+    }
 
     /**
      * The department that has many sections.

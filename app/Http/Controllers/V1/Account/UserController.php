@@ -19,7 +19,7 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -53,18 +53,33 @@ class UserController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            $users = $users->orderBy($columnSort, $sortDirection);
+            switch ($columnSort) {
+                case 'fullname':
+                    $users = $users->orderBy('firstname', $sortDirection);
+                    break;
+                case 'department_section':
+                    $users = $users->orderBy('department_id', $sortDirection)
+                        ->orderBy('section_id', $sortDirection);
+                    break;
+                case 'position_designation':
+                    $users = $users->orderBy('position_id', $sortDirection)
+                        ->orderBy('designation_id', $sortDirection);
+                    break;
+                default:
+                    $users = $users->orderBy($columnSort, $sortDirection);
+                    break;
+            }
         }
 
         if ($paginated) {
-            $users = $users->paginate($perPage);
+            return $users->paginate($perPage);
         } else {
             $users = $users->limit($perPage)->get();
-        }
 
-        return response()->json([
-            'data' => $users
-        ]);
+            return response()->json([
+                'data' => $users
+            ]);
+        }
     }
 
     /**

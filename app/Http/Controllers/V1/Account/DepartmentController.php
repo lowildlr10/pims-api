@@ -22,7 +22,7 @@ class DepartmentController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $departments = Department::query()->with([
-            'sections:id,section_name,department_id,active',
+            'sections:id,section_name,department_id,section_head_id,active',
             'sections.head:id,firstname,lastname',
             'head:id,firstname,lastname'
         ]);
@@ -34,6 +34,10 @@ class DepartmentController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
+            if ($columnSort === 'headfullname') {
+                $columnSort = 'department_head_id';
+            }
+
             $departments = $departments->orderBy($columnSort, $sortDirection);
         }
 

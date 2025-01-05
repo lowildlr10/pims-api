@@ -3,19 +3,22 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\Department;
 use App\Models\Section;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SectionController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'department_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -36,12 +39,16 @@ class SectionController extends Controller
         if ($paginated) {
             $sections = $sections->paginate($perPage);
         } else {
-            $sections = $sections->limit($perPage)->get();
-        }
+            if ($showAll) {
+                $sections = $sections->where('active', true)->get();
+            } else {
+                $sections = $sections->where('active', true)->limit($perPage)->get();
+            }
 
-        return response()->json([
-            'data' => $sections
-        ]);
+            return response()->json([
+                'data' => $sections
+            ]);
+        }
     }
 
     /**
@@ -60,6 +67,14 @@ class SectionController extends Controller
 
         try {
             $section = Section::create($validated);
+            $department = Department::find($validated['department_id']);
+
+            if (!$department->active) {
+                Section::where('department_id', $department->id)
+                    ->update([
+                        'active' => $department->active
+                    ]);
+            }
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Section creation failed. Please try again.'
@@ -102,6 +117,14 @@ class SectionController extends Controller
 
         try {
             $section->update($validated);
+            $department = Department::find($validated['department_id']);
+
+            if (!$department->active) {
+                Section::where('department_id', $department->id)
+                    ->update([
+                        'active' => $department->active
+                    ]);
+            }
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Section update failed. Please try again.'

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\Department;
+use App\Models\Section;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -17,6 +18,7 @@ class DepartmentController extends Controller
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
+        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'department_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -29,13 +31,21 @@ class DepartmentController extends Controller
 
         if (!empty($search)) {
             $departments = $departments->where(function($query) use ($search){
-                $query->where('department_name', 'ILIKE', "%{$search}%");
+                $query->where('department_name', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('sections', 'section_name', 'ILIKE', "%{$search}%");
             });
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            if ($columnSort === 'headfullname') {
-                $columnSort = 'department_head_id';
+            switch ($columnSort) {
+                case 'headfullname':
+                    $columnSort = 'department_head_id';
+                    break;
+                case 'department_name_formatted':
+                    $columnSort = 'department_name';
+                    break;
+                default:
+                    break;
             }
 
             $departments = $departments->orderBy($columnSort, $sortDirection);
@@ -44,7 +54,11 @@ class DepartmentController extends Controller
         if ($paginated) {
             return $departments->paginate($perPage);
         } else {
-            $departments = $departments->limit($perPage)->get();
+            if ($showAll) {
+                $departments = $departments->where('active', true)->get();
+            } else {
+                $departments = $departments->where('active', true)->limit($perPage)->get();
+            }
 
             return response()->json([
                 'data' => $departments
@@ -101,12 +115,17 @@ class DepartmentController extends Controller
         $validated = $request->validate([
             'department_name' => 'required|unique:departments,department_name,' . $department->id,
             'department_head_id' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|in:true,false'
         ]);
 
         $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
+            Section::where('department_id', $department->id)
+                ->update([
+                    'active' => $validated['active']
+                ]);
+
             $department->update($validated);
         } catch (\Throwable $th) {
             return response()->json([

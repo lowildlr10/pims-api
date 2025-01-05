@@ -17,6 +17,7 @@ class RoleController extends Controller
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'role_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -36,7 +37,11 @@ class RoleController extends Controller
         if ($paginated) {
             return $roles->paginate($perPage);
         } else {
-            $roles = $roles->limit($perPage)->get();
+            if ($showAll) {
+                $roles = $roles->get();
+            } else {
+                $roles = $roles->limit($perPage)->get();
+            }
 
              return response()->json([
                 'data' => $roles

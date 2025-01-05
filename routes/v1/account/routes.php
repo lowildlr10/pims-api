@@ -49,19 +49,19 @@ Route::middleware('auth:sanctum')->group(function() {
 
     Route::name('sections.')->prefix('/accounts/sections')->group(function () {
         Route::get('/', [AccountControllers\SectionController::class, 'index'])
-            ->middleware('ability:super:*,head:*,account-department:*,account-department:view')
+            ->middleware('ability:super:*,head:*,account-section:*,account-section:view')
             ->name('index');
         Route::post('/', [AccountControllers\SectionController::class, 'store'])
-            ->middleware('ability:super:*,account-department:*,account-department:view')
+            ->middleware('ability:super:*,account-section:*,account-section:view')
             ->name('store');
-        Route::get('/{department}', [AccountControllers\SectionController::class, 'show'])
-            ->middleware('ability:super:*,account-department:*,account-department:view')
+        Route::get('/{section}', [AccountControllers\SectionController::class, 'show'])
+            ->middleware('ability:super:*,account-section:*,account-section:view')
             ->name('show');
-        Route::put('/{department}', [AccountControllers\SectionController::class, 'update'])
-            ->middleware('ability:super:*,account-department:*,account-department:view')
+        Route::put('/{section}', [AccountControllers\SectionController::class, 'update'])
+            ->middleware('ability:super:*,account-section:*,account-section:view')
             ->name('update');
-        Route::delete('/{department}', [AccountControllers\SectionController::class, 'delete'])
-            ->middleware('ability:super:*,account-department:*,account-department:view')
+        Route::delete('/{section}', [AccountControllers\SectionController::class, 'delete'])
+            ->middleware('ability:super:*,account-section:*,account-section:view')
             ->name('delete');
     });
 

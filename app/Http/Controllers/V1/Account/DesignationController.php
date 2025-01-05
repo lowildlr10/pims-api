@@ -6,16 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Designation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class DesignationController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'designation_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -33,13 +35,17 @@ class DesignationController extends Controller
         }
 
         if ($paginated) {
-            $designations = $designations->paginate($perPage);
+            return $designations->paginate($perPage);
         } else {
-            $designations = $designations->limit($perPage)->get();
-        }
+            if ($showAll) {
+                $designations = $designations->get();
+            } else {
+                $designations = $designations->limit($perPage)->get();
+            }
 
-        return response()->json([
-            'data' => $designations
-        ]);
+            return response()->json([
+                'data' => $designations
+            ]);
+        }
     }
 }

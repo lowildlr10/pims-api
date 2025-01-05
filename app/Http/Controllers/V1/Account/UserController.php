@@ -23,6 +23,7 @@ class UserController extends Controller
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'firstname');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -74,7 +75,11 @@ class UserController extends Controller
         if ($paginated) {
             return $users->paginate($perPage);
         } else {
-            $users = $users->limit($perPage)->get();
+            if ($showAll) {
+                $users = $users->get();
+            } else {
+                $users = $users->limit($perPage)->get();
+            }
 
             return response()->json([
                 'data' => $users

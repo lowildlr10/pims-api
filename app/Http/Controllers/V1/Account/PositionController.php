@@ -6,16 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Models\Position;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PositionController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'position_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -33,13 +35,17 @@ class PositionController extends Controller
         }
 
         if ($paginated) {
-            $positions = $positions->paginate($perPage);
+            return $positions->paginate($perPage);
         } else {
-            $positions = $positions->limit($perPage)->get();
-        }
+            if ($showAll) {
+                $positions = $positions->get();
+            } else {
+                $positions = $positions->limit($perPage)->get();
+            }
 
-        return response()->json([
-            'data' => $positions
-        ]);
+            return response()->json([
+                'data' => $positions
+            ]);
+        }
     }
 }

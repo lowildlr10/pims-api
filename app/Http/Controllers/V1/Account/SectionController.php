@@ -19,6 +19,7 @@ class SectionController extends Controller
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
+        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'department_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -39,11 +40,11 @@ class SectionController extends Controller
         if ($paginated) {
             $sections = $sections->paginate($perPage);
         } else {
-            if ($showAll) {
-                $sections = $sections->where('active', true)->get();
-            } else {
-                $sections = $sections->where('active', true)->limit($perPage)->get();
-            }
+            if (!$showInactive) $sections = $sections->where('active', true);
+
+            $sections = $showAll
+                ? $sections->get()
+                : $sections = $sections->limit($perPage)->get();
 
             return response()->json([
                 'data' => $sections

@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -195,6 +196,10 @@ class UserController extends Controller
     public function update(Request $request, User $user): JsonResponse
     {
         $updateType = $request->get('update_type', 'account-management');
+
+        if ($updateType === 'account-management') {
+            new Middleware('ability:super:*,account-user:*,account-user:update');
+        }
 
         switch ($updateType) {
             case 'profile':

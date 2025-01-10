@@ -94,7 +94,7 @@ Route::middleware('auth:sanctum')->group(function() {
             ->middleware('ability:super:*,account-user:*,account-user:view')
             ->name('show');
         Route::put('/{user}', [AccountControllers\UserController::class, 'update'])
-            ->middleware('ability:super:*,account-user:*,account-user:update')
+            // ->middleware('ability:super:*,account-user:*,account-user:update')
             ->name('update');
         Route::delete('/{user}', [AccountControllers\UserController::class, 'delete'])
             ->middleware('ability:super:*,account-user:*,account-user:delete')

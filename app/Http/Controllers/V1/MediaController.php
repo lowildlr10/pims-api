@@ -10,24 +10,21 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Routing\Controllers\Middleware;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 use Intervention\Image\Drivers\Gd\Driver;
 
-class UserController extends Controller
+class MediaController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'firstname');
         $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $users = User::with([
             'department:id,department_name',
@@ -55,37 +52,14 @@ class UserController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'fullname_formatted':
-                    $users = $users->orderBy('firstname', $sortDirection);
-                    break;
-                case 'department_section':
-                    $users = $users->orderBy('department_id', $sortDirection)
-                        ->orderBy('section_id', $sortDirection);
-                    break;
-                case 'position_designation':
-                    $users = $users->orderBy('position_id', $sortDirection)
-                        ->orderBy('designation_id', $sortDirection);
-                    break;
-                default:
-                    $users = $users->orderBy($columnSort, $sortDirection);
-                    break;
-            }
+            $users = $users->orderBy($columnSort, $sortDirection);
         }
 
-        if ($paginated) {
-            return $users->paginate($perPage);
-        } else {
-            if ($showAll) {
-                $users = $users->get();
-            } else {
-                $users = $users->limit($perPage)->get();
-            }
+        $users = $users->paginate($perPage);
 
-            return response()->json([
-                'data' => $users
-            ]);
-        }
+        return response()->json([
+            'data' => $users
+        ]);
     }
 
     /**
@@ -94,12 +68,11 @@ class UserController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'employee_id' => 'required|string',
             'firstname' => 'required|string',
             'middlename' => 'nullable|string',
             'lastname' => 'required|string',
             'sex' => 'required|string|in:male,female',
-            'section_id' => 'required',
+            'section' => 'required',
             'position' => 'required',
             'designation' => 'nullable',
             'username' => 'required|unique:users',
@@ -108,11 +81,10 @@ class UserController extends Controller
             'password' => 'required|min:6',
             'avatar' => 'nullable|string',
             'signature' => 'nullable|string',
-            'restricted' => 'required|in:true,false',
-            'allow_signature' => 'boolean',
-            'roles' => 'required|string'
+            'restricted' => 'required|boolean',
+            'allow_signature' => 'required|boolean',
+            'roles' => 'required|array'
         ]);
-        $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $position = Position::updateOrCreate([
@@ -127,7 +99,7 @@ class UserController extends Controller
                 'designation_name' => $validated['designation']
             ]);
 
-            $section = Section::find($validated['section_id']);
+            $section = Section::find($validated['section']);
 
             $user = User::create(array_merge(
                 $validated,
@@ -142,8 +114,7 @@ class UserController extends Controller
                 ]
             ));
 
-            $roles = json_decode($validated['roles']);
-            $user->roles()->sync($roles);
+            $user->roles()->sync($validated['roles']);
 
             if ($request->avatar && !empty($request->avatar)) {
                 $avatar = $this->processAndSaveImage($request->avatar, $user->id);
@@ -198,10 +169,6 @@ class UserController extends Controller
     {
         $updateType = $request->get('update_type', 'account-management');
 
-        if ($updateType === 'account-management') {
-            new Middleware('ability:super:*,account-user:*,account-user:update');
-        }
-
         switch ($updateType) {
             case 'profile':
                 $validated = $request->validate([
@@ -234,7 +201,6 @@ class UserController extends Controller
 
             default:
                 $validated = $request->validate([
-                    'employee_id' => 'required|string',
                     'firstname' => 'required|string',
                     'middlename' => 'nullable|string',
                     'lastname' => 'required|string',
@@ -246,10 +212,9 @@ class UserController extends Controller
                     'email' => 'email|unique:users,email,' . $user->id . '|nullable',
                     'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
                     'password' => 'nullable|min:6',
-                    'restricted' => 'required|in:true,false',
-                    'roles' => 'required|string'
+                    'restricted' => 'required|boolean',
+                    'roles' => 'required|array'
                 ]);
-                $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
                 break;
         }
 
@@ -270,8 +235,8 @@ class UserController extends Controller
 
             if ($updateType === 'account-management') {
                 $section = Section::find($validated['section_id']);
-                $roles = json_decode($validated['roles']);
-                $user->roles()->sync($roles);
+
+                $user->roles()->sync($validated['roles']);
             }
 
             if ($updateType === 'avatar') {
@@ -341,8 +306,7 @@ class UserController extends Controller
                             'position_id' => $position->id,
                             'designation_id' => $designation->id,
                             'department_id' => $section->department_id,
-                            'section_id' => $section->id,
-                            'restricted' => $restricted
+                            'section_id' => $section->id
                         ],
                         !empty(trim($password))
                             ? ['password' => bcrypt($password)]

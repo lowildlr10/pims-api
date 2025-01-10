@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->string('employee_id')->unique();
             $table->string('firstname');
             $table->string('middlename')->nullable();
             $table->string('lastname');
@@ -43,6 +44,7 @@ return new class extends Migration
             $table->boolean('restricted')->default(true);
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::table('departments', function (Blueprint $table) {

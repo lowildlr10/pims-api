@@ -8,13 +8,15 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens,HasFactory, Notifiable, HasUuids;
+    use HasApiTokens, HasFactory, Notifiable, HasUuids, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -22,6 +24,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'employee_id',
         'firstname',
         'middlename',
         'lastname',
@@ -73,7 +76,7 @@ class User extends Authenticatable
         return Attribute::make(
             get: fn ($value, $attributes)
                 => !empty($attributes['middlename'])
-                    ? "{$attributes['firstname']} {$attributes['lastname'][0]}. {$attributes['lastname']}"
+                    ? "{$attributes['firstname']} {$attributes['middlename'][0]}. {$attributes['lastname']}"
                     : "{$attributes['firstname']} {$attributes['lastname']}",
         );
     }
@@ -94,6 +97,25 @@ class User extends Authenticatable
             ->toArray();
 	}
 
+    public function hasPermission(array|string $permissions): bool
+    {
+        switch (gettype($permissions)) {
+            case 'array':
+                foreach ($permissions ?? [] as $permission) {
+                    if ($this->tokenCan($permission)) return true;
+                }
+                break;
+
+            case 'string':
+                return $this->tokenCan('super') || $this->tokenCan($permissions);
+
+            default:
+                return false;
+        }
+
+        return false;
+    }
+
     /**
      * The roles that belong to the user.
      */
@@ -107,7 +129,7 @@ class User extends Authenticatable
     /**
      * The position that belong to the user.
      */
-    public function position()
+    public function position(): HasOne
     {
         return $this->hasOne(Position::class, 'id', 'position_id');
     }
@@ -115,7 +137,7 @@ class User extends Authenticatable
     /**
      * The designation that belong to the user.
      */
-    public function designation()
+    public function designation(): HasOne
     {
         return $this->hasOne(Designation::class, 'id', 'designation_id');
     }
@@ -123,7 +145,7 @@ class User extends Authenticatable
     /**
      * The department that belong to the user.
      */
-    public function department()
+    public function department(): HasOne
     {
         return $this->hasOne(Department::class, 'id', 'department_id');
     }
@@ -131,7 +153,7 @@ class User extends Authenticatable
     /**
      * The section that belong to the user.
      */
-    public function section()
+    public function section(): HasOne
     {
         return $this->hasOne(Section::class, 'id', 'section_id');
     }

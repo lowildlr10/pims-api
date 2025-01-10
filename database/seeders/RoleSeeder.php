@@ -17,6 +17,7 @@ class RoleSeeder extends Seeder
                 'account-role:view',
                 'account-department:view',
                 'account-section:view',
+                'company:*',
                 'pr:view,approve,disapprove,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -26,6 +27,7 @@ class RoleSeeder extends Seeder
                 'dv:view,print',
                 'inventory:view,print',
                 'lib-fund-source:view',
+                'lib-signatory:*',
                 'lib-paper-size:*',
                 'lib-unit-issue:*'
             ]
@@ -34,6 +36,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'End User',
             'permissions' => [
                 'user:*',
+                'comapny:view',
                 'pr:view,create,update,submit,cancel,delete,print',
                 'rfq:view,receive,submit,print',
                 'aoq:view,print',
@@ -51,6 +54,7 @@ class RoleSeeder extends Seeder
                 'account-role:*',
                 'account-department:*',
                 'account-section:*',
+                'company:*',
                 'pr:*',
                 'rfq:*',
                 'aoq:*',
@@ -61,11 +65,11 @@ class RoleSeeder extends Seeder
                 'inventory:*',
                 'payment:*',
                 'lib-fund-source:*',
-                'lib-inv-class:*',
                 'lib-item-class:*',
                 'lib-mfo-pap:*',
                 'lib-mode-proc:*',
                 'lib-paper-size:*',
+                'lib-signatory:*',
                 'lib-supplier:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:*'
@@ -75,6 +79,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Supply Officer',
             'permissions' => [
                 'supply:*',
+                'comapny:view',
                 'pr:view,create,update,cancel,delete,print',
                 'rfq:*',
                 'aoq:*',
@@ -84,10 +89,10 @@ class RoleSeeder extends Seeder
                 'dv:create,update,delete,submit,print',
                 'inventory:*',
                 'lib-fund-source:*',
-                'lib-inv-class:*',
                 'lib-item-class:*',
                 'lib-mode-proc:*',
                 'lib-paper-size:*',
+                'lib-signatory:*',
                 'lib-supplier:*',
                 'lib-unit-issue:*'
             ]
@@ -96,6 +101,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Budget',
             'permissions' => [
                 'budget:*',
+                'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -114,6 +120,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Accounting',
             'permissions' => [
                 'accounting:*',
+                'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -123,6 +130,7 @@ class RoleSeeder extends Seeder
                 'dv:*',
                 'lib-fund-source:*',
                 'lib-mfo-pap:*',
+                'lib-signatory:*',
                 'lib-paper-size:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:*'
@@ -132,6 +140,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Cashier',
             'permissions' => [
                 'cashier:*',
+                'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -142,6 +151,7 @@ class RoleSeeder extends Seeder
                 'payment:*',
                 'lib-fund-source:*',
                 'lib-mfo-pap:*',
+                'lib-signatory:*',
                 'lib-uacs-code:*'
             ]
         ]

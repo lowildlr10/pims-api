@@ -4,43 +4,37 @@ namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
-    // Get the current user
-    public function me(Request $request)
+    public function me(Request $request): JsonResponse
     {
-        $user = User::with('position', 'designation', 'department', 'section')
-            ->find($request->user()->id);
+        $user = User::with([
+            'department:id,department_name',
+            'section:id,section_name',
+            'position:id,position_name',
+            'designation:id,designation_name',
+            'roles:id,role_name'
+        ])
+        ->find($request->user()->id);
 
         return response()->json([
             'data' => [
-                'id' => $user->id,
-                'fullname' => $user->fullname,
-                'firstname' => $user->firstname,
-                'middlename' => $user->middlename,
-                'lastname' => $user->lastname,
-                'username' => $user->username,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'position' => $user->position->only(['id', 'position_name']),
-                'designation' => $user->designation->only(['id', 'designation_name']),
-                'department' => $user->department->only(['id', 'department_name']),
-                'section' => $user->section->only(['id', 'section_name']),
-                'avatar' => $user->avatar,
-                'signature' => $user->signature,
+                'user' => $user,
+                'permissions' => $request->user()->permissions()
             ]
         ]);
     }
 
-    public function login(Request $request)
+    public function login(Request $request): JsonResponse
     {
         // Validate the request
         $validated = $request->validate([
-            'login' => 'required',
-            'password' => 'required|min:6'
+            'login' => 'required|string',
+            'password' => 'required|string|min:6'
         ]);
 
         $loginField = filter_var($validated['login'], FILTER_VALIDATE_EMAIL)
@@ -71,13 +65,15 @@ class AuthController extends Controller
             ->plainTextToken;
 
         return response()->json([
-            'access_token' => $token,
-            'message' => 'Logged in successfully',
+            'data' => [
+                'access_token' => $token,
+                'message' => 'Logged in successfully',
+            ]
         ]);
     }
 
     // Logout a user
-    public function logout(Request $request)
+    public function logout(Request $request): JsonResponse
     {
         try {
             // Revoke the user's token

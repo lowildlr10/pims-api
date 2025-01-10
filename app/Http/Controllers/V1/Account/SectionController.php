@@ -20,7 +20,7 @@ class SectionController extends Controller
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'department_name');
+        $columnSort = $request->get('column_sort', 'section_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
@@ -29,7 +29,7 @@ class SectionController extends Controller
         if (!empty($search)) {
             $sections = $sections->where(function($query) use ($search){
                 $query->where('section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('department', 'department_name', 'ILIKE', "%{$search}%");
+                    ->orWhereRelation('department', 'section_name', 'ILIKE', "%{$search}%");
             });
         }
 

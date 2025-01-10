@@ -19,13 +19,13 @@ Route::middleware('auth:sanctum')->group(function() {
 
     Route::name('positions.')->prefix('/accounts/positions')->group(function () {
         Route::get('/', [AccountControllers\PositionController::class, 'index'])
-            ->middleware('ability:super:*,head:*,account-position:*,account-position:view')
+            // ->middleware('ability:super:*,head:*,account-position:*,account-position:view')
             ->name('index');
     });
 
     Route::name('designations.')->prefix('/accounts/designations')->group(function () {
         Route::get('/', [AccountControllers\DesignationController::class, 'index'])
-            ->middleware('ability:super:*,head:*,account-designation:*,account-designation:view')
+            // ->middleware('ability:super:*,head:*,account-designation:*,account-designation:view')
             ->name('index');
     });
 

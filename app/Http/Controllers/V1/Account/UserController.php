@@ -97,7 +97,7 @@ class UserController extends Controller
             'middlename' => 'nullable|string',
             'lastname' => 'required|string',
             'sex' => 'required|string|in:male,female',
-            'section' => 'required',
+            'section_id' => 'required',
             'position' => 'required',
             'designation' => 'nullable',
             'username' => 'required|unique:users',
@@ -107,8 +107,8 @@ class UserController extends Controller
             'avatar' => 'nullable|string',
             'signature' => 'nullable|string',
             'restricted' => 'required|in:true,false',
-            'allow_signature' => 'required|boolean',
-            'roles' => 'required|array'
+            'allow_signature' => 'boolean',
+            'roles' => 'required|string'
         ]);
         $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
 
@@ -125,7 +125,7 @@ class UserController extends Controller
                 'designation_name' => $validated['designation']
             ]);
 
-            $section = Section::find($validated['section']);
+            $section = Section::find($validated['section_id']);
 
             $user = User::create(array_merge(
                 $validated,
@@ -140,7 +140,8 @@ class UserController extends Controller
                 ]
             ));
 
-            $user->roles()->sync($validated['roles']);
+            $roles = json_decode($validated['roles']);
+            $user->roles()->sync($roles);
 
             if ($request->avatar && !empty($request->avatar)) {
                 $avatar = $this->processAndSaveImage($request->avatar, $user->id);
@@ -239,7 +240,7 @@ class UserController extends Controller
                     'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
                     'password' => 'nullable|min:6',
                     'restricted' => 'required|in:true,false',
-                    'roles' => 'required|array'
+                    'roles' => 'required|string'
                 ]);
                 $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
                 break;
@@ -262,8 +263,8 @@ class UserController extends Controller
 
             if ($updateType === 'account-management') {
                 $section = Section::find($validated['section_id']);
-
-                $user->roles()->sync($validated['roles']);
+                $roles = json_decode($validated['roles']);
+                $user->roles()->sync($roles);
             }
 
             if ($updateType === 'avatar') {

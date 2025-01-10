@@ -56,7 +56,7 @@ class UserController extends Controller
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
-                case 'fullname':
+                case 'fullname_formatted':
                     $users = $users->orderBy('firstname', $sortDirection);
                     break;
                 case 'department_section':
@@ -339,7 +339,8 @@ class UserController extends Controller
                             'position_id' => $position->id,
                             'designation_id' => $designation->id,
                             'department_id' => $section->department_id,
-                            'section_id' => $section->id
+                            'section_id' => $section->id,
+                            'restricted' => $restricted
                         ],
                         !empty(trim($password))
                             ? ['password' => bcrypt($password)]

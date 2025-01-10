@@ -34,16 +34,16 @@ Route::middleware('auth:sanctum')->group(function() {
             ->middleware('ability:super:*,head:*,account-department:*,account-department:view')
             ->name('index');
         Route::post('/', [AccountControllers\DepartmentController::class, 'store'])
-            ->middleware('ability:super:*,account-department:*,account-department:view')
+            ->middleware('ability:super:*,account-department:*,account-department:create')
             ->name('store');
         Route::get('/{department}', [AccountControllers\DepartmentController::class, 'show'])
             ->middleware('ability:super:*,account-department:*,account-department:view')
             ->name('show');
         Route::put('/{department}', [AccountControllers\DepartmentController::class, 'update'])
-            ->middleware('ability:super:*,account-department:*,account-department:view')
+            ->middleware('ability:super:*,account-department:*,account-department:update')
             ->name('update');
         Route::delete('/{department}', [AccountControllers\DepartmentController::class, 'delete'])
-            ->middleware('ability:super:*,account-department:*,account-department:view')
+            ->middleware('ability:super:*,account-department:*,account-department:delete')
             ->name('delete');
     });
 
@@ -52,16 +52,16 @@ Route::middleware('auth:sanctum')->group(function() {
             ->middleware('ability:super:*,head:*,account-section:*,account-section:view')
             ->name('index');
         Route::post('/', [AccountControllers\SectionController::class, 'store'])
-            ->middleware('ability:super:*,account-section:*,account-section:view')
+            ->middleware('ability:super:*,account-section:*,account-section:create')
             ->name('store');
         Route::get('/{section}', [AccountControllers\SectionController::class, 'show'])
             ->middleware('ability:super:*,account-section:*,account-section:view')
             ->name('show');
         Route::put('/{section}', [AccountControllers\SectionController::class, 'update'])
-            ->middleware('ability:super:*,account-section:*,account-section:view')
+            ->middleware('ability:super:*,account-section:*,account-section:update')
             ->name('update');
         Route::delete('/{section}', [AccountControllers\SectionController::class, 'delete'])
-            ->middleware('ability:super:*,account-section:*,account-section:view')
+            ->middleware('ability:super:*,account-section:*,account-section:delete')
             ->name('delete');
     });
 
@@ -70,16 +70,16 @@ Route::middleware('auth:sanctum')->group(function() {
             ->middleware('ability:super:*,head:*,account-role:*,account-role:view')
             ->name('index');
         Route::post('/', [AccountControllers\RoleController::class, 'store'])
-            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->middleware('ability:super:*,account-role:*,account-role:create')
             ->name('store');
         Route::get('/{role}', [AccountControllers\RoleController::class, 'show'])
             ->middleware('ability:super:*,account-role:*,account-role:view')
             ->name('show');
         Route::put('/{role}', [AccountControllers\RoleController::class, 'update'])
-            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->middleware('ability:super:*,account-role:*,account-role:update')
             ->name('update');
         Route::delete('/{role}', [AccountControllers\RoleController::class, 'delete'])
-            ->middleware('ability:super:*,account-role:*,account-role:view')
+            ->middleware('ability:super:*,account-role:*,account-role:delete')
             ->name('delete');
     });
 

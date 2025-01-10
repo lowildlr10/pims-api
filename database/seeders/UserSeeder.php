@@ -28,6 +28,7 @@ class UserSeeder extends Seeder
             ->first();
 
         User::create([
+            'employee_id' => '1111',
             'firstname' => 'System',
             'lastname' => 'Administrator',
             'sex' => 'male',

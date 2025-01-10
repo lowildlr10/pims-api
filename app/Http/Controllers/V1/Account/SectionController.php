@@ -24,7 +24,7 @@ class SectionController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $sections = Section::query();
+        $sections = Section::with('department');
 
         if (!empty($search)) {
             $sections = $sections->where(function($query) use ($search){

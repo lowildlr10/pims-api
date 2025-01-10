@@ -56,14 +56,19 @@ class RoleController extends Controller
     {
         $validated = $request->validate([
             'role_name' => 'required|unique:roles,role_name',
-            'permissions' => 'required|array',
+            'permissions' => 'required|string',
             'active' => 'required|in:true,false'
         ]);
 
         $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $role = Role::create($validated);
+            $role = Role::create(array_merge(
+                $validated,
+                [
+                    'permissions' => json_decode($validated['permissions'])
+                ]
+            ));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Role creation failed. Please try again.'
@@ -97,14 +102,19 @@ class RoleController extends Controller
     {
         $validated = $request->validate([
             'role_name' => 'required|unique:roles,role_name,' . $role->id,
-            'permissions' => 'required|array',
+            'permissions' => 'required|string',
             'active' => 'required|in:true,false'
         ]);
 
         $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $role->update($validated);
+            $role->update(array_merge(
+                $validated,
+                [
+                    'permissions' => json_decode($validated['permissions'])
+                ]
+            ));
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Role update failed. Please try again.'

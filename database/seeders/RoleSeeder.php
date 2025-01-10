@@ -27,6 +27,7 @@ class RoleSeeder extends Seeder
                 'dv:view,print',
                 'inventory:view,print',
                 'lib-fund-source:view',
+                'lib-signatory:*',
                 'lib-paper-size:*',
                 'lib-unit-issue:*'
             ]
@@ -64,11 +65,11 @@ class RoleSeeder extends Seeder
                 'inventory:*',
                 'payment:*',
                 'lib-fund-source:*',
-                'lib-inv-class:*',
                 'lib-item-class:*',
                 'lib-mfo-pap:*',
                 'lib-mode-proc:*',
                 'lib-paper-size:*',
+                'lib-signatory:*',
                 'lib-supplier:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:*'
@@ -88,10 +89,10 @@ class RoleSeeder extends Seeder
                 'dv:create,update,delete,submit,print',
                 'inventory:*',
                 'lib-fund-source:*',
-                'lib-inv-class:*',
                 'lib-item-class:*',
                 'lib-mode-proc:*',
                 'lib-paper-size:*',
+                'lib-signatory:*',
                 'lib-supplier:*',
                 'lib-unit-issue:*'
             ]
@@ -129,6 +130,7 @@ class RoleSeeder extends Seeder
                 'dv:*',
                 'lib-fund-source:*',
                 'lib-mfo-pap:*',
+                'lib-signatory:*',
                 'lib-paper-size:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:*'
@@ -149,6 +151,7 @@ class RoleSeeder extends Seeder
                 'payment:*',
                 'lib-fund-source:*',
                 'lib-mfo-pap:*',
+                'lib-signatory:*',
                 'lib-uacs-code:*'
             ]
         ]

@@ -11,9 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('designations', function (Blueprint $table) {
+        Schema::create('paper_sizes', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('designation_name');
+            $table->string('paper_type');
+            $table->double('width');
+            $table->double('height');
+            $table->enum('unit', ['mm', 'cm', 'in']);
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 
@@ -22,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('designations');
+        Schema::dropIfExists('paper_sizes');
     }
 };

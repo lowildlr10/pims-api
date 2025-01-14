@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers\V1\Library;
 
-use App\Models\Supplier;
+use App\Models\UacsCodeClassification;
 use Illuminate\Http\Request;
 
-class SupplierController extends Controller
+class UacsCodeClassificationController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,21 +16,15 @@ class SupplierController extends Controller
         $perPage = $request->get('per_page', 5);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'supplier_name');
+        $columnSort = $request->get('column_sort', 'classification_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $suppliers = Supplier::query();
+        $uacsCodeClassifications = UacsCodeClassification::query()->with('uacs_codes');
 
         if (!empty($search)) {
-            $suppliers = $suppliers->where(function($query) use ($search){
-                $query->where('supplier_name', 'ILIKE', "%{$search}%")
-                    ->orWhere('address', 'ILIKE', "%{$search}%")
-                    ->orWhere('tin_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('phone', 'ILIKE', "%{$search}%")
-                    ->orWhere('telephone', 'ILIKE', "%{$search}%")
-                    ->orWhere('vat_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('contact_person', 'ILIKE', "%{$search}%");
+            $uacsCodeClassifications = $uacsCodeClassifications->where(function($query) use ($search){
+                $query->where('classification_name', 'ILIKE', "%{$search}%");
             });
         }
 
@@ -46,20 +40,20 @@ class SupplierController extends Controller
             //         break;
             // }
 
-            $suppliers = $suppliers->orderBy($columnSort, $sortDirection);
+            $uacsCodeClassifications = $uacsCodeClassifications->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $suppliers->paginate($perPage);
+            return $uacsCodeClassifications->paginate($perPage);
         } else {
-            if (!$showInactive) $suppliers = $suppliers->where('active', true);
+            if (!$showInactive) $uacsCodeClassifications = $uacsCodeClassifications->where('active', true);
 
-            $suppliers = $showAll
-                ? $suppliers->get()
-                : $suppliers = $suppliers->limit($perPage)->get();
+            $uacsCodeClassifications = $showAll
+                ? $uacsCodeClassifications->get()
+                : $uacsCodeClassifications = $uacsCodeClassifications->limit($perPage)->get();
 
             return response()->json([
-                'data' => $suppliers
+                'data' => $uacsCodeClassifications
             ]);
         }
     }
@@ -75,7 +69,7 @@ class SupplierController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Supplier $supplier)
+    public function show(UacsCodeClassification $uacsCodeClassification)
     {
         //
     }
@@ -83,7 +77,7 @@ class SupplierController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Supplier $supplier)
+    public function update(Request $request, UacsCodeClassification $uacsCodeClassification)
     {
         //
     }

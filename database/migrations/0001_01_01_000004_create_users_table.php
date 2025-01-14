@@ -44,7 +44,6 @@ return new class extends Migration
             $table->boolean('restricted')->default(true);
             $table->rememberToken();
             $table->timestamps();
-            $table->softDeletes();
         });
 
         Schema::table('departments', function (Blueprint $table) {

@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('positions', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('position_name');
-            $table->timestamps();
         });
     }
 

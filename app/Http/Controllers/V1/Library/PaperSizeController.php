@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\V1\Library;
 
-use App\Http\Controllers\Controller;
+use App\Models\PaperSize;
 use Illuminate\Http\Request;
 
 class PaperSizeController extends Controller
@@ -26,7 +26,7 @@ class PaperSizeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(PaperSize $paperSize)
     {
         //
     }
@@ -34,7 +34,7 @@ class PaperSizeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, PaperSize $paperSize)
     {
         //
     }
@@ -42,7 +42,7 @@ class PaperSizeController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function delete(PaperSize $paperSize)
     {
         //
     }

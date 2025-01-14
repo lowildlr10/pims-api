@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-class Position extends Model
+class SignatoryDetail extends Model
 {
     use HasUuids;
 
@@ -15,7 +15,10 @@ class Position extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'position_name',
+        'signatory_id',
+        'document',
+        'signatory_type',
+        'position'
     ];
 
     /**

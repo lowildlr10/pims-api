@@ -141,25 +141,4 @@ class DepartmentController extends Controller
             ]
         ]);
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function delete(Department $department): JsonResponse
-    {
-        try {
-            $department->delete();
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' =>
-                    $th->getCode() === '23000' ?
-                        'Failed to delete department. There are records connected to this record.' :
-                        'Unknown error occured. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'Department deleted successfully',
-        ]);
-    }
 }

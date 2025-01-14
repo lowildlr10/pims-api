@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-class Position extends Model
+class Supplier extends Model
 {
     use HasUuids;
 
@@ -15,13 +15,13 @@ class Position extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'position_name',
+        'supplier_name',
+        'address',
+        'tin_no',
+        'phone',
+        'telephone',
+        'vat_no',
+        'contact_person',
+        'active'
     ];
-
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
 }

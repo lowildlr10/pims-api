@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\V1\Library;
 
-use App\Http\Controllers\Controller;
+use App\Models\FundingSource;
 use Illuminate\Http\Request;
 
 class FundingSourceController extends Controller
@@ -10,9 +10,54 @@ class FundingSourceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
-        //
+        $search = trim($request->get('search', ''));
+        $perPage = $request->get('per_page', 5);
+        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
+        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
+        $columnSort = $request->get('column_sort', 'title');
+        $sortDirection = $request->get('sort_direction', 'desc');
+        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+
+        $fundingSources = FundingSource::query()->with('location');
+
+        if (!empty($search)) {
+            $fundingSources = $fundingSources->where(function($query) use ($search){
+                $query->where('title', 'ILIKE', "%{$search}%")
+                    ->orWhere('total_cost', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('location', 'location_name', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        if (in_array($sortDirection, ['asc', 'desc'])) {
+            // switch ($columnSort) {
+            //     case 'headfullname':
+            //         $columnSort = 'department_head_id';
+            //         break;
+            //     case 'department_name_formatted':
+            //         $columnSort = 'department_name';
+            //         break;
+            //     default:
+            //         break;
+            // }
+
+            $fundingSources = $fundingSources->orderBy($columnSort, $sortDirection);
+        }
+
+        if ($paginated) {
+            return $fundingSources->paginate($perPage);
+        } else {
+            if (!$showInactive) $fundingSources = $fundingSources->where('active', true);
+
+            $fundingSources = $showAll
+                ? $fundingSources->get()
+                : $fundingSources = $fundingSources->limit($perPage)->get();
+
+            return response()->json([
+                'data' => $fundingSources
+            ]);
+        }
     }
 
     /**
@@ -26,7 +71,7 @@ class FundingSourceController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(FundingSource $fundingSource)
     {
         //
     }
@@ -34,15 +79,7 @@ class FundingSourceController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function update(Request $request, FundingSource $fundingSource)
     {
         //
     }

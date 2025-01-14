@@ -11,9 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('designations', function (Blueprint $table) {
+        Schema::create('signatory_details', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('designation_name');
+            $table->uuid('signatory_id');
+            $table->foreign('signatory_id')
+                ->references('id')
+                ->on('signatories');
+            $table->string('document');
+            $table->string('signatory_type');
+            $table->string('position');
         });
     }
 
@@ -22,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('designations');
+        Schema::dropIfExists('signatory_details');
     }
 };

@@ -382,33 +382,6 @@ class UserController extends Controller
         ]);
     }
 
-    /**
-     * Softdelete the specified resource from storage.
-     */
-    public function delete(User $user): JsonResponse
-    {
-        if (User::count() === 1) {
-            return response()->json([
-                'message' => 'Unable to delete user. The system must have at least one user registered.'
-            ], 422);
-        }
-
-        try {
-            $user->delete();
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' =>
-                    $th->getCode() === '23000' ?
-                        'Failed to delete category. There are records connected to this record.' :
-                        'Unknown error occured. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'User deleted successfully',
-        ]);
-    }
-
     private function processAndSaveImage(string $base64Data, string $imageName, string $imageDirectory = ''): string
     {
         $appUrl = env('APP_URL') ?? 'http://localhost';

@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Position extends Model
+class PaperSize extends Model
 {
-    use HasUuids;
+    use HasUuids, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -15,13 +16,10 @@ class Position extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'position_name',
+        'paper_type',
+        'unit',
+        'length',
+        'width',
+        'unit'
     ];
-
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
 }

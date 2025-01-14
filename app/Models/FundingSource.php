@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-class Position extends Model
+class FundingSource extends Model
 {
     use HasUuids;
 
@@ -15,13 +15,9 @@ class Position extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'position_name',
+        'title',
+        'location_id',
+        'total_cost',
+        'active'
     ];
-
-    /**
-     * Indicates if the model should be timestamped.
-     *
-     * @var bool
-     */
-    public $timestamps = false;
 }

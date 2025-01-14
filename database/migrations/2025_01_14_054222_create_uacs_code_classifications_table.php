@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('designations', function (Blueprint $table) {
+        Schema::create('uacs_code_classifications', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('designation_name');
+            $table->string('classification_name');
+            $table->boolean('active')->default(true);
+            $table->timestamps();
         });
     }
 
@@ -22,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('designations');
+        Schema::dropIfExists('uacs_code_classifications');
     }
 };

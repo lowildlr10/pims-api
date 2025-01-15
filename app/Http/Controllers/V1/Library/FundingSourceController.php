@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\V1\Library;
 
+use App\Http\Controllers\Controller;
 use App\Models\FundingSource;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class FundingSourceController extends Controller
 {
@@ -31,16 +34,19 @@ class FundingSourceController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            // switch ($columnSort) {
-            //     case 'headfullname':
-            //         $columnSort = 'department_head_id';
-            //         break;
-            //     case 'department_name_formatted':
-            //         $columnSort = 'department_name';
-            //         break;
-            //     default:
-            //         break;
-            // }
+            switch ($columnSort) {
+                case 'title_formatted':
+                    $columnSort = 'title';
+                    break;
+                case 'location_name':
+                    $columnSort = 'location_id';
+                    break;
+                case 'total_cost_formatted':
+                    $columnSort = 'total_cost';
+                    break;
+                default:
+                    break;
+            }
 
             $fundingSources = $fundingSources->orderBy($columnSort, $sortDirection);
         }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class UacsCode extends Model
 {
@@ -21,4 +22,9 @@ class UacsCode extends Model
         'description',
         'active'
     ];
+
+    public function uacsClassification(): HasOne
+    {
+        return $this->hasOne(UacsCodeClassification::class, 'classification_id');
+    }
 }

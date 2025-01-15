@@ -18,8 +18,8 @@ class PaperSize extends Model
     protected $fillable = [
         'paper_type',
         'unit',
-        'length',
         'width',
+        'height',
         'unit'
     ];
 }

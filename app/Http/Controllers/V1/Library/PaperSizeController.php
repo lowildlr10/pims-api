@@ -56,7 +56,27 @@ class PaperSizeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'paper_type' => 'required|unique:paper_sizes,paper_type',
+            'unit' => 'required|in:mm,cm,in',
+            'width' => 'required|numeric',
+            'height' => 'required|numeric'
+        ]);
+
+        try {
+            $paperSize = PaperSize::create($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Paper type creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $paperSize,
+                'message' => 'Paper type created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -64,7 +84,11 @@ class PaperSizeController extends Controller
      */
     public function show(PaperSize $paperSize)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $paperSize
+            ]
+        ]);
     }
 
     /**
@@ -72,7 +96,27 @@ class PaperSizeController extends Controller
      */
     public function update(Request $request, PaperSize $paperSize)
     {
-        //
+        $validated = $request->validate([
+            'paper_type' => 'required|unique:paper_sizes,paper_type,' . $paperSize->id,
+            'unit' => 'required|in:mm,cm,in',
+            'width' => 'required|numeric',
+            'height' => 'required|numeric'
+        ]);
+
+        try {
+            $paperSize->update($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Paper type update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $paperSize,
+                'message' => 'Paper type updated successfully.'
+            ]
+        ]);
     }
 
     /**

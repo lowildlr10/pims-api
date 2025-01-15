@@ -63,7 +63,27 @@ class ProcurementModeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'mode_name' => 'required|unique:procurement_modes,mode_name',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $procurementMode = ProcurementMode::create($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Mode of procurement creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $procurementMode,
+                'message' => 'Mode of procurement created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -71,7 +91,11 @@ class ProcurementModeController extends Controller
      */
     public function show(ProcurementMode $procurementMode)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $procurementMode
+            ]
+        ]);
     }
 
     /**
@@ -79,6 +103,26 @@ class ProcurementModeController extends Controller
      */
     public function update(Request $request, ProcurementMode $procurementMode)
     {
-        //
+        $validated = $request->validate([
+            'mode_name' => 'required|unique:procurement_modes,mode_name,' . $procurementMode->id,
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $procurementMode->update($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Mode of procurement update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $procurementMode,
+                'message' => 'Mode of procurement updated successfully.'
+            ]
+        ]);
     }
 }

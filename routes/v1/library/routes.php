@@ -62,10 +62,10 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
         Route::post('/', [LibraryControllers\ProcurementModeController::class, 'store'])
             ->middleware('ability:super:*,lib-mode-proc:*,lib-mode-proc:create')
             ->name('store');
-        Route::get('/{modeProcurement}', [LibraryControllers\ProcurementModeController::class, 'show'])
+        Route::get('/{procurementMode}', [LibraryControllers\ProcurementModeController::class, 'show'])
             ->middleware('ability:super:*,lib-mode-proc:*,lib-mode-proc:view')
             ->name('show');
-        Route::put('/{modeProcurement}', [LibraryControllers\ProcurementModeController::class, 'update'])
+        Route::put('/{procurementMode}', [LibraryControllers\ProcurementModeController::class, 'update'])
             ->middleware('ability:super:*,lib-mode-proc:*,lib-mode-proc:update')
             ->name('update');
     });

@@ -69,7 +69,33 @@ class SupplierController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'supplier_name' => 'required|unique:suppliers,supplier_name',
+            'address' => 'nullable',
+            'tin_no' => 'nullable',
+            'phone' => 'nullable',
+            'telephone' => 'nullable',
+            'vat_no' => 'nullable',
+            'contact_person' => 'nullable',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $supplier = Supplier::create($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Supplier creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $supplier,
+                'message' => 'Supplier created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -77,7 +103,11 @@ class SupplierController extends Controller
      */
     public function show(Supplier $supplier)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $supplier
+            ]
+        ]);
     }
 
     /**
@@ -85,6 +115,32 @@ class SupplierController extends Controller
      */
     public function update(Request $request, Supplier $supplier)
     {
-        //
+        $validated = $request->validate([
+            'supplier_name' => 'required|unique:suppliers,supplier_name,' . $supplier->id,
+            'address' => 'nullable',
+            'tin_no' => 'nullable',
+            'phone' => 'nullable',
+            'telephone' => 'nullable',
+            'vat_no' => 'nullable',
+            'contact_person' => 'nullable',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $supplier->update($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Supplier update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $supplier,
+                'message' => 'Supplier updated successfully.'
+            ]
+        ]);
     }
 }

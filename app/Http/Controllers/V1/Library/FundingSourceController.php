@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
 use App\Models\FundingSource;
+use App\Models\Location;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -71,7 +72,40 @@ class FundingSourceController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|unique:funding_sources,title',
+            'location' => 'required',
+            'total_cost' => 'required|numeric',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $location = Location::updateOrCreate([
+                'location_name' => $validated['location'],
+            ], [
+                'location_name' => $validated['location']
+            ]);
+
+            $fundingSource = FundingSource::create(array_merge(
+                $validated,
+                [
+                    'location_id' => $location->id,
+                ]
+            ));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Funding source/project creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $fundingSource,
+                'message' => 'Funding source/project created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -79,7 +113,14 @@ class FundingSourceController extends Controller
      */
     public function show(FundingSource $fundingSource)
     {
-        //
+        $fundingSource = $fundingSource->with('location')
+            ->find($fundingSource->id);
+
+        return response()->json([
+            'data' => [
+                'data' => $fundingSource
+            ]
+        ]);
     }
 
     /**
@@ -87,6 +128,39 @@ class FundingSourceController extends Controller
      */
     public function update(Request $request, FundingSource $fundingSource)
     {
-        //
+        $validated = $request->validate([
+            'title' => 'required|unique:funding_sources,title,' . $fundingSource->id,
+            'location' => 'required',
+            'total_cost' => 'required|numeric',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $location = Location::updateOrCreate([
+                'location_name' => $validated['location'],
+            ], [
+                'location_name' => $validated['location']
+            ]);
+
+            $fundingSource->update(array_merge(
+                $validated,
+                [
+                    'location_id' => $location->id,
+                ]
+            ));
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Funding source/project update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $fundingSource,
+                'message' => 'Funding source/project updated successfully.'
+            ]
+        ]);
     }
 }

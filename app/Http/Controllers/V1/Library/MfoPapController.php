@@ -64,7 +64,28 @@ class MfoPapController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'code' => 'required|unique:mfo_paps,code',
+            'description' => 'nullable',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $mfoPap = MfoPap::create($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'MFO/PAP creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $mfoPap,
+                'message' => 'MFO/PAP created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -72,7 +93,11 @@ class MfoPapController extends Controller
      */
     public function show(MfoPap $mfoPap)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $mfoPap
+            ]
+        ]);
     }
 
     /**
@@ -80,6 +105,27 @@ class MfoPapController extends Controller
      */
     public function update(Request $request, MfoPap $mfoPap)
     {
-        //
+        $validated = $request->validate([
+            'code' => 'required|unique:mfo_paps,code,' . $mfoPap->id,
+            'description' => 'nullable',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $mfoPap->update($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'MFO/PAP update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $mfoPap,
+                'message' => 'MFO/PAP updated successfully.'
+            ]
+        ]);
     }
 }

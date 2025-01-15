@@ -63,7 +63,27 @@ class UacsCodeClassificationController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'classification_name' => 'required|unique:uacs_code_classifications,classification_name',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $uacsCodeClassification = UacsCodeClassification::create($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'UACS code classification creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $uacsCodeClassification,
+                'message' => 'UACS code classification created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -71,7 +91,11 @@ class UacsCodeClassificationController extends Controller
      */
     public function show(UacsCodeClassification $uacsCodeClassification)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $uacsCodeClassification
+            ]
+        ]);
     }
 
     /**
@@ -79,6 +103,26 @@ class UacsCodeClassificationController extends Controller
      */
     public function update(Request $request, UacsCodeClassification $uacsCodeClassification)
     {
-        //
+        $validated = $request->validate([
+            'classification_name' => 'required|unique:uacs_code_classifications,classification_name,' . $uacsCodeClassification->id,
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $uacsCodeClassification->update($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'UACS code classification update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $uacsCodeClassification,
+                'message' => 'UACS code classification updated successfully.'
+            ]
+        ]);
     }
 }

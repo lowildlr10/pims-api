@@ -69,7 +69,30 @@ class UacsCodeController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'classification_id' => 'required',
+            'account_title' => 'required|string',
+            'code' => 'required|unique:uacs_codes,code',
+            'description' => 'nullable',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $uacsCode = UacsCode::create($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'UACS code creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $uacsCode,
+                'message' => 'UACS code created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -77,7 +100,11 @@ class UacsCodeController extends Controller
      */
     public function show(UacsCode $uacsCode)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $uacsCode
+            ]
+        ]);
     }
 
     /**
@@ -85,6 +112,29 @@ class UacsCodeController extends Controller
      */
     public function update(Request $request, UacsCode $uacsCode)
     {
-        //
+        $validated = $request->validate([
+            'classification_id' => 'required',
+            'account_title' => 'required|string',
+            'code' => 'required|unique:uacs_codes,code,' . $uacsCode->id,
+            'description' => 'nullable',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $uacsCode->update($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'UACS code update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $uacsCode,
+                'message' => 'UACS code updated successfully.'
+            ]
+        ]);
     }
 }

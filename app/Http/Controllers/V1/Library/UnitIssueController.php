@@ -63,7 +63,27 @@ class UnitIssueController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'unit_name' => 'required|unique:unit_issues,unit_name',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $unitIssue = UnitIssue::create($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Unit of issue creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $unitIssue,
+                'message' => 'Unit of issue created successfully.'
+            ]
+        ]);
     }
 
     /**
@@ -71,7 +91,11 @@ class UnitIssueController extends Controller
      */
     public function show(UnitIssue $unitIssue)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $unitIssue
+            ]
+        ]);
     }
 
     /**
@@ -79,6 +103,26 @@ class UnitIssueController extends Controller
      */
     public function update(Request $request, UnitIssue $unitIssue)
     {
-        //
+        $validated = $request->validate([
+            'unit_name' => 'required|unique:unit_issues,unit_name,' . $unitIssue->id,
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $unitIssue->update($validated);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Unit of issue update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $unitIssue,
+                'message' => 'Unit of issue updated successfully.'
+            ]
+        ]);
     }
 }

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
+use App\Models\Designation;
 use App\Models\Signatory;
+use App\Models\SignatoryDetail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -78,22 +80,109 @@ class SignatoryController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'user_id' => 'required|unique:signatories,user_id',
+            'details' => 'required|string',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $details = json_decode($validated['details']);
+
+            $signatory = Signatory::create($validated);
+
+            foreach ($details ?? [] as $detail) {
+                if (!empty($detail->position)) {
+                    $designation = Designation::updateOrCreate([
+                        'designation_name' => $detail->position,
+                    ], [
+                        'designation_name' => $detail->position
+                    ]);
+
+                    SignatoryDetail::create([
+                        'signatory_id' => $signatory->id,
+                        'document' => $detail->document,
+                        'signatory_type' => $detail->signatory_type,
+                        'position' => $detail->position
+                    ]);
+                }
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Signatory creation failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $signatory,
+                'message' => 'Signatory created successfully.'
+            ]
+        ]);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Signatory $signatories)
+    public function show(Signatory $signatory)
     {
-        //
+        return response()->json([
+            'data' => [
+                'data' => $signatory
+            ]
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Signatory $signatories)
+    public function update(Request $request, Signatory $signatory)
     {
-        //
+        $validated = $request->validate([
+            'user_id' => 'required|unique:signatories,user_id,' . $signatory->id,
+            'details' => 'required|string',
+            'active' => 'required|in:true,false'
+        ]);
+
+        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+
+        try {
+            $details = json_decode($validated['details']);
+
+            $signatory->update($validated);
+
+            SignatoryDetail::where('signatory_id', $signatory->id)
+                ->delete();
+
+            foreach ($details ?? [] as $detail) {
+                if (!empty($detail->position)) {
+                    $designation = Designation::updateOrCreate([
+                        'designation_name' => $detail->position,
+                    ], [
+                        'designation_name' => $detail->position
+                    ]);
+
+                    SignatoryDetail::create([
+                        'signatory_id' => $signatory->id,
+                        'document' => $detail->document,
+                        'signatory_type' => $detail->signatory_type,
+                        'position' => $detail->position
+                    ]);
+                }
+            }
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Signatory update failed. Please try again.'
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => [
+                'data' => $signatory,
+                'message' => 'Signatory updated successfully.'
+            ]
+        ]);
     }
 }

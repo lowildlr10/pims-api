@@ -25,7 +25,9 @@ class DepartmentController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $departments = Department::query()->with([
-            'sections:id,section_name,department_id,section_head_id,active',
+            'sections' => function ($query) {
+                $query->orderBy('section_name');
+            },
             'sections.head:id,firstname,lastname',
             'head:id,firstname,lastname'
         ]);

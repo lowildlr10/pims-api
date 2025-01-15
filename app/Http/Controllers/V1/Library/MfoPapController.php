@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\V1\Library;
 
+use App\Http\Controllers\Controller;
 use App\Models\MfoPap;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class MfoPapController extends Controller
 {
@@ -30,16 +33,13 @@ class MfoPapController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            // switch ($columnSort) {
-            //     case 'headfullname':
-            //         $columnSort = 'department_head_id';
-            //         break;
-            //     case 'department_name_formatted':
-            //         $columnSort = 'department_name';
-            //         break;
-            //     default:
-            //         break;
-            // }
+            switch ($columnSort) {
+                case 'code_formatted':
+                    $columnSort = 'code';
+                    break;
+                default:
+                    break;
+            }
 
             $mfoPaps = $mfoPaps->orderBy($columnSort, $sortDirection);
         }

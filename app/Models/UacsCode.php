@@ -23,8 +23,8 @@ class UacsCode extends Model
         'active'
     ];
 
-    public function uacsClassification(): HasOne
+    public function classification(): HasOne
     {
-        return $this->hasOne(UacsCodeClassification::class, 'classification_id');
+        return $this->hasOne(UacsCodeClassification::class, 'id', 'classification_id');
     }
 }

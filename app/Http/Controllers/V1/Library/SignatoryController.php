@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers\V1\Library;
 
+use App\Http\Controllers\Controller;
 use App\Models\Signatory;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SignatoryController extends Controller
 {
@@ -16,12 +20,14 @@ class SignatoryController extends Controller
         $perPage = $request->get('per_page', 5);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'code');
+        $columnSort = $request->get('column_sort', 'fullname');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $signatories = Signatory::query()->with([
-            'signatory_details',
+            'details' => function ($query) {
+                $query->orderBy('document');
+            },
             'user'
         ]);
 
@@ -30,23 +36,26 @@ class SignatoryController extends Controller
                 $query->whereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'middlename', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('signatory_details', 'position', 'ILIKE', "%{$search}%");;
+                    ->orWhereRelation('details', 'position', 'ILIKE', "%{$search}%");;
             });
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            // switch ($columnSort) {
-            //     case 'headfullname':
-            //         $columnSort = 'department_head_id';
-            //         break;
-            //     case 'department_name_formatted':
-            //         $columnSort = 'department_name';
-            //         break;
-            //     default:
-            //         break;
-            // }
+            switch ($columnSort) {
+                case 'fullname':
+                    // $columnSort = 'user.firstname';
+                    $columnSort = '';
+                    $signatories = $signatories->orderBy(
+                        User::select('firstname')->whereColumn('users.id', 'signatories.user_id')
+                    );
+                    break;
+                default:
+                    break;
+            }
 
-            $signatories = $signatories->orderBy($columnSort, $sortDirection);
+            if ($columnSort) {
+                $signatories = $signatories->orderBy($columnSort, $sortDirection);
+            }
         }
 
         if ($paginated) {

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\V1\Library;
 
+use App\Http\Controllers\Controller;
 use App\Models\UacsCodeClassification;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class UacsCodeClassificationController extends Controller
 {
@@ -20,7 +23,7 @@ class UacsCodeClassificationController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $uacsCodeClassifications = UacsCodeClassification::query()->with('uacs_codes');
+        $uacsCodeClassifications = UacsCodeClassification::query();
 
         if (!empty($search)) {
             $uacsCodeClassifications = $uacsCodeClassifications->where(function($query) use ($search){
@@ -29,16 +32,13 @@ class UacsCodeClassificationController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            // switch ($columnSort) {
-            //     case 'headfullname':
-            //         $columnSort = 'department_head_id';
-            //         break;
-            //     case 'department_name_formatted':
-            //         $columnSort = 'department_name';
-            //         break;
-            //     default:
-            //         break;
-            // }
+            switch ($columnSort) {
+                case 'classification_name_formatted':
+                    $columnSort = 'classification_name';
+                    break;
+                default:
+                    break;
+            }
 
             $uacsCodeClassifications = $uacsCodeClassifications->orderBy($columnSort, $sortDirection);
         }

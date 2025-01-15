@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\V1\Library;
 
+use App\Http\Controllers\Controller;
 use App\Models\Supplier;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class SupplierController extends Controller
 {
@@ -35,16 +38,13 @@ class SupplierController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            // switch ($columnSort) {
-            //     case 'headfullname':
-            //         $columnSort = 'department_head_id';
-            //         break;
-            //     case 'department_name_formatted':
-            //         $columnSort = 'department_name';
-            //         break;
-            //     default:
-            //         break;
-            // }
+            switch ($columnSort) {
+                case 'supplier_name_formatted':
+                    $columnSort = 'supplier_name';
+                    break;
+                default:
+                    break;
+            }
 
             $suppliers = $suppliers->orderBy($columnSort, $sortDirection);
         }

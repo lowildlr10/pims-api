@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers\V1\Library;
 
+use App\Http\Controllers\Controller;
 use App\Models\UnitIssue;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class UnitIssueController extends Controller
 {
@@ -29,16 +32,13 @@ class UnitIssueController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            // switch ($columnSort) {
-            //     case 'headfullname':
-            //         $columnSort = 'department_head_id';
-            //         break;
-            //     case 'department_name_formatted':
-            //         $columnSort = 'department_name';
-            //         break;
-            //     default:
-            //         break;
-            // }
+            switch ($columnSort) {
+                case 'unit_name_formatted':
+                    $columnSort = 'unit_name';
+                    break;
+                default:
+                    break;
+            }
 
             $unitIssues = $unitIssues->orderBy($columnSort, $sortDirection);
         }

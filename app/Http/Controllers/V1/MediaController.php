@@ -27,7 +27,7 @@ class MediaController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
 
         $users = User::with([
-            'department:id,department_name',
+            'division:id,division_name',
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
@@ -45,7 +45,7 @@ class MediaController extends Controller
                     ->orWhere('username', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('position', 'position_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('designation', 'designation_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('department', 'department_name', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('division', 'division_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('roles', 'role_name', 'ILIKE', "%{$search}%");
             });
@@ -106,7 +106,7 @@ class MediaController extends Controller
                 [
                     'position_id' => $position->id,
                     'designation_id' => $designation->id,
-                    'department_id' => $section->department_id,
+                    'division_id' => $section->division_id,
                     'section_id' => $section->id,
                     'avatar' => null,
                     'signature' => null,
@@ -147,7 +147,7 @@ class MediaController extends Controller
     public function show(User $user): JsonResponse
     {
         $user = $user->with([
-            'department:id,department_name',
+            'division:id,division_name',
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
@@ -305,7 +305,7 @@ class MediaController extends Controller
                         [
                             'position_id' => $position->id,
                             'designation_id' => $designation->id,
-                            'department_id' => $section->department_id,
+                            'division_id' => $section->division_id,
                             'section_id' => $section->id
                         ],
                         !empty(trim($password))

@@ -176,7 +176,7 @@ class UserController extends Controller
     public function show(User $user): JsonResponse
     {
         $user = $user->with([
-            'department:id,department_name',
+            'division:id,division_name',
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',

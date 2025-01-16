@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class SectionSeeder extends Seeder
 {
-    private $departments = [
+    private $divisions = [
         'Office of the Municipal Mayor',
         'Office of the Municipal Vice Mayor',
         'Office of the Sangguniang Bayan',
@@ -37,12 +37,12 @@ class SectionSeeder extends Seeder
      */
     public function run(): void
     {
-        foreach ($this->departments as $key => $department) {
-            $deptData = DB::table('departments')
-                ->where('department_name', $department)
+        foreach ($this->divisions as $key => $division) {
+            $divData = DB::table('divisions')
+                ->where('division_name', $division)
                 ->first();
             Section::create([
-                'department_id' => $deptData->id,
+                'division_id' => $divData->id,
                 'section_name' => "Section Test {$key}"
             ]);
         }

@@ -32,7 +32,7 @@ class UserSeeder extends Seeder
             'firstname' => 'System',
             'lastname' => 'Administrator',
             'sex' => 'male',
-            'department_id' => $section->department_id,
+            'division_id' => $section->division_id,
             'section_id' => $section->id,
             'position_id' => $position->id,
             'designation_id' => $designation->id,

@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
+use App\Models\Division;
 use App\Models\Section;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class DepartmentController extends Controller
+class DivisionController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -20,11 +20,11 @@ class DepartmentController extends Controller
         $perPage = $request->get('per_page', 5);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'department_name');
+        $columnSort = $request->get('column_sort', 'division_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $departments = Department::query()->with([
+        $divisions = Division::query()->with([
             'sections' => function ($query) {
                 $query->orderBy('section_name');
             },
@@ -33,8 +33,8 @@ class DepartmentController extends Controller
         ]);
 
         if (!empty($search)) {
-            $departments = $departments->where(function($query) use ($search){
-                $query->where('department_name', 'ILIKE', "%{$search}%")
+            $divisions = $divisions->where(function($query) use ($search){
+                $query->where('division_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('sections', 'section_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -42,29 +42,29 @@ class DepartmentController extends Controller
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'headfullname':
-                    $columnSort = 'department_head_id';
+                    $columnSort = 'division_head_id';
                     break;
-                case 'department_name_formatted':
-                    $columnSort = 'department_name';
+                case 'division_name_formatted':
+                    $columnSort = 'division_name';
                     break;
                 default:
                     break;
             }
 
-            $departments = $departments->orderBy($columnSort, $sortDirection);
+            $divisions = $divisions->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $departments->paginate($perPage);
+            return $divisions->paginate($perPage);
         } else {
-            if (!$showInactive) $departments = $departments->where('active', true);
+            if (!$showInactive) $divisions = $divisions->where('active', true);
 
-            $departments = $showAll
-                ? $departments->get()
-                : $departments = $departments->limit($perPage)->get();
+            $divisions = $showAll
+                ? $divisions->get()
+                : $divisions = $divisions->limit($perPage)->get();
 
             return response()->json([
-                'data' => $departments
+                'data' => $divisions
             ]);
         }
     }
@@ -75,25 +75,25 @@ class DepartmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'department_name' => 'required|unique:departments,department_name',
-            'department_head_id' => 'nullable',
+            'division_name' => 'required|unique:divisions,division_name',
+            'division_head_id' => 'nullable',
             'active' => 'required|in:true,false'
         ]);
 
         $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $department = Department::create($validated);
+            $division = Division::create($validated);
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Department creation failed. Please try again.'
+                'message' => 'Division creation failed. Please try again.'
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $department,
-                'message' => 'Department created successfully.'
+                'data' => $division,
+                'message' => 'Division created successfully.'
             ]
         ]);
     }
@@ -101,11 +101,11 @@ class DepartmentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Department $department): JsonResponse
+    public function show(Division $division): JsonResponse
     {
         return response()->json([
             'data' => [
-                'data' => $department
+                'data' => $division
             ]
         ]);
     }
@@ -113,33 +113,33 @@ class DepartmentController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Department $department): JsonResponse
+    public function update(Request $request, Division $division): JsonResponse
     {
         $validated = $request->validate([
-            'department_name' => 'required|unique:departments,department_name,' . $department->id,
-            'department_head_id' => 'nullable',
+            'division_name' => 'required|unique:divisions,division_name,' . $division->id,
+            'division_head_id' => 'nullable',
             'active' => 'required|in:true,false'
         ]);
 
         $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            Section::where('department_id', $department->id)
+            Section::where('division_id', $division->id)
                 ->update([
                     'active' => $validated['active']
                 ]);
 
-            $department->update($validated);
+            $division->update($validated);
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Department update failed. Please try again.'
+                'message' => 'Division update failed. Please try again.'
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $department,
-                'message' => 'Department updated successfully.'
+                'data' => $division,
+                'message' => 'Division updated successfully.'
             ]
         ]);
     }

@@ -129,25 +129,4 @@ class RoleController extends Controller
             ]
         ]);
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function delete(Role $role): JsonResponse
-    {
-        try {
-            $role->delete();
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' =>
-                    $th->getCode() === '23000' ?
-                        'Failed to delete role. There are records connected to this record.' :
-                        'Unknown error occured. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'Role deleted successfully',
-        ]);
-    }
 }

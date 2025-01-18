@@ -17,4 +17,11 @@ class Designation extends Model
     protected $fillable = [
         'designation_name',
     ];
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
 }

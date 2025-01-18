@@ -15,7 +15,7 @@ class RoleSeeder extends Seeder
                 'head:*',
                 'account-user:view',
                 'account-role:view',
-                'account-department:view',
+                'account-division:view',
                 'account-section:view',
                 'company:*',
                 'pr:view,approve,disapprove,print',
@@ -27,8 +27,14 @@ class RoleSeeder extends Seeder
                 'dv:view,print',
                 'inventory:view,print',
                 'lib-fund-source:view',
+                'lib-item-class:view',
+                'lib-mfo-pap:view',
+                'lib-mode-proc:view',
                 'lib-signatory:*',
+                'lib-supplier:view',
                 'lib-paper-size:*',
+                'lib-uacs-class:view',
+                'lib-uacs-code:view',
                 'lib-unit-issue:*'
             ]
         ],
@@ -43,7 +49,12 @@ class RoleSeeder extends Seeder
                 'po:view,print',
                 'iar:view,print',
                 'ors:view,print',
-                'dv:view,print'
+                'dv:view,print',
+                'lib-fund-source:view',
+                'lib-paper-size:view',
+                'lib-signatory:view',
+                'lib-supplier:view',
+                'lib-unit-issue:view'
             ]
         ],
         [
@@ -52,7 +63,7 @@ class RoleSeeder extends Seeder
                 'super:*',
                 'account-user:*',
                 'account-role:*',
-                'account-department:*',
+                'account-division:*',
                 'account-section:*',
                 'company:*',
                 'pr:*',
@@ -71,6 +82,7 @@ class RoleSeeder extends Seeder
                 'lib-paper-size:*',
                 'lib-signatory:*',
                 'lib-supplier:*',
+                'lib-uacs-class:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:*'
             ]
@@ -79,6 +91,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Supply Officer',
             'permissions' => [
                 'supply:*',
+                'account-user:view',
                 'comapny:view',
                 'pr:view,create,update,cancel,delete,print',
                 'rfq:*',
@@ -101,6 +114,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Budget',
             'permissions' => [
                 'budget:*',
+                'account-user:view',
                 'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
@@ -112,14 +126,18 @@ class RoleSeeder extends Seeder
                 'lib-fund-source:*',
                 'lib-mfo-pap:*',
                 'lib-paper-size:*',
+                'lib-signatory:*',
+                'lib-supplier:view',
+                'lib-uacs-class:*',
                 'lib-uacs-code:*',
-                'lib-unit-issue:*'
+                'lib-unit-issue:view'
             ]
         ],
         [
             'role_name' => 'Accounting',
             'permissions' => [
                 'accounting:*',
+                'account-user:view',
                 'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
@@ -131,15 +149,18 @@ class RoleSeeder extends Seeder
                 'lib-fund-source:*',
                 'lib-mfo-pap:*',
                 'lib-signatory:*',
+                'lib-supplier:view',
                 'lib-paper-size:*',
+                'lib-uacs-class:*',
                 'lib-uacs-code:*',
-                'lib-unit-issue:*'
+                'lib-unit-issue:view'
             ]
         ],
         [
             'role_name' => 'Cashier',
             'permissions' => [
                 'cashier:*',
+                'account-user:view',
                 'comapny:view',
                 'pr:view,print',
                 'rfq:view,print',
@@ -152,7 +173,10 @@ class RoleSeeder extends Seeder
                 'lib-fund-source:*',
                 'lib-mfo-pap:*',
                 'lib-signatory:*',
-                'lib-uacs-code:*'
+                'lib-supplier:view',
+                'lib-uacs-class:*',
+                'lib-uacs-code:*',
+                'lib-unit-issue:view'
             ]
         ]
     ];

@@ -19,14 +19,14 @@ class Section extends Model
      */
     protected $fillable = [
         'section_name',
-        'department_id',
+        'division_id',
         'section_head_id',
         'active'
     ];
 
     protected $appends = [
         'headfullname',
-        'department_section'
+        'division_section'
     ];
 
     public function headfullname(): Attribute
@@ -39,24 +39,24 @@ class Section extends Model
         );
     }
 
-    protected function departmentSection(): Attribute
+    protected function divisionSection(): Attribute
     {
-        $departmentName = !empty($this->department)
-            ? (strlen($this->department->department_name) > 35
-                ? substr($this->department->department_name, 0, 35) . '...'
-                : $this->department->department_name)
+        $divisionName = !empty($this->division)
+            ? (strlen($this->division->division_name) > 35
+                ? substr($this->division->division_name, 0, 35) . '...'
+                : $this->division->division_name)
             : '-';
 
         return new Attribute(
-            get: fn () => !empty($this->department)
-                ? "{$this->section_name} ({$departmentName})"
+            get: fn () => !empty($this->division)
+                ? "{$this->section_name} ({$divisionName})"
                 : '-',
         );
     }
 
-    public function department(): BelongsTo
+    public function division(): BelongsTo
     {
-        return $this->belongsTo(Department::class, 'department_id');
+        return $this->belongsTo(Division::class, 'division_id');
     }
 
     /**

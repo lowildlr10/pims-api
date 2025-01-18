@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('designations', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('designation_name');
-            $table->timestamps();
         });
     }
 

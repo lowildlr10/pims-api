@@ -13,7 +13,7 @@ class AuthController extends Controller
     public function me(Request $request): JsonResponse
     {
         $user = User::with([
-            'department:id,department_name',
+            'division:id,division_name',
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',

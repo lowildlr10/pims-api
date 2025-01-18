@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
+use App\Models\Division;
 use App\Models\Section;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,12 +24,12 @@ class SectionController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $sections = Section::with('department');
+        $sections = Section::with('division');
 
         if (!empty($search)) {
             $sections = $sections->where(function($query) use ($search){
                 $query->where('section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('department', 'section_name', 'ILIKE', "%{$search}%");
+                    ->orWhereRelation('division', 'division_name', 'ILIKE', "%{$search}%");
             });
         }
 
@@ -58,7 +58,7 @@ class SectionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'department_id' => 'required',
+            'division_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
             'active' => 'required|in:true,false'
@@ -68,12 +68,12 @@ class SectionController extends Controller
 
         try {
             $section = Section::create($validated);
-            $department = Department::find($validated['department_id']);
+            $division = Division::find($validated['division_id']);
 
-            if (!$department->active) {
-                Section::where('department_id', $department->id)
+            if (!$division->active) {
+                Section::where('division_id', $division->id)
                     ->update([
-                        'active' => $department->active
+                        'active' => $division->active
                     ]);
             }
         } catch (\Throwable $th) {
@@ -108,7 +108,7 @@ class SectionController extends Controller
     public function update(Request $request, Section $section)
     {
         $validated = $request->validate([
-            'department_id' => 'required',
+            'division_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
             'active' => 'required|in:true,false'
@@ -118,12 +118,12 @@ class SectionController extends Controller
 
         try {
             $section->update($validated);
-            $department = Department::find($validated['department_id']);
+            $division = Division::find($validated['division_id']);
 
-            if (!$department->active) {
-                Section::where('department_id', $department->id)
+            if (!$division->active) {
+                Section::where('division_id', $division->id)
                     ->update([
-                        'active' => $department->active
+                        'active' => $division->active
                     ]);
             }
         } catch (\Throwable $th) {
@@ -137,27 +137,6 @@ class SectionController extends Controller
                 'data' => $section,
                 'message' => 'Section updated successfully.'
             ]
-        ]);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function delete(Section $section): JsonResponse
-    {
-        try {
-            $section->delete();
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' =>
-                    $th->getCode() === '23000' ?
-                        'Failed to delete section. There are records connected to this record.' :
-                        'Unknown error occured. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'Section deleted successfully',
         ]);
     }
 }

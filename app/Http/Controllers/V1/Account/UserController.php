@@ -30,7 +30,7 @@ class UserController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $users = User::with([
-            'department:id,department_name',
+            'division:id,division_name',
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
@@ -48,7 +48,7 @@ class UserController extends Controller
                     ->orWhere('username', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('position', 'position_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('designation', 'designation_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('department', 'department_name', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('division', 'division_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('roles', 'role_name', 'ILIKE', "%{$search}%");
             });
@@ -59,8 +59,8 @@ class UserController extends Controller
                 case 'fullname_formatted':
                     $users = $users->orderBy('firstname', $sortDirection);
                     break;
-                case 'department_section':
-                    $users = $users->orderBy('department_id', $sortDirection)
+                case 'division_section':
+                    $users = $users->orderBy('division_id', $sortDirection)
                         ->orderBy('section_id', $sortDirection);
                     break;
                 case 'position_designation':
@@ -134,7 +134,7 @@ class UserController extends Controller
                 [
                     'position_id' => $position->id,
                     'designation_id' => $designation->id,
-                    'department_id' => $section->department_id,
+                    'division_id' => $section->division_id,
                     'section_id' => $section->id,
                     'avatar' => null,
                     'signature' => null,
@@ -176,7 +176,7 @@ class UserController extends Controller
     public function show(User $user): JsonResponse
     {
         $user = $user->with([
-            'department:id,department_name',
+            'division:id,division_name',
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
@@ -340,7 +340,7 @@ class UserController extends Controller
                         [
                             'position_id' => $position->id,
                             'designation_id' => $designation->id,
-                            'department_id' => $section->department_id,
+                            'division_id' => $section->division_id,
                             'section_id' => $section->id,
                             'restricted' => $restricted
                         ],
@@ -379,33 +379,6 @@ class UserController extends Controller
                 'data' => $request->except('password'),
                 'message' => $successMessage
             ]
-        ]);
-    }
-
-    /**
-     * Softdelete the specified resource from storage.
-     */
-    public function delete(User $user): JsonResponse
-    {
-        if (User::count() === 1) {
-            return response()->json([
-                'message' => 'Unable to delete user. The system must have at least one user registered.'
-            ], 422);
-        }
-
-        try {
-            $user->delete();
-        } catch (\Throwable $th) {
-            return response()->json([
-                'message' =>
-                    $th->getCode() === '23000' ?
-                        'Failed to delete category. There are records connected to this record.' :
-                        'Unknown error occured. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'message' => 'User deleted successfully',
         ]);
     }
 

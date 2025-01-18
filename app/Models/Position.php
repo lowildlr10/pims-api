@@ -17,4 +17,11 @@ class Position extends Model
     protected $fillable = [
         'position_name',
     ];
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
 }

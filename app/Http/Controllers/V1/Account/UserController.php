@@ -218,16 +218,9 @@ class UserController extends Controller
                 ]);
                 break;
 
-            case 'avatar':
+            case 'allow_signature':
                 $validated = $request->validate([
-                    'avatar' => 'nullable|string',
-                ]);
-                break;
-
-            case 'signature':
-                $validated = $request->validate([
-                    'allow_signature' => 'required|in:true,false',
-                    'signature' => 'nullable|string',
+                    'allow_signature' => 'required|in:true,false'
                 ]);
                 $allowSignature = filter_var($validated['allow_signature'], FILTER_VALIDATE_BOOLEAN);
                 break;
@@ -274,30 +267,6 @@ class UserController extends Controller
                 $user->roles()->sync($roles);
             }
 
-            if ($updateType === 'avatar') {
-                if ($request->avatar !== $user->avatar && !empty($request->avatar)) {
-                    $avatar = $this->processAndSaveImage($request->avatar, $user->id, 'avatars');
-                } else {
-                    if (!empty($request->avatar)) {
-                        $avatar = $request->avatar;
-                    } else {
-                        $avatar = null;
-                    }
-                }
-            }
-
-            if ($updateType === 'signature') {
-                if ($request->signature !== $user->signature && !empty($request->signature)) {
-                    $signature = $this->processAndSaveImage($request->signature, $user->id, 'signatures');
-                } else {
-                    if (!empty($request->signature)) {
-                        $signature = $request->signature;
-                    } else {
-                        $signature = null;
-                    }
-                }
-            }
-
             switch ($updateType) {
                 case 'profile':
                     $password = $validated['password'];
@@ -314,20 +283,11 @@ class UserController extends Controller
                     );
                     break;
 
-                case 'avatar':
+                case 'allow_signature':
                     $updateData = array_merge(
                         $validated,
                         [
-                            'avatar' => $avatar,
-                        ]
-                    );
-                    break;
-
-                case 'signature':
-                    $updateData = array_merge(
-                        $validated,
-                        [
-                            'signature' => $signature,
+                            'allow_signature' => $allowSignature,
                         ]
                     );
                     break;
@@ -353,10 +313,8 @@ class UserController extends Controller
 
             $user->update($updateData);
         } catch (\Throwable $th) {
-            if ($updateType === 'avatar') {
-                $errorMessage = 'Avatar update failed. Please try again.';
-            } else if ($updateType === 'signature') {
-                $errorMessage = 'Signature update failed. Please try again.';
+            if ($updateType === 'allow_signature') {
+                $errorMessage = 'Failed to allow signature. Please try again.';
             } else {
                 $errorMessage = 'User update failed. Please try again.';
             }
@@ -366,10 +324,8 @@ class UserController extends Controller
             ], 422);
         }
 
-        if ($updateType === 'avatar') {
-            $successMessage = 'Avatar updated successfully.';
-        } else if ($updateType === 'signature') {
-            $successMessage = 'Signature updated successfully.';
+        if ($updateType === 'allow_signature') {
+            $successMessage = 'Signature allowed successfully.';
         } else {
             $successMessage = 'User updated successfully.';
         }

@@ -28,7 +28,9 @@ class Company extends Model
      */
     protected $fillable = [
         'company_name',
+        'favicon',
         'company_logo',
+        'login_background',
         'theme_colors'
     ];
 }

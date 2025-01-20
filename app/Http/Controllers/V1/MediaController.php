@@ -210,6 +210,7 @@ class MediaController extends Controller
                             $signature = null;
                         }
                     }
+
                     $data->update([
                         'signature' => $signature
                     ]);
@@ -219,7 +220,7 @@ class MediaController extends Controller
                     $data = Company::find($id);
                     $successMessage = 'Logo updated successfully.';
 
-                    if ($request->image !== $data->logo && !empty($request->image)) {
+                    if ($request->image !== $data->company_logo && !empty($request->image)) {
                         $logo = $this->processAndSaveImage($request->image, $data->id, 'company-logo', 200);
                     } else {
                         if (!empty($request->image)) {
@@ -228,8 +229,46 @@ class MediaController extends Controller
                             $logo = null;
                         }
                     }
+
+                    if ($request->image !== $data->company_logo && !empty($request->image)) {
+                        $favicon = $this->processAndSaveImage($request->image, $data->id, 'company-favicon', 16, 'ico');
+                    } else {
+                        if (!empty($request->image)) {
+                            $favicon = $request->image;
+                        } else {
+                            $favicon = null;
+                        }
+                    }
+
                     $data->update([
-                        'company_logo' => $logo
+                        'company_logo' => $logo,
+                        'favicon' => $favicon
+                    ]);
+                    break;
+
+                case 'company-login-background':
+                    $data = Company::find($id);
+                    $successMessage = 'Login background image updated successfully.';
+
+                    if ($request->image !== $data->login_background && !empty($request->image)) {
+                        $backgroundImage = $this->processAndSaveImage(
+                            $request->image,
+                            $data->id,
+                            'company-login-background',
+                            1920,
+                            'jpg',
+                            30
+                        );
+                    } else {
+                        if (!empty($request->image)) {
+                            $backgroundImage = $request->image;
+                        } else {
+                            $backgroundImage = null;
+                        }
+                    }
+
+                    $data->update([
+                        'login_background' => $backgroundImage
                     ]);
                     break;
 
@@ -245,6 +284,14 @@ class MediaController extends Controller
 
                 case 'user-signature':
                     $errorMessage = 'Signature update failed. Please try again.';
+                    break;
+
+                case 'company-logo':
+                    $errorMessage = 'Company logo update failed. Please try again.';
+                    break;
+
+                case 'company-login-background':
+                    $errorMessage = 'Login background image update failed. Please try again.';
                     break;
 
                 default:
@@ -293,13 +340,13 @@ class MediaController extends Controller
     // }
 
     private function processAndSaveImage(
-        string $base64Data, string $imageName, string $imageDirectory = '', $width = 150
+        string $base64Data, string $imageName, string $imageDirectory = '', $width = 150, $format = 'png', $quality = 10
     ): string
     {
         $appUrl = env('APP_URL') ?? 'http://localhost';
         $image = Image::read($base64Data)->scale($width);
 
-        $filename = "{$imageName}.png";
+        $filename = "{$imageName}.{$format}";
         $relativeFileDirectory = !empty($imageDirectory) ? "{$imageDirectory}/{$filename}" : $filename;
         $publicDirectory = "public/images/{$imageDirectory}";
         $directory = "{$appUrl}/storage/images/{$relativeFileDirectory}";
@@ -310,7 +357,9 @@ class MediaController extends Controller
             Storage::makeDirectory($publicDirectory);
         }
 
-        $image->encodeByExtension('png', progressive: true, quality: 10)
+        if ($format === 'ico') $format = 'png';
+
+        $image->encodeByExtension($format, progressive: true, quality: $quality)
             ->save(public_path(
                 "/storage/images/{$relativeFileDirectory}"
             ));

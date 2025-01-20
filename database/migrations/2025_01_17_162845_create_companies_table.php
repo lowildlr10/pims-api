@@ -14,7 +14,9 @@ return new class extends Migration
         Schema::create('companies', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('company_name');
+            $table->text('favicon')->nullable();
             $table->text('company_logo')->nullable();
+            $table->text('login_background')->nullable();
             $table->json('theme_colors');
             $table->timestamps();
         });

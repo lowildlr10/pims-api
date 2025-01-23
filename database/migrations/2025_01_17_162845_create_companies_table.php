@@ -14,6 +14,15 @@ return new class extends Migration
         Schema::create('companies', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('company_name');
+            $table->text('address')->nullable();
+            $table->string('region')->nullable();
+            $table->string('province')->nullable();
+            $table->string('municipality')->nullable();
+            $table->string('company_type')->default('LGU');
+            $table->uuid('company_head_id')->nullable();
+            $table->foreign('company_head_id')
+                ->references('id')
+                ->on('users');
             $table->text('favicon')->nullable();
             $table->text('company_logo')->nullable();
             $table->text('login_background')->nullable();

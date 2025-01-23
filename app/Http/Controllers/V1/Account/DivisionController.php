@@ -5,12 +5,20 @@ namespace App\Http\Controllers\V1\Account;
 use App\Http\Controllers\Controller;
 use App\Models\Division;
 use App\Models\Section;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class DivisionController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -84,7 +92,21 @@ class DivisionController extends Controller
 
         try {
             $division = Division::create($validated);
+
+            $this->logRepository->create([
+                'message' => "Division created successfully.",
+                'log_id' => $division->id,
+                'log_module' => 'account-division',
+                'data' => $division
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Division creation failed.",
+                'details' => $th->getMessage(),
+                'log_module' => 'account-division',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Division creation failed. Please try again.'
             ], 422);
@@ -130,7 +152,22 @@ class DivisionController extends Controller
                 ]);
 
             $division->update($validated);
+
+            $this->logRepository->create([
+                'message' => "Division updated successfully.",
+                'log_id' => $division->id,
+                'log_module' => 'account-division',
+                'data' => $division
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Division update failed.",
+                'details' => $th->getMessage(),
+                'log_id' => $division->id,
+                'log_module' => 'account-division',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Division update failed. Please try again.'
             ], 422);

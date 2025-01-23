@@ -7,6 +7,7 @@ use App\Models\Designation;
 use App\Models\Position;
 use App\Models\Section;
 use App\Models\User;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -17,6 +18,13 @@ use Intervention\Image\Drivers\Gd\Driver;
 
 class UserController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -25,6 +33,7 @@ class UserController extends Controller
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
+        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'firstname');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
@@ -76,11 +85,11 @@ class UserController extends Controller
         if ($paginated) {
             return $users->paginate($perPage);
         } else {
-            if ($showAll) {
-                $users = $users->get();
-            } else {
-                $users = $users->limit($perPage)->get();
-            }
+            if (!$showInactive) $users = $users->where('restricted', false);
+
+            $users = $showAll
+                ? $users->get()
+                : $users = $users->limit($perPage)->get();
 
             return response()->json([
                 'data' => $users
@@ -145,18 +154,22 @@ class UserController extends Controller
             $roles = json_decode($validated['roles']);
             $user->roles()->sync($roles);
 
-            if ($request->avatar && !empty($request->avatar)) {
-                $avatar = $this->processAndSaveImage($request->avatar, $user->id);
-                $user->avatar = $avatar;
-            }
-
-            if ($request->signature && !empty($request->signature)) {
-                $signature = $this->processAndSaveImage($request->signature, $user->id);
-                $user->signature = $signature;
-            }
-
             $user->save();
+
+            $this->logRepository->create([
+                'message' => "User registered successfully",
+                'log_id' => $user->id,
+                'log_module' => 'account-user',
+                'data' => $user
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "User registration failed.",
+                'details' => $th->getMessage(),
+                'log_module' => 'account-user',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'User registration failed. Please try again.'
             ], 422);
@@ -319,6 +332,14 @@ class UserController extends Controller
                 $errorMessage = 'User update failed. Please try again.';
             }
 
+            $this->logRepository->create([
+                'message' => $errorMessage,
+                'details' => $th->getMessage(),
+                'log_id' => $user->id,
+                'log_module' => 'account-user',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => $errorMessage
             ], 422);
@@ -330,37 +351,18 @@ class UserController extends Controller
             $successMessage = 'User updated successfully.';
         }
 
+        $this->logRepository->create([
+            'message' => $successMessage,
+            'log_id' => $user->id,
+            'log_module' => 'account_user',
+            'data' => $user
+        ]);
+
         return response()->json([
             'data' => [
                 'data' => $request->except('password'),
                 'message' => $successMessage
             ]
         ]);
-    }
-
-    private function processAndSaveImage(string $base64Data, string $imageName, string $imageDirectory = ''): string
-    {
-        $appUrl = env('APP_URL') ?? 'http://localhost';
-
-        $width = 150;
-        $image = Image::read($base64Data)->scale($width);
-
-        $filename = "{$imageName}.png";
-        $relativeFileDirectory = !empty($imageDirectory) ? "{$imageDirectory}/{$filename}" : $filename;
-        $publicDirectory = "public/images/{$imageDirectory}";
-        $directory = "{$appUrl}/storage/images/{$relativeFileDirectory}";
-
-        Storage::delete("{$publicDirectory}/{$filename}");
-
-        if (!Storage::exists($publicDirectory)) {
-            Storage::makeDirectory($publicDirectory);
-        }
-
-        $image->encodeByExtension('png', progressive: true, quality: 10)
-            ->save(public_path(
-                "/storage/images/{$relativeFileDirectory}"
-            ));
-
-        return $directory;
     }
 }

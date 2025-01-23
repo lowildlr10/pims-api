@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     public function me(Request $request): JsonResponse
     {
         $user = User::with([
@@ -47,12 +55,30 @@ class AuthController extends Controller
 
         // Attempt to log the user in
         if (!auth()->attempt($credentials)) {
+            $this->logRepository->create([
+                'message' => "Login attempt unsuccessful.",
+                'details' => 'Invalid credentials.',
+                'log_module' => 'login',
+                'data' => [
+                    'login' => $validated['login']
+                ]
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Invalid credentials.',
             ], 401);
         }
 
         if (auth()->user()->restricted) {
+            $this->logRepository->create([
+                'message' => "Login attempt unsuccessful.",
+                'details' => 'User is restricted.',
+                'log_module' => 'login',
+                'data' => [
+                    'login' => $validated['login']
+                ]
+            ], isError: true);
+
             return response()->json([
                 'message' => 'User is not active. Please contact your system administrator.',
             ], 401);
@@ -64,10 +90,16 @@ class AuthController extends Controller
             ->createToken('authToken', $abilities, now()->addDay())
             ->plainTextToken;
 
+        $this->logRepository->create([
+            'message' => "Logged in successfully.",
+            'log_module' => 'login',
+            'data' => auth()->user()
+        ]);
+
         return response()->json([
             'data' => [
                 'access_token' => $token,
-                'message' => 'Logged in successfully',
+                'message' => 'Logged in successfully.',
             ]
         ]);
     }
@@ -75,10 +107,24 @@ class AuthController extends Controller
     // Logout a user
     public function logout(Request $request): JsonResponse
     {
+        $user = $request->user();
+
         try {
-            // Revoke the user's token
             $request->user()->currentAccessToken()->delete();
+
+            $this->logRepository->create([
+                'message' => "Logged out successfully.",
+                'log_module' => 'logout',
+                'data' => $user
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Logout failed.",
+                'details' => $th->getMessage(),
+                'log_module' => 'logout',
+                'data' => $user
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Logout failed. Please try again.',
             ], 422);

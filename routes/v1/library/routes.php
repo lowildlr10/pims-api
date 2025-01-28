@@ -10,6 +10,21 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
             ->name('index');
     });
 
+    Route::name('bids-awards-committees.')->prefix('/bids-awards-committees')->group(function () {
+        Route::get('/', [LibraryControllers\BidsAwardsCommitteeController::class, 'index'])
+            ->middleware('ability:super:*,head:*,lib-bid-committee:*,lib-bid-committee:view')
+            ->name('index');
+        Route::post('/', [LibraryControllers\BidsAwardsCommitteeController::class, 'store'])
+            ->middleware('ability:super:*,lib-bid-committee:*,lib-bid-committee:create')
+            ->name('store');
+        Route::get('/{bidsAwardsCommittee}', [LibraryControllers\BidsAwardsCommitteeController::class, 'show'])
+            ->middleware('ability:super:*,lib-bid-committee:*,lib-bid-committee:view')
+            ->name('show');
+        Route::put('/{bidsAwardsCommittee}', [LibraryControllers\BidsAwardsCommitteeController::class, 'update'])
+            ->middleware('ability:super:*,lib-bid-committee:*,lib-bid-committee:update')
+            ->name('update');
+    });
+
     Route::name('funding-sources.')->prefix('/funding-sources')->group(function () {
         Route::get('/', [LibraryControllers\FundingSourceController::class, 'index'])
             ->middleware('ability:super:*,head:*,lib-fund-source:*,lib-fund-source:view')
@@ -86,6 +101,21 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
         Route::delete('/{paperSize}', [LibraryControllers\PaperSizeController::class, 'delete'])
             ->middleware('ability:super:*,lib-paper-size:*,lib-paper-size:delete')
             ->name('delete');
+    });
+
+    Route::name('responsibility-centers.')->prefix('/responsibility-centers')->group(function () {
+        Route::get('/', [LibraryControllers\ResposibilityCenterController::class, 'index'])
+            ->middleware('ability:super:*,head:*,lib-responsibility-center:*,lib-responsibility-center:view')
+            ->name('index');
+        Route::post('/', [LibraryControllers\ResposibilityCenterController::class, 'store'])
+            ->middleware('ability:super:*,lib-responsibility-center:*,lib-responsibility-center:create')
+            ->name('store');
+        Route::get('/{responsibilityCenter}', [LibraryControllers\ResposibilityCenterController::class, 'show'])
+            ->middleware('ability:super:*,lib-responsibility-center:*,lib-responsibility-center:view')
+            ->name('show');
+        Route::put('/{responsibilityCenter}', [LibraryControllers\ResposibilityCenterController::class, 'update'])
+            ->middleware('ability:super:*,lib-responsibility-center:*,lib-responsibility-center:update')
+            ->name('update');
     });
 
     Route::name('signatories.')->prefix('/signatories')->group(function () {

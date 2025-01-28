@@ -40,6 +40,14 @@ class RoleController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
+            switch ($columnSort) {
+                case 'role_name_formatted':
+                    $columnSort = 'role_name';
+                    break;
+                default:
+                    break;
+            }
+
             $roles = $roles->orderBy($columnSort, $sortDirection);
         }
 

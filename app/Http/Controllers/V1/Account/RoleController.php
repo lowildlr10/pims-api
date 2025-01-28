@@ -69,13 +69,12 @@ class RoleController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $role = Role::create(array_merge(
                 $validated,
                 [
-                    'active' => $active,
                     'permissions' => json_decode($validated['permissions'])
                 ]
             ));
@@ -130,13 +129,12 @@ class RoleController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $role->update(array_merge(
                 $validated,
                 [
-                    'active' => $active,
                     'permissions' => json_decode($validated['permissions'])
                 ]
             ));

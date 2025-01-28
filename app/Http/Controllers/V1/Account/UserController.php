@@ -121,7 +121,7 @@ class UserController extends Controller
             'allow_signature' => 'boolean',
             'roles' => 'required|string'
         ]);
-        $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
+        $validated['restricted'] = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $position = Position::updateOrCreate([
@@ -157,7 +157,7 @@ class UserController extends Controller
             $user->save();
 
             $this->logRepository->create([
-                'message' => "User registered successfully",
+                'message' => "User registered successfully.",
                 'log_id' => $user->id,
                 'log_module' => 'account-user',
                 'data' => $user

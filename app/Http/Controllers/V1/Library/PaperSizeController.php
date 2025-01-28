@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
 use App\Models\PaperSize;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PaperSizeController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -65,7 +73,21 @@ class PaperSizeController extends Controller
 
         try {
             $paperSize = PaperSize::create($validated);
+
+            $this->logRepository->create([
+                'message' => "Paper type created successfully.",
+                'log_id' => $paperSize->id,
+                'log_module' => 'lib-paper-size',
+                'data' => $paperSize
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Paper type creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-paper-size',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Paper type creation failed. Please try again.'
             ], 422);
@@ -105,7 +127,22 @@ class PaperSizeController extends Controller
 
         try {
             $paperSize->update($validated);
+
+            $this->logRepository->create([
+                'message' => "Paper type updated successfully.",
+                'log_id' => $paperSize->id,
+                'log_module' => 'lib-paper-size',
+                'data' => $paperSize
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Paper type update failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_id' => $paperSize->id,
+                'log_module' => 'lib-paper-size',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Paper type update failed. Please try again.'
             ], 422);

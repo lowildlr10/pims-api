@@ -7,12 +7,20 @@ use App\Models\Designation;
 use App\Models\Signatory;
 use App\Models\SignatoryDetail;
 use App\Models\User;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class SignatoryController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -86,7 +94,7 @@ class SignatoryController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $details = json_decode($validated['details']);
@@ -109,7 +117,21 @@ class SignatoryController extends Controller
                     ]);
                 }
             }
+
+            $this->logRepository->create([
+                'message' => "Signatory created successfully.",
+                'log_id' => $signatory->id,
+                'log_module' => 'lib-signatory',
+                'data' => $signatory
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Signatory creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-signatory',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Signatory creation failed. Please try again.'
             ], 422);
@@ -146,7 +168,7 @@ class SignatoryController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $details = json_decode($validated['details']);
@@ -172,7 +194,22 @@ class SignatoryController extends Controller
                     ]);
                 }
             }
+
+            $this->logRepository->create([
+                'message' => "Signatory updated successfully.",
+                'log_id' => $signatory->id,
+                'log_module' => 'lib-signatory',
+                'data' => $signatory
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Signatory update failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_id' => $signatory->id,
+                'log_module' => 'lib-signatory',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Signatory update failed. Please try again.'
             ], 422);

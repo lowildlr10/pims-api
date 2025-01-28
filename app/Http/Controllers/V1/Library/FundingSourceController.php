@@ -5,12 +5,20 @@ namespace App\Http\Controllers\V1\Library;
 use App\Http\Controllers\Controller;
 use App\Models\FundingSource;
 use App\Models\Location;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class FundingSourceController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -79,7 +87,7 @@ class FundingSourceController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $location = Location::updateOrCreate([
@@ -94,7 +102,21 @@ class FundingSourceController extends Controller
                     'location_id' => $location->id,
                 ]
             ));
+
+            $this->logRepository->create([
+                'message' => "Funding source/project created successfully.",
+                'log_id' => $fundingSource->id,
+                'log_module' => 'lib-fund-source',
+                'data' => $fundingSource
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Funding source/project creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-fund-source',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Funding source/project creation failed. Please try again.'
             ], 422);
@@ -135,7 +157,7 @@ class FundingSourceController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $location = Location::updateOrCreate([
@@ -150,7 +172,22 @@ class FundingSourceController extends Controller
                     'location_id' => $location->id,
                 ]
             ));
+
+            $this->logRepository->create([
+                'message' => "Funding source/project update failed. Please try again.",
+                'log_id' => $fundingSource->id,
+                'log_module' => 'lib-fund-source',
+                'data' => $fundingSource
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Funding source/project update failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_id' => $fundingSource->id,
+                'log_module' => 'lib-fund-source',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Funding source/project update failed. Please try again.'
             ], 422);

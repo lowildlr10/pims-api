@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
 use App\Models\ProcurementMode;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ProcurementModeController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -68,11 +76,25 @@ class ProcurementModeController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $procurementMode = ProcurementMode::create($validated);
+
+            $this->logRepository->create([
+                'message' => "Mode of procurement created successfully.",
+                'log_id' => $procurementMode->id,
+                'log_module' => 'lib-mode-proc',
+                'data' => $procurementMode
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Mode of procurement creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-mode-proc',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Mode of procurement creation failed. Please try again.'
             ], 422);
@@ -108,11 +130,26 @@ class ProcurementModeController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $procurementMode->update($validated);
+
+            $this->logRepository->create([
+                'message' => "Mode of procurement updated successfully.",
+                'log_id' => $procurementMode->id,
+                'log_module' => 'lib-mode-proc',
+                'data' => $procurementMode
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Mode of procurement update failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_id' => $procurementMode->id,
+                'log_module' => 'lib-mode-proc',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Mode of procurement update failed. Please try again.'
             ], 422);

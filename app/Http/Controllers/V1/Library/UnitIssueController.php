@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
 use App\Models\UnitIssue;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class UnitIssueController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -68,11 +76,25 @@ class UnitIssueController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $unitIssue = UnitIssue::create($validated);
+
+            $this->logRepository->create([
+                'message' => "Unit of issue created successfully.",
+                'log_id' => $unitIssue->id,
+                'log_module' => 'lib-unit-issue',
+                'data' => $unitIssue
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Unit of issue creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-unit-issue',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Unit of issue creation failed. Please try again.'
             ], 422);
@@ -108,11 +130,26 @@ class UnitIssueController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $unitIssue->update($validated);
+
+            $this->logRepository->create([
+                'message' => "Unit of issue updated successfully.",
+                'log_id' => $unitIssue->id,
+                'log_module' => 'lib-unit-issue',
+                'data' => $unitIssue
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Unit of issue update failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_id' => $unitIssue->id,
+                'log_module' => 'lib-unit-issue',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Unit of issue update failed. Please try again.'
             ], 422);

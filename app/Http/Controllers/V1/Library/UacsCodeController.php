@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
 use App\Models\UacsCode;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class UacsCodeController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -77,11 +85,25 @@ class UacsCodeController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $uacsCode = UacsCode::create($validated);
+
+            $this->logRepository->create([
+                'message' => "UACS code created successfully.",
+                'log_id' => $uacsCode->id,
+                'log_module' => 'lib-uacs-code',
+                'data' => $uacsCode
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "UACS code creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-uacs-code',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'UACS code creation failed. Please try again.'
             ], 422);
@@ -120,11 +142,26 @@ class UacsCodeController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $uacsCode->update($validated);
+
+            $this->logRepository->create([
+                'message' => "Section updated successfully.",
+                'log_id' => $uacsCode->id,
+                'log_module' => 'lib-uacs-code',
+                'data' => $uacsCode
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Section update failed.",
+                'details' => $th->getMessage(),
+                'log_id' => $uacsCode->id,
+                'log_module' => 'lib-uacs-code',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'UACS code update failed. Please try again.'
             ], 422);

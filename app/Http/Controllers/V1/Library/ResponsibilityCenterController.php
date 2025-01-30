@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\ResposibilityCenter;
+use App\Models\ResponsibilityCenter;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class ResposibilityCenterController extends Controller
+class ResponsibilityCenterController extends Controller
 {
     private LogRepository $logRepository;
 
@@ -31,10 +31,10 @@ class ResposibilityCenterController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $resposibilityCenter = ResposibilityCenter::query();
+        $responsibilityCenter = ResponsibilityCenter::query();
 
         if (!empty($search)) {
-            $resposibilityCenter = $resposibilityCenter->where(function($query) use ($search){
+            $responsibilityCenter = $responsibilityCenter->where(function($query) use ($search){
                 $query->where('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
             });
@@ -49,20 +49,20 @@ class ResposibilityCenterController extends Controller
                     break;
             }
 
-            $resposibilityCenter = $resposibilityCenter->orderBy($columnSort, $sortDirection);
+            $responsibilityCenter = $responsibilityCenter->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $resposibilityCenter->paginate($perPage);
+            return $responsibilityCenter->paginate($perPage);
         } else {
-            if (!$showInactive) $resposibilityCenter = $resposibilityCenter->where('active', true);
+            if (!$showInactive) $responsibilityCenter = $responsibilityCenter->where('active', true);
 
-            $resposibilityCenter = $showAll
-                ? $resposibilityCenter->get()
-                : $resposibilityCenter = $resposibilityCenter->limit($perPage)->get();
+            $responsibilityCenter = $showAll
+                ? $responsibilityCenter->get()
+                : $responsibilityCenter = $responsibilityCenter->limit($perPage)->get();
 
             return response()->json([
-                'data' => $resposibilityCenter
+                'data' => $responsibilityCenter
             ]);
         }
     }
@@ -74,20 +74,20 @@ class ResposibilityCenterController extends Controller
     {
         $validated = $request->validate([
             'code' => 'required|unique:responsibility_centers,code',
-            'description' => 'required|string',
+            'description' => 'nullable|string',
             'active' => 'required|in:true,false'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $resposibilityCenter = ResposibilityCenter::create($validated);
+            $responsibilityCenter = ResponsibilityCenter::create($validated);
 
             $this->logRepository->create([
                 'message' => "Responsibility center created successfully.",
-                'log_id' => $resposibilityCenter->id,
+                'log_id' => $responsibilityCenter->id,
                 'log_module' => 'lib-responsibility-center',
-                'data' => $resposibilityCenter
+                'data' => $responsibilityCenter
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
@@ -104,7 +104,7 @@ class ResposibilityCenterController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $resposibilityCenter,
+                'data' => $responsibilityCenter,
                 'message' => 'Responsibility center created successfully.'
             ]
         ]);
@@ -113,11 +113,11 @@ class ResposibilityCenterController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ResposibilityCenter $resposibilityCenter)
+    public function show(ResponsibilityCenter $responsibilityCenter)
     {
         return response()->json([
             'data' => [
-                'data' => $resposibilityCenter
+                'data' => $responsibilityCenter
             ]
         ]);
     }
@@ -125,30 +125,30 @@ class ResposibilityCenterController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ResposibilityCenter $resposibilityCenter)
+    public function update(Request $request, ResponsibilityCenter $responsibilityCenter)
     {
         $validated = $request->validate([
-            'code' => 'required|unique:responsibility_centers,code,' . $resposibilityCenter->id,
-            'description' => 'required|string',
+            'code' => 'required|unique:responsibility_centers,code,' . $responsibilityCenter->id,
+            'description' => 'nullable|string',
             'active' => 'required|in:true,false'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $resposibilityCenter->update($validated);
+            $responsibilityCenter->update($validated);
 
             $this->logRepository->create([
                 'message' => "Responsibility center updated successfully.",
-                'log_id' => $resposibilityCenter->id,
+                'log_id' => $responsibilityCenter->id,
                 'log_module' => 'lib-responsibility-center',
-                'data' => $resposibilityCenter
+                'data' => $responsibilityCenter
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
                 'message' => "Responsibility center update failed. Please try again.",
                 'details' => $th->getMessage(),
-                'log_id' => $resposibilityCenter->id,
+                'log_id' => $responsibilityCenter->id,
                 'log_module' => 'lib-responsibility-center',
                 'data' => $validated
             ], isError: true);
@@ -160,7 +160,7 @@ class ResposibilityCenterController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $resposibilityCenter,
+                'data' => $responsibilityCenter,
                 'message' => 'Responsibility center updated successfully.'
             ]
         ]);

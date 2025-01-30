@@ -104,16 +104,16 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
     });
 
     Route::name('responsibility-centers.')->prefix('/responsibility-centers')->group(function () {
-        Route::get('/', [LibraryControllers\ResposibilityCenterController::class, 'index'])
+        Route::get('/', [LibraryControllers\ResponsibilityCenterController::class, 'index'])
             ->middleware('ability:super:*,head:*,lib-responsibility-center:*,lib-responsibility-center:view')
             ->name('index');
-        Route::post('/', [LibraryControllers\ResposibilityCenterController::class, 'store'])
+        Route::post('/', [LibraryControllers\ResponsibilityCenterController::class, 'store'])
             ->middleware('ability:super:*,lib-responsibility-center:*,lib-responsibility-center:create')
             ->name('store');
-        Route::get('/{responsibilityCenter}', [LibraryControllers\ResposibilityCenterController::class, 'show'])
+        Route::get('/{responsibilityCenter}', [LibraryControllers\ResponsibilityCenterController::class, 'show'])
             ->middleware('ability:super:*,lib-responsibility-center:*,lib-responsibility-center:view')
             ->name('show');
-        Route::put('/{responsibilityCenter}', [LibraryControllers\ResposibilityCenterController::class, 'update'])
+        Route::put('/{responsibilityCenter}', [LibraryControllers\ResponsibilityCenterController::class, 'update'])
             ->middleware('ability:super:*,lib-responsibility-center:*,lib-responsibility-center:update')
             ->name('update');
     });

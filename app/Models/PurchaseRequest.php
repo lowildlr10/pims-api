@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,12 +31,24 @@ class PurchaseRequest extends Model
         'sig_cash_availability_id',
         'sig_approved_by_id',
         'status',
+        'total_estimated_cost',
         'submitted_at',
         'approved_cash_available_at',
         'approved_at',
         'disapproved_at',
         'cancelled_at'
     ];
+
+    protected $appends = [
+        'total_estimated_cost_formatted'
+    ];
+
+    protected function totalEstimatedCostFormatted(): Attribute
+    {
+        return new Attribute(
+            get: fn () => '₱' . number_format($this->total_estimated_cost, 2)
+        );
+    }
 
     /**
      * The purchase request that has one section.

@@ -24,7 +24,7 @@ class PurchaseRequestController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -37,20 +37,25 @@ class PurchaseRequestController extends Controller
             'fundingSource:id,title',
             'section:id,section_name',
 
+            'items' => function ($query) {
+                $query->orderBy('item_sequence');
+            },
+            'items.unitIssue:id,unit_name',
+
             'requestor:id,firstname,lastname',
             'requestor.position:id,position_name',
             'requestor.designation:id,designation_name',
 
             'signatoryCashAvailability:id',
             'signatoryCashAvailability.user:id,firstname,lastname',
-            'signatoryCashAvailability:details' => function ($query) {
+            'signatoryCashAvailability.details' => function ($query) {
                 $query->where('document', 'pr')
                     ->where('signatory_type', 'cash_availability');
             },
 
             'signatoryApprovedBy:id',
             'signatoryApprovedBy.user:id,firstname,lastname',
-            'signatoryApprovedBy:details' => function ($query) {
+            'signatoryApprovedBy.details' => function ($query) {
                 $query->where('document', 'pr')
                     ->where('signatory_type', 'approved_by');
             }
@@ -107,12 +112,12 @@ class PurchaseRequestController extends Controller
     {
         $validated = $request->validate([
             'section_id' => 'required|string',
-            'pr_date' => 'required|date',
+            'pr_date' => 'required',
             'sai_no' => 'nullable|string',
             'sai_no' => 'nullable|string',
-            'sai_date' => 'nullable|date',
+            'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
-            'alobs_date' => 'nullable|date',
+            'alobs_date' => 'nullable',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',
@@ -133,18 +138,26 @@ class PurchaseRequestController extends Controller
                 ]
             ));
 
+            $totalEstimatedCost = 0;
+
             foreach ($items ?? [] as $key => $item) {
                 PurchaseRequestItem::create([
                     'purchase_request_id' => $purchaseRequest->id,
                     'item_sequence' => $key,
-                    'quantity' => (int) $item['quantity'],
-                    'unit_issue_id' => $item['unit_issue_id'],
-                    'description' => $item['description'],
-                    'stock_no' => (int) $item['stock_no'] ?? $key + 1,
-                    'estimated_unit_cost' => (float) $item['estimated_unit_cost'],
-                    'estimated_cost' => (float) $item['estimated_cost']
+                    'quantity' => (int) $item->quantity,
+                    'unit_issue_id' => $item->unit_issue_id,
+                    'description' => $item->description,
+                    'stock_no' => (int) $item->stock_no ?? $key + 1,
+                    'estimated_unit_cost' => (float) $item->estimated_unit_cost,
+                    'estimated_cost' => (float) $item->estimated_cost
                 ]);
+
+                $totalEstimatedCost += $item->estimated_cost;
             }
+
+            $purchaseRequest->update([
+                'total_estimated_cost' => $totalEstimatedCost
+            ]);
 
             $this->logRepository->create([
                 'message' => $message,
@@ -194,12 +207,12 @@ class PurchaseRequestController extends Controller
     {
         $validated = $request->validate([
             'section_id' => 'required|string',
-            'pr_date' => 'required|date',
+            'pr_date' => 'required',
             'sai_no' => 'nullable|string',
             'sai_no' => 'nullable|string',
-            'sai_date' => 'nullable|date',
+            'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
-            'alobs_date' => 'nullable|date',
+            'alobs_date' => 'nullable',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',
@@ -231,6 +244,8 @@ class PurchaseRequestController extends Controller
 
             $purchaseRequest->update($validated);
 
+            $totalEstimatedCost = 0;
+
             PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
                 ->delete();
 
@@ -238,14 +253,20 @@ class PurchaseRequestController extends Controller
                 PurchaseRequestItem::create([
                     'purchase_request_id' => $purchaseRequest->id,
                     'item_sequence' => $key,
-                    'quantity' => (int) $item['quantity'],
-                    'unit_issue_id' => $item['unit_issue_id'],
-                    'description' => $item['description'],
-                    'stock_no' => (int) $item['stock_no'] ?? $key + 1,
-                    'estimated_unit_cost' => (float) $item['estimated_unit_cost'],
-                    'estimated_cost' => (float) $item['estimated_cost']
+                    'quantity' => (int) $item->quantity,
+                    'unit_issue_id' => $item->unit_issue_id,
+                    'description' => $item->description,
+                    'stock_no' => (int) $item->stock_no ?? $key + 1,
+                    'estimated_unit_cost' => (float) $item->estimated_unit_cost,
+                    'estimated_cost' => (float) $item->estimated_cost
                 ]);
+
+                $totalEstimatedCost += $item->estimated_cost;
             }
+
+            $purchaseRequest->update([
+                'total_estimated_cost' => $totalEstimatedCost
+            ]);
 
             $this->logRepository->create([
                 'message' => $message,

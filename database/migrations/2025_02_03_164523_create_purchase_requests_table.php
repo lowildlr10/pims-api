@@ -41,6 +41,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('signatories');
             $table->string('status');
+            $table->decimal('total_estimated_cost', 20, 2)->default(0.00);
             $table->timestamp('submitted_at')->nullable();
             $table->timestamp('approved_cash_available_at')->nullable();
             $table->timestamp('approved_at')->nullable();

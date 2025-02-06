@@ -32,7 +32,27 @@ class SignatoryController extends Controller
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'fullname');
         $sortDirection = $request->get('sort_direction', 'desc');
+        $document = $request->get('document', '');
+        $signatoryType = $request->get('signatory_type', '');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+
+        if (!empty($document) && !empty($signatoryType)) {
+            $signatories = SignatoryDetail::with('signatory')
+                ->where('document', $document)
+                ->where('signatory_type', $signatoryType);
+
+            if (!$showInactive) {
+                $signatories = $signatories->whereRelation('signatory', 'active', true);
+            }
+
+            $signatories = $showAll
+                ? $signatories->get()
+                : $signatories = $signatories->limit($perPage)->get();
+
+            return response()->json([
+                'data' => $signatories
+            ]);
+        }
 
         $signatories = Signatory::query()->with([
             'details' => function ($query) {

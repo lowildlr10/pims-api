@@ -85,7 +85,18 @@ class UserController extends Controller
         if ($paginated) {
             return $users->paginate($perPage);
         } else {
+            $user = auth()->user();
+
             if (!$showInactive) $users = $users->where('restricted', false);
+
+            if ($user->tokenCant('super:*')
+                || $user->tokenCant('head:*')
+                || $user->tokenCant('supply:*')
+                || $user->tokenCant('budget:*')
+                || $user->tokenCant('accounting:*')
+            ) {
+                $users = $users->where('id', $user->id);
+            }
 
             $users = $showAll
                 ? $users->get()

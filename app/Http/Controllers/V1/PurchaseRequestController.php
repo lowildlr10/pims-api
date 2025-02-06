@@ -26,6 +26,8 @@ class PurchaseRequestController extends Controller
      */
     public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
+        $user = auth()->user();
+
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -60,6 +62,15 @@ class PurchaseRequestController extends Controller
                     ->where('signatory_type', 'approved_by');
             }
         ]);
+
+        if ($user->tokenCant('super:*')
+            || $user->tokenCant('head:*')
+            || $user->tokenCant('supply:*')
+            || $user->tokenCant('budget:*')
+            || $user->tokenCant('accounting:*')
+        ) {
+            $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
+        }
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){

@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\UacsCode;
+use App\Models\ResponsibilityCenter;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class UacsCodeController extends Controller
+class ResponsibilityCenterController extends Controller
 {
     private LogRepository $logRepository;
 
@@ -31,14 +31,12 @@ class UacsCodeController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $uacsCodes = UacsCode::query()->with('classification');
+        $responsibilityCenter = ResponsibilityCenter::query();
 
         if (!empty($search)) {
-            $uacsCodes = $uacsCodes->where(function($query) use ($search){
-                $query->where('account_title', 'ILIKE', "%{$search}%")
-                    ->orWhere('code', 'ILIKE', "%{$search}%")
-                    ->orWhere('description', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('classification', 'classification_name', 'ILIKE', "%{$search}%");
+            $responsibilityCenter = $responsibilityCenter->where(function($query) use ($search){
+                $query->where('code', 'ILIKE', "%{$search}%")
+                    ->orWhere('description', 'ILIKE', "%{$search}%");
             });
         }
 
@@ -47,27 +45,24 @@ class UacsCodeController extends Controller
                 case 'code_formatted':
                     $columnSort = 'code';
                     break;
-                case 'classification_name':
-                    $columnSort = 'classification.classification_name';
-                    break;
                 default:
                     break;
             }
 
-            $uacsCodes = $uacsCodes->orderBy($columnSort, $sortDirection);
+            $responsibilityCenter = $responsibilityCenter->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $uacsCodes->paginate($perPage);
+            return $responsibilityCenter->paginate($perPage);
         } else {
-            if (!$showInactive) $uacsCodes = $uacsCodes->where('active', true);
+            if (!$showInactive) $responsibilityCenter = $responsibilityCenter->where('active', true);
 
-            $uacsCodes = $showAll
-                ? $uacsCodes->get()
-                : $uacsCodes = $uacsCodes->limit($perPage)->get();
+            $responsibilityCenter = $showAll
+                ? $responsibilityCenter->get()
+                : $responsibilityCenter = $responsibilityCenter->limit($perPage)->get();
 
             return response()->json([
-                'data' => $uacsCodes
+                'data' => $responsibilityCenter
             ]);
         }
     }
@@ -78,41 +73,39 @@ class UacsCodeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'classification_id' => 'required',
-            'account_title' => 'required|string',
-            'code' => 'required|unique:uacs_codes,code',
-            'description' => 'nullable',
+            'code' => 'required|unique:responsibility_centers,code',
+            'description' => 'nullable|string',
             'active' => 'required|in:true,false'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCode = UacsCode::create($validated);
+            $responsibilityCenter = ResponsibilityCenter::create($validated);
 
             $this->logRepository->create([
-                'message' => "UACS code created successfully.",
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode
+                'message' => "Responsibility center created successfully.",
+                'log_id' => $responsibilityCenter->id,
+                'log_module' => 'lib-responsibility-center',
+                'data' => $responsibilityCenter
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "UACS code creation failed. Please try again.",
+                'message' => "Responsibility center creation failed. Please try again.",
                 'details' => $th->getMessage(),
-                'log_module' => 'lib-uacs-code',
+                'log_module' => 'lib-responsibility-center',
                 'data' => $validated
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code creation failed. Please try again.'
+                'message' => 'Responsibility center creation failed. Please try again.'
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCode,
-                'message' => 'UACS code created successfully.'
+                'data' => $responsibilityCenter,
+                'message' => 'Responsibility center created successfully.'
             ]
         ]);
     }
@@ -120,11 +113,11 @@ class UacsCodeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(UacsCode $uacsCode)
+    public function show(ResponsibilityCenter $responsibilityCenter)
     {
         return response()->json([
             'data' => [
-                'data' => $uacsCode
+                'data' => $responsibilityCenter
             ]
         ]);
     }
@@ -132,45 +125,43 @@ class UacsCodeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, UacsCode $uacsCode)
+    public function update(Request $request, ResponsibilityCenter $responsibilityCenter)
     {
         $validated = $request->validate([
-            'classification_id' => 'required',
-            'account_title' => 'required|string',
-            'code' => 'required|unique:uacs_codes,code,' . $uacsCode->id,
-            'description' => 'nullable',
+            'code' => 'required|unique:responsibility_centers,code,' . $responsibilityCenter->id,
+            'description' => 'nullable|string',
             'active' => 'required|in:true,false'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCode->update($validated);
+            $responsibilityCenter->update($validated);
 
             $this->logRepository->create([
-                'message' => "Section updated successfully.",
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode
+                'message' => "Responsibility center updated successfully.",
+                'log_id' => $responsibilityCenter->id,
+                'log_module' => 'lib-responsibility-center',
+                'data' => $responsibilityCenter
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Section update failed.",
+                'message' => "Responsibility center update failed. Please try again.",
                 'details' => $th->getMessage(),
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
+                'log_id' => $responsibilityCenter->id,
+                'log_module' => 'lib-responsibility-center',
                 'data' => $validated
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code update failed. Please try again.'
+                'message' => 'Responsibility center update failed. Please try again.'
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCode,
-                'message' => 'UACS code updated successfully.'
+                'data' => $responsibilityCenter,
+                'message' => 'Responsibility center updated successfully.'
             ]
         ]);
     }

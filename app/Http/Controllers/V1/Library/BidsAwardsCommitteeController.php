@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\UacsCode;
+use App\Models\BidsAwardsCommittee;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class UacsCodeController extends Controller
+class BidsAwardsCommitteeController extends Controller
 {
     private LogRepository $logRepository;
 
@@ -27,47 +27,41 @@ class UacsCodeController extends Controller
         $perPage = $request->get('per_page', 5);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'code');
+        $columnSort = $request->get('column_sort', 'committee_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $uacsCodes = UacsCode::query()->with('classification');
+        $bidsAwardsCommittees = BidsAwardsCommittee::query();
 
         if (!empty($search)) {
-            $uacsCodes = $uacsCodes->where(function($query) use ($search){
-                $query->where('account_title', 'ILIKE', "%{$search}%")
-                    ->orWhere('code', 'ILIKE', "%{$search}%")
-                    ->orWhere('description', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('classification', 'classification_name', 'ILIKE', "%{$search}%");
+            $bidsAwardsCommittees = $bidsAwardsCommittees->where(function($query) use ($search){
+                $query->where('committee_name', 'ILIKE', "%{$search}%");
             });
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
-                case 'code_formatted':
-                    $columnSort = 'code';
-                    break;
-                case 'classification_name':
-                    $columnSort = 'classification.classification_name';
+                case 'committee_name_formatted':
+                    $columnSort = 'committee_name';
                     break;
                 default:
                     break;
             }
 
-            $uacsCodes = $uacsCodes->orderBy($columnSort, $sortDirection);
+            $bidsAwardsCommittees = $bidsAwardsCommittees->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $uacsCodes->paginate($perPage);
+            return $bidsAwardsCommittees->paginate($perPage);
         } else {
-            if (!$showInactive) $uacsCodes = $uacsCodes->where('active', true);
+            if (!$showInactive) $bidsAwardsCommittees = $bidsAwardsCommittees->where('active', true);
 
-            $uacsCodes = $showAll
-                ? $uacsCodes->get()
-                : $uacsCodes = $uacsCodes->limit($perPage)->get();
+            $bidsAwardsCommittees = $showAll
+                ? $bidsAwardsCommittees->get()
+                : $bidsAwardsCommittees = $bidsAwardsCommittees->limit($perPage)->get();
 
             return response()->json([
-                'data' => $uacsCodes
+                'data' => $bidsAwardsCommittees
             ]);
         }
     }
@@ -78,41 +72,38 @@ class UacsCodeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'classification_id' => 'required',
-            'account_title' => 'required|string',
-            'code' => 'required|unique:uacs_codes,code',
-            'description' => 'nullable',
+            'committee_name' => 'required|unique:bids_awards_committees,committee_name',
             'active' => 'required|in:true,false'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCode = UacsCode::create($validated);
+            $bidsAwardsCommittee = BidsAwardsCommittee::create($validated);
 
             $this->logRepository->create([
-                'message' => "UACS code created successfully.",
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode
+                'message' => "Bids awards committee created successfully.",
+                'log_id' => $bidsAwardsCommittee->id,
+                'log_module' => 'lib-bid-committee',
+                'data' => $bidsAwardsCommittee
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "UACS code creation failed. Please try again.",
+                'message' => "Bids awards committee creation failed. Please try again.",
                 'details' => $th->getMessage(),
-                'log_module' => 'lib-uacs-code',
+                'log_module' => 'lib-bid-committee',
                 'data' => $validated
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code creation failed. Please try again.'
+                'message' => 'Bids awards committee creation failed. Please try again.'
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCode,
-                'message' => 'UACS code created successfully.'
+                'data' => $bidsAwardsCommittee,
+                'message' => 'Bids awards committee created successfully.'
             ]
         ]);
     }
@@ -120,11 +111,11 @@ class UacsCodeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(UacsCode $uacsCode)
+    public function show(BidsAwardsCommittee $bidsAwardsCommittee)
     {
         return response()->json([
             'data' => [
-                'data' => $uacsCode
+                'data' => $bidsAwardsCommittee
             ]
         ]);
     }
@@ -132,45 +123,42 @@ class UacsCodeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, UacsCode $uacsCode)
+    public function update(Request $request, BidsAwardsCommittee $bidsAwardsCommittee)
     {
         $validated = $request->validate([
-            'classification_id' => 'required',
-            'account_title' => 'required|string',
-            'code' => 'required|unique:uacs_codes,code,' . $uacsCode->id,
-            'description' => 'nullable',
+            'committee_name' => 'required|unique:bids_awards_committees,committee_name,' . $bidsAwardsCommittee->id,
             'active' => 'required|in:true,false'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCode->update($validated);
+            $bidsAwardsCommittee->update($validated);
 
             $this->logRepository->create([
-                'message' => "Section updated successfully.",
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode
+                'message' => "Bids awards committee updated successfully.",
+                'log_id' => $bidsAwardsCommittee->id,
+                'log_module' => 'lib-bid-committee',
+                'data' => $bidsAwardsCommittee
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Section update failed.",
+                'message' => "Bids awards committee update failed. Please try again.",
                 'details' => $th->getMessage(),
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
+                'log_id' => $bidsAwardsCommittee->id,
+                'log_module' => 'lib-bid-committee',
                 'data' => $validated
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code update failed. Please try again.'
+                'message' => 'Bids awards committee update failed. Please try again.'
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCode,
-                'message' => 'UACS code updated successfully.'
+                'data' => $bidsAwardsCommittee,
+                'message' => 'Bids awards committee updated successfully.'
             ]
         ]);
     }

@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class RoleController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -32,6 +40,14 @@ class RoleController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
+            switch ($columnSort) {
+                case 'role_name_formatted':
+                    $columnSort = 'role_name';
+                    break;
+                default:
+                    break;
+            }
+
             $roles = $roles->orderBy($columnSort, $sortDirection);
         }
 
@@ -61,7 +77,7 @@ class RoleController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $role = Role::create(array_merge(
@@ -70,7 +86,21 @@ class RoleController extends Controller
                     'permissions' => json_decode($validated['permissions'])
                 ]
             ));
+
+            $this->logRepository->create([
+                'message' => "Role created successfully",
+                'log_id' => $role->id,
+                'log_module' => 'account-role',
+                'data' => $role
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Role creation failed.",
+                'details' => $th->getMessage(),
+                'log_module' => 'account-role',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Role creation failed. Please try again.'
             ], 422);
@@ -107,7 +137,7 @@ class RoleController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $role->update(array_merge(
@@ -116,7 +146,22 @@ class RoleController extends Controller
                     'permissions' => json_decode($validated['permissions'])
                 ]
             ));
+
+            $this->logRepository->create([
+                'message' => "Role updated successfully.",
+                'log_id' => $role->id,
+                'log_module' => 'account-role',
+                'data' => $role
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Role update failed.",
+                'details' => $th->getMessage(),
+                'log_id' => $role->id,
+                'log_module' => 'account-role',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Role update failed. Please try again.'
             ], 422);

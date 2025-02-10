@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
 use App\Models\UacsCodeClassification;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class UacsCodeClassificationController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -68,11 +76,25 @@ class UacsCodeClassificationController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $uacsCodeClassification = UacsCodeClassification::create($validated);
+
+            $this->logRepository->create([
+                'message' => "UACS code classification created successfully.",
+                'log_id' => $uacsCodeClassification->id,
+                'log_module' => 'lib-uacs-class',
+                'data' => $uacsCodeClassification
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "UACS code classification creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-uacs-class',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'UACS code classification creation failed. Please try again.'
             ], 422);
@@ -108,11 +130,26 @@ class UacsCodeClassificationController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $uacsCodeClassification->update($validated);
+
+             $this->logRepository->create([
+                'message' => "Section updated successfully.",
+                'log_id' => $uacsCodeClassification->id,
+                'log_module' => 'lib-uacs-class',
+                'data' => $uacsCodeClassification
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Section update failed.",
+                'details' => $th->getMessage(),
+                'log_id' => $uacsCodeClassification->id,
+                'log_module' => 'lib-uacs-class',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'UACS code classification update failed. Please try again.'
             ], 422);

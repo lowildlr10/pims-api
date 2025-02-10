@@ -4,12 +4,20 @@ namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
 use App\Models\ItemClassification;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ItemClassificationController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -68,11 +76,25 @@ class ItemClassificationController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $itemClassifications = ItemClassification::create($validated);
+
+            $this->logRepository->create([
+                'message' => "Item classification created successfully.",
+                'log_id' => $itemClassifications->id,
+                'log_module' => 'lib-item-class',
+                'data' => $itemClassifications
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Item classification creation failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_module' => 'lib-item-class',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Item classification creation failed. Please try again.'
             ], 422);
@@ -108,11 +130,26 @@ class ItemClassificationController extends Controller
             'active' => 'required|in:true,false'
         ]);
 
-        $active = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
+        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
             $itemClassification->update($validated);
+
+            $this->logRepository->create([
+                'message' => "Item classification updated successfully.",
+                'log_id' => $itemClassification->id,
+                'log_module' => 'lib-item-class',
+                'data' => $itemClassification
+            ]);
         } catch (\Throwable $th) {
+            $this->logRepository->create([
+                'message' => "Item classification update failed. Please try again.",
+                'details' => $th->getMessage(),
+                'log_id' => $itemClassification->id,
+                'log_module' => 'lib-item-class',
+                'data' => $validated
+            ], isError: true);
+
             return response()->json([
                 'message' => 'Item classification update failed. Please try again.'
             ], 422);

@@ -40,7 +40,12 @@ class PurchaseRequest extends Model
     ];
 
     protected $appends = [
-        'total_estimated_cost_formatted'
+        'total_estimated_cost_formatted',
+        'section_name',
+        'funding_source_title',
+        'requestor_fullname',
+        'cash_availability_fullname',
+        'approver_fullname'
     ];
 
     protected function totalEstimatedCostFormatted(): Attribute
@@ -50,12 +55,62 @@ class PurchaseRequest extends Model
         );
     }
 
+    protected function sectionName(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->section)
+                    ? $this->section->section_name
+                    : "-",
+        );
+    }
+
+    protected function fundingSourceTitle(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->fundingSource)
+                    ? $this->fundingSource->title
+                    : "-",
+        );
+    }
+
+    protected function requestorFullname(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->requestor)
+                    ? $this->requestor->fullname
+                    : "-",
+        );
+    }
+
+    protected function cashAvailabilityFullname(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->signatoryCashAvailability)
+                    ? $this->signatoryCashAvailability->fullname
+                    : "-",
+        );
+    }
+
+    protected function approverFullname(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->signatoryApprovedBy)
+                    ? $this->signatoryApprovedBy->fullname
+                    : "-",
+        );
+    }
+
     /**
      * The purchase request that has one section.
      */
     public function section(): HasOne
     {
-        return $this->hasOne(Section::class, 'id', 'funding_source_id');
+        return $this->hasOne(Section::class, 'id', 'section_id');
     }
 
     /**

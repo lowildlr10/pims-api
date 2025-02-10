@@ -36,31 +36,31 @@ class PurchaseRequestController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()->with([
-            'fundingSource:id,title',
-            'section:id,section_name',
+            // 'fundingSource:id,title',
+            // 'section:id,section_name',
 
             'items' => function ($query) {
                 $query->orderBy('item_sequence');
             },
             'items.unitIssue:id,unit_name',
 
-            'requestor:id,firstname,lastname',
-            'requestor.position:id,position_name',
-            'requestor.designation:id,designation_name',
+            // 'requestor:id,firstname,lastname',
+            // 'requestor.position:id,position_name',
+            // 'requestor.designation:id,designation_name',
 
-            'signatoryCashAvailability:id',
-            'signatoryCashAvailability.user:id,firstname,lastname',
-            'signatoryCashAvailability.details' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'cash_availability');
-            },
+            // 'signatoryCashAvailability:id,user_id',
+            // 'signatoryCashAvailability.user:id,firstname,lastname',
+            // 'signatoryCashAvailability.details' => function ($query) {
+            //     $query->where('document', 'pr')
+            //         ->where('signatory_type', 'cash_availability');
+            // },
 
-            'signatoryApprovedBy:id',
-            'signatoryApprovedBy.user:id,firstname,lastname',
-            'signatoryApprovedBy.details' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'approved_by');
-            }
+            // 'signatoryApprovedBy:id,user_id',
+            // 'signatoryApprovedBy.user:id,firstname,lastname',
+            // 'signatoryApprovedBy.details' => function ($query) {
+            //     $query->where('document', 'pr')
+            //         ->where('signatory_type', 'approved_by');
+            // }
         ]);
 
         if ($user->tokenCant('super:*')
@@ -100,7 +100,19 @@ class PurchaseRequestController extends Controller
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
-            $purchaseRequests = $purchaseRequests->orderBy($columnSort, $sortDirection);
+            switch ($columnSort) {
+                case 'pr_no':
+                    $purchaseRequests = $purchaseRequests->orderByRaw("CAST(REPLACE(pr_no, '-', '') AS INTEGER) {$sortDirection}");
+                    break;
+
+                case 'pr_date_formatted':
+                    $purchaseRequests = $purchaseRequests->orderBy('pr_date');
+                    break;
+
+                default:
+                    $purchaseRequests = $purchaseRequests->orderBy($columnSort, $sortDirection);
+                    break;
+            }
         }
 
         if ($paginated) {
@@ -233,13 +245,12 @@ class PurchaseRequestController extends Controller
         ]);
 
         try {
-            if ($purchaseRequest->status !== PurchaseRequestStatus::DRAFT
-                || $purchaseRequest->status !== PurchaseRequestStatus::DISAPPROVED) {
-                $message = 'Purchase request update failed, already processing or approved.';
+            if ($purchaseRequest->status === PurchaseRequestStatus::DRAFT
+                || $purchaseRequest->status === PurchaseRequestStatus::DISAPPROVED) {
+                $message = 'Purchase request update failed, already processing or approved or cancelled.';
 
                 $this->logRepository->create([
                     'message' => $message,
-                    'details' => $th->getMessage(),
                     'log_id' => $purchaseRequest->id,
                     'log_module' => 'pr',
                     'data' => $validated
@@ -253,7 +264,15 @@ class PurchaseRequestController extends Controller
             $message = 'Purchase request updated successfully.';
             $items = json_decode($validated['items']);
 
-            $purchaseRequest->update($validated);
+            $purchaseRequest->update(array_merge(
+                $validated,
+                [
+                    'status' => PurchaseRequestStatus::DRAFT,
+                    'submitted_at' => NULL,
+                    'approved_cash_available_at' => NULL,
+                    'disapproved_at' => NULL
+                ]
+            ));
 
             $totalEstimatedCost = 0;
 
@@ -315,7 +334,7 @@ class PurchaseRequestController extends Controller
     public function submitForApproval(PurchaseRequest $purchaseRequest): JsonResponse
     {
         try {
-            $message = 'Purchase request successfully marked as "pending" for approval.';
+            $message = 'Purchase request successfully marked as "Pending" for approval.';
 
             $purchaseRequest->update([
                 'submitted_at' => Carbon::now(),

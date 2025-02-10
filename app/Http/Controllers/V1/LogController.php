@@ -16,12 +16,13 @@ class LogController extends Controller
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
-        $columnSort = $request->get('column_sort', 'unit_name');
+        $columnSort = $request->get('column_sort', 'logged_at');
         $sortDirection = $request->get('sort_direction', 'desc');
+        $logId = $request->get('log_id', '');
 
         $logs = Log::with('user');
 
-        if (!empty($search)) {
+        if (!empty($search) && empty($logId)) {
             $logs = $logs->where(function($query) use ($search){
                 $query->where('log_id', 'ILIKE', "%{$search}%")
                     ->orWhere('log_module', 'ILIKE', "%{$search}%")
@@ -33,6 +34,8 @@ class LogController extends Controller
                     ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%");
             });
         }
+
+        if ($logId) $logs = $logs->where('log_id', $logId);
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {

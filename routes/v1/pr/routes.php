@@ -18,18 +18,18 @@ Route::middleware('auth:sanctum')->group(function() {
         Route::put('/{purchaseRequest}', [MainControllers\PurchaseRequestController::class, 'update'])
             ->middleware('ability:super:*,pr:*,pr:update')
             ->name('update');
-        Route::put('/{purchaseRequest}', [MainControllers\PurchaseRequestController::class, 'submitForApproval'])
+        Route::put('/{purchaseRequest}/submit-approval', [MainControllers\PurchaseRequestController::class, 'submitForApproval'])
             ->name('submit');
-        Route::put('/{purchaseRequest}', [MainControllers\PurchaseRequestController::class, 'approveForCashAvailability'])
+        Route::put('/{purchaseRequest}/approve-cash-availability', [MainControllers\PurchaseRequestController::class, 'approveForCashAvailability'])
             ->middleware('ability:super:*,head:*,supply:*,budget:*,pr:*,pr:approve-cash-available')
             ->name('approve_for_cash_availability');
-        Route::put('/{purchaseRequest}', [MainControllers\PurchaseRequestController::class, 'approve'])
+        Route::put('/{purchaseRequest}/approve', [MainControllers\PurchaseRequestController::class, 'approve'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:approve')
             ->name('approve');
-        Route::put('/{purchaseRequest}', [MainControllers\PurchaseRequestController::class, 'disapprove'])
+        Route::put('/{purchaseRequest}/disapprove', [MainControllers\PurchaseRequestController::class, 'disapprove'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:disapprove')
             ->name('update');
-        Route::put('/{purchaseRequest}', [MainControllers\PurchaseRequestController::class, 'cancel'])
+        Route::put('/{purchaseRequest}/cancel', [MainControllers\PurchaseRequestController::class, 'cancel'])
             ->name('cancel');
     });
 });

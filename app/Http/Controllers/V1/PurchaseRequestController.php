@@ -63,12 +63,12 @@ class PurchaseRequestController extends Controller
             // }
         ]);
 
-        if ($user->tokenCant('super:*')
-            || $user->tokenCant('head:*')
-            || $user->tokenCant('supply:*')
-            || $user->tokenCant('budget:*')
-            || $user->tokenCant('accounting:*')
-        ) {
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accounting:*')
+        ) {} else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
         }
 
@@ -107,6 +107,10 @@ class PurchaseRequestController extends Controller
 
                 case 'pr_date_formatted':
                     $purchaseRequests = $purchaseRequests->orderBy('pr_date');
+                    break;
+
+                case 'status_formatted':
+                    $purchaseRequests = $purchaseRequests->orderBy('status');
                     break;
 
                 default:

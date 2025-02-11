@@ -14,6 +14,8 @@ class LogController extends Controller
      */
     public function index(Request $request): LengthAwarePaginator
     {
+        $user = auth()->user();
+
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $columnSort = $request->get('column_sort', 'logged_at');
@@ -21,6 +23,10 @@ class LogController extends Controller
         $logId = $request->get('log_id', '');
 
         $logs = Log::with('user');
+
+        if ($user->tokenCan('super:*')) {} else {
+            $logs = $logs->where('user_id', $user->id);
+        }
 
         if (!empty($search) && empty($logId)) {
             $logs = $logs->where(function($query) use ($search){

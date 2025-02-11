@@ -30,6 +30,8 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
+        $user = auth()->user();
+
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -45,6 +47,15 @@ class UserController extends Controller
             'designation:id,designation_name',
             'roles:id,role_name'
         ]);
+
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accounting:*')
+        ) {} else {
+            $users = $users->where('id', $user->id);
+        }
 
         if (!empty($search)) {
             $users = $users->where(function($query) use ($search){
@@ -85,18 +96,7 @@ class UserController extends Controller
         if ($paginated) {
             return $users->paginate($perPage);
         } else {
-            $user = auth()->user();
-
             if (!$showInactive) $users = $users->where('restricted', false);
-
-            if ($user->tokenCant('super:*')
-                || $user->tokenCant('head:*')
-                || $user->tokenCant('supply:*')
-                || $user->tokenCant('budget:*')
-                || $user->tokenCant('accounting:*')
-            ) {
-                $users = $users->where('id', $user->id);
-            }
 
             $users = $showAll
                 ? $users->get()

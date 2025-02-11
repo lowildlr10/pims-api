@@ -24,6 +24,8 @@ class SectionController extends Controller
      */
     public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
+        $user = auth()->user();
+        
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -49,6 +51,15 @@ class SectionController extends Controller
             $sections = $sections->paginate($perPage);
         } else {
             if (!$showInactive) $sections = $sections->where('active', true);
+
+            if ($user->tokenCan('super:*')
+                || $user->tokenCan('head:*')
+                || $user->tokenCan('supply:*')
+                || $user->tokenCan('budget:*')
+                || $user->tokenCan('accounting:*')
+            ) {} else {
+                $sections = $sections->where('id', $user->section_id);
+            }
 
             $sections = $showAll
                 ? $sections->get()

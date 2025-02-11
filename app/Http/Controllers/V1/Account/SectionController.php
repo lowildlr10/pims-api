@@ -25,7 +25,7 @@ class SectionController extends Controller
     public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
         $user = auth()->user();
-        
+
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);

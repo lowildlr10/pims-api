@@ -168,18 +168,22 @@ class PurchaseRequestController extends Controller
             $totalEstimatedCost = 0;
 
             foreach ($items ?? [] as $key => $item) {
+                $quantity = (int) $item->quantity;
+                $unitCost = (float) $item->estimated_unit_cost;
+                $cost = round($quantity * $unitCost, 2);
+
                 PurchaseRequestItem::create([
                     'purchase_request_id' => $purchaseRequest->id,
                     'item_sequence' => $key,
-                    'quantity' => (int) $item->quantity,
+                    'quantity' => $quantity,
                     'unit_issue_id' => $item->unit_issue_id,
                     'description' => $item->description,
                     'stock_no' => (int) $item->stock_no ?? $key + 1,
-                    'estimated_unit_cost' => (float) $item->estimated_unit_cost,
-                    'estimated_cost' => (float) $item->estimated_cost
+                    'estimated_unit_cost' => $unitCost,
+                    'estimated_cost' => $cost
                 ]);
 
-                $totalEstimatedCost += $item->estimated_cost;
+                $totalEstimatedCost += $cost;
             }
 
             $purchaseRequest->update([
@@ -284,18 +288,22 @@ class PurchaseRequestController extends Controller
                 ->delete();
 
             foreach ($items ?? [] as $key => $item) {
+                $quantity = (int) $item->quantity;
+                $unitCost = (float) $item->estimated_unit_cost;
+                $cost = round($quantity * $unitCost, 2);
+
                 PurchaseRequestItem::create([
                     'purchase_request_id' => $purchaseRequest->id,
                     'item_sequence' => $key,
-                    'quantity' => (int) $item->quantity,
+                    'quantity' => $quantity,
                     'unit_issue_id' => $item->unit_issue_id,
                     'description' => $item->description,
                     'stock_no' => (int) $item->stock_no ?? $key + 1,
-                    'estimated_unit_cost' => (float) $item->estimated_unit_cost,
-                    'estimated_cost' => (float) $item->estimated_cost
+                    'estimated_unit_cost' => $unitCost,
+                    'estimated_cost' => $cost
                 ]);
 
-                $totalEstimatedCost += $item->estimated_cost;
+                $totalEstimatedCost += $cost;
             }
 
             $purchaseRequest->update([

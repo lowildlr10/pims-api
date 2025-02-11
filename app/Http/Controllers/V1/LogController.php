@@ -25,7 +25,7 @@ class LogController extends Controller
         $logs = Log::with('user');
 
         if ($user->tokenCan('super:*')) {} else {
-            $logs = $logs->where('user_id', $user->id);
+            if (empty($logId)) $logs = $logs->where('user_id', $user->id);
         }
 
         if (!empty($search) && empty($logId)) {

@@ -44,8 +44,11 @@ class PurchaseRequest extends Model
         'section_name',
         'funding_source_title',
         'requestor_fullname',
+        'requestor_position',
         'cash_availability_fullname',
-        'approver_fullname'
+        'cash_availability_position',
+        'approver_fullname',
+        'approver_position'
     ];
 
     protected function totalEstimatedCostFormatted(): Attribute
@@ -85,6 +88,16 @@ class PurchaseRequest extends Model
         );
     }
 
+    protected function requestorPosition(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->requestor)
+                    ? $this->requestor->position->position_name
+                    : "-",
+        );
+    }
+
     protected function cashAvailabilityFullname(): Attribute
     {
         return Attribute::make(
@@ -95,12 +108,44 @@ class PurchaseRequest extends Model
         );
     }
 
+    protected function cashAvailabilityPosition(): Attribute
+    {
+        $detail = isset($this->signatoryCashAvailability->details) ?
+            $this->signatoryCashAvailability->details
+                ->where('document', 'pr')
+                ->where('signatory_type', 'cash_availability')
+                ->first() : NULL;
+
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($detail)
+                    ? $detail->position
+                    : "-",
+        );
+    }
+
     protected function approverFullname(): Attribute
     {
         return Attribute::make(
             get: fn ($value, $attributes)
                 => !empty($this->signatoryApprovedBy)
                     ? $this->signatoryApprovedBy->fullname
+                    : "-",
+        );
+    }
+
+    protected function approverPosition(): Attribute
+    {
+        $detail = isset($this->signatoryApprovedBy->details)
+            ? $this->signatoryApprovedBy->details
+                ->where('document', 'pr')
+                ->where('signatory_type', 'approved_by')
+                ->first() : NULL;
+
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($detail)
+                    ? $detail->position
                     : "-",
         );
     }

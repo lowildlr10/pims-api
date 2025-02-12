@@ -37,6 +37,16 @@ class Signatory extends Model
         );
     }
 
+    public function signature(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value, $attributes)
+                => !empty($this->user)
+                    ? $this->user->signature
+                    : "-",
+        );
+    }
+
     public function details(): HasMany
     {
         return $this->hasMany(SignatoryDetail::class);

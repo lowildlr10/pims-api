@@ -124,7 +124,7 @@ class UserController extends Controller
             'designation' => 'nullable',
             'username' => 'required|unique:users',
             'email' => 'email|unique:users|nullable',
-            'phone' => 'string|unique:users|max:13|nullable',
+            'phone' => 'string|max:13|nullable',
             'password' => 'required|min:6',
             'avatar' => 'nullable|string',
             'signature' => 'nullable|string',
@@ -237,7 +237,7 @@ class UserController extends Controller
                     'designation' => 'nullable',
                     'username' => 'required|unique:users,username,' . $user->id,
                     'email' => 'email|unique:users,email,' . $user->id . '|nullable',
-                    'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
+                    'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                 ]);
                 break;
@@ -261,7 +261,7 @@ class UserController extends Controller
                     'designation' => 'nullable',
                     'username' => 'required|unique:users,username,' . $user->id,
                     'email' => 'email|unique:users,email,' . $user->id . '|nullable',
-                    'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
+                    'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                     'restricted' => 'required|in:true,false',
                     'roles' => 'required|string'

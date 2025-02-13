@@ -332,6 +332,7 @@ class UserController extends Controller
                             ? ['password' => bcrypt($password)]
                             : []
                     );
+                    $user->tokens()->delete();
                     break;
             }
 

@@ -152,6 +152,8 @@ class PurchaseRequestController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $user = auth()->user();
+
         $validated = $request->validate([
             'section_id' => 'required|string',
             'pr_date' => 'required',
@@ -170,6 +172,31 @@ class PurchaseRequestController extends Controller
 
         try {
             $message = 'Purchase request created successfully.';
+            $canAccess = in_array(true, [
+                $user->tokenCan('head:*'),
+                $user->tokenCan('user:*'),
+                $user->tokenCan('budget:*'),
+                $user->tokenCan('accounting:*'),
+                $user->tokenCan('cashier:*')
+            ]);
+            $cantAccess = in_array(true, [
+                $user->tokenCant('super:*'),
+                $user->tokenCant('supply:*')
+            ]);
+
+            if ($canAccess && $cantAccess && $validated['requested_by_id'] !== $user->id) {
+                $message = 'Purchase request creation failed. User is not authorized to create purchase requests for others.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_module' => 'pr',
+                    'data' => $validated
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
             $items = json_decode($validated['items']);
 
             $purchaseRequest = PurchaseRequest::create(array_merge(
@@ -251,6 +278,8 @@ class PurchaseRequestController extends Controller
      */
     public function update(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         $validated = $request->validate([
             'section_id' => 'required|string',
             'pr_date' => 'required',
@@ -268,6 +297,34 @@ class PurchaseRequestController extends Controller
         ]);
 
         try {
+            $canAccess = in_array(true, [
+                $user->tokenCan('head:*'),
+                $user->tokenCan('user:*'),
+                $user->tokenCan('budget:*'),
+                $user->tokenCan('accounting:*'),
+                $user->tokenCan('cashier:*')
+            ]);
+            $cantAccess = in_array(true, [
+                $user->tokenCant('super:*'),
+                $user->tokenCant('supply:*')
+            ]);
+
+            if ($canAccess && $cantAccess && $purchaseRequest->requested_by_id !== $user->id) {
+                $message =
+                    'Purchase request update failed.
+                    User is not authorized to update purchase requests for others.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $validated
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
             $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
 
             if ($currentStatus === PurchaseRequestStatus::CANCELLED
@@ -371,8 +428,38 @@ class PurchaseRequestController extends Controller
      */
     public function submitForApproval(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Pending" for approval.';
+            $message = 'Purchase request has been successfully marked as "Pending".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('head:*'),
+                $user->tokenCan('user:*'),
+                $user->tokenCan('budget:*'),
+                $user->tokenCan('accounting:*'),
+                $user->tokenCan('cashier:*')
+            ]);
+            $cantAccess = in_array(true, [
+                $user->tokenCant('super:*'),
+                $user->tokenCant('supply:*')
+            ]);
+
+            if ($canAccess && $cantAccess && $purchaseRequest->requested_by_id !== $user->id) {
+                $message =
+                    'Purchase request submit failed.
+                    User is not authorized to submit purchase requests for others.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'submitted_at' => Carbon::now(),
@@ -415,8 +502,35 @@ class PurchaseRequestController extends Controller
      */
     public function approveForCashAvailability(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Approved for Cash Availability".';
+            $message = 'Purchase request has been successfully marked as "Approved for Cash Availability".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*'),
+                $user->tokenCan('budget:*'),
+                $user->tokenCan('accounting:*'),
+                $user->tokenCan('cashier:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                $message =
+                    'Purchase request approval for cash availability failed.
+                    User is not authorized.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'approved_cash_available_at' => Carbon::now(),
@@ -458,8 +572,31 @@ class PurchaseRequestController extends Controller
      */
     public function approve(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Approved".';
+            $message = 'Purchase request has been successfully marked as "Approved".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*'),
+                $user->tokenCan('head:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                $message = 'Purchase request approve failed. User is not authorized.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'approved_at' => Carbon::now(),
@@ -501,8 +638,31 @@ class PurchaseRequestController extends Controller
      */
     public function disapprove(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Disapproved".';
+            $message = 'Purchase request has been successfully marked as "Disapproved".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*'),
+                $user->tokenCan('head:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                $message = 'Purchase request disapprove failed. User is not authorized.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'disapproved_at' => Carbon::now(),
@@ -544,8 +704,36 @@ class PurchaseRequestController extends Controller
      */
     public function cancel(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
             $message = 'Purchase request successfully marked as "Cancelled".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('head:*'),
+                $user->tokenCan('user:*'),
+                $user->tokenCan('budget:*'),
+                $user->tokenCan('accounting:*'),
+                $user->tokenCan('cashier:*')
+            ]);
+            $cantAccess = in_array(true, [
+                $user->tokenCant('super:*'),
+                $user->tokenCant('supply:*')
+            ]);
+
+            if ($canAccess && $cantAccess && $purchaseRequest->requested_by_id !== $user->id) {
+                $message = 'Purchase request cancel failed. User is not authorized to cancel purchase requests for others.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'cancelled_at' => Carbon::now(),

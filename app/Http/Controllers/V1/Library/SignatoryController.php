@@ -49,6 +49,11 @@ class SignatoryController extends Controller
                 ? $signatories->get()
                 : $signatories = $signatories->limit($perPage)->get();
 
+            foreach ($signatories ?? [] as $signatory) {
+                $user = User::find($signatory->signatory->user_id);
+                $signatory->fullname_designation = "{$user->fullname} ({$signatory->position})";
+            }
+
             return response()->json([
                 'data' => $signatories
             ]);

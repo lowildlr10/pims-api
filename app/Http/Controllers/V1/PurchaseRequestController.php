@@ -4,8 +4,10 @@ namespace App\Http\Controllers\V1;
 
 use App\Enums\PurchaseRequestStatus;
 use App\Http\Controllers\Controller;
+use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
+use App\Models\User;
 use App\Repositories\LogRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -36,31 +38,30 @@ class PurchaseRequestController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()->with([
-            // 'fundingSource:id,title',
-            // 'section:id,section_name',
+            'funding_source:id,title',
+            'section:id,section_name',
 
             'items' => function ($query) {
                 $query->orderBy('item_sequence');
             },
-            'items.unitIssue:id,unit_name',
+            'items.unit_issue:id,unit_name',
 
-            // 'requestor:id,firstname,lastname',
-            // 'requestor.position:id,position_name',
-            // 'requestor.designation:id,designation_name',
+            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
+            'requestor.position:id,position_name',
 
-            // 'signatoryCashAvailability:id,user_id',
-            // 'signatoryCashAvailability.user:id,firstname,lastname',
-            // 'signatoryCashAvailability.details' => function ($query) {
-            //     $query->where('document', 'pr')
-            //         ->where('signatory_type', 'cash_availability');
-            // },
+            'signatory_cash_available:id,user_id',
+            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_cash_available.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'cash_availability');
+            },
 
-            // 'signatoryApprovedBy:id,user_id',
-            // 'signatoryApprovedBy.user:id,firstname,lastname',
-            // 'signatoryApprovedBy.details' => function ($query) {
-            //     $query->where('document', 'pr')
-            //         ->where('signatory_type', 'approved_by');
-            // }
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'approved_by');
+            }
         ]);
 
         if ($user->tokenCan('super:*')
@@ -106,11 +107,25 @@ class PurchaseRequestController extends Controller
                     break;
 
                 case 'pr_date_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('pr_date');
+                    $purchaseRequests = $purchaseRequests->orderBy('pr_date', $sortDirection);
+                    break;
+
+                case 'funding_source_title':
+                    $purchaseRequests = $purchaseRequests->orderBy(
+                        FundingSource::select('title')->whereColumn('funding_sources.id', 'purchase_requests.funding_source_id'),
+                        $sortDirection
+                    );
+                    break;
+
+                case 'requestor_fullname':
+                    $purchaseRequests = $purchaseRequests->orderBy(
+                        User::select('firstname')->whereColumn('users.id', 'purchase_requests.requested_by_id'),
+                        $sortDirection
+                    );
                     break;
 
                 case 'status_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('status');
+                    $purchaseRequests = $purchaseRequests->orderBy('status', $sortDirection);
                     break;
 
                 default:

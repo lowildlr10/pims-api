@@ -23,11 +23,33 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
     public function print(array $pageConfig, string $prId): array
     {
-
+        try {
             $company = Company::first();
             $pr = PurchaseRequest::with([
-                'items',
-                'items.unitIssue:id,unit_name'
+                'funding_source:id,title',
+                'section:id,section_name',
+
+                'items' => function ($query) {
+                    $query->orderBy('item_sequence');
+                },
+                'items.unit_issue:id,unit_name',
+
+                'requestor:id,firstname,lastname,position_id,allow_signature,signature',
+                'requestor.position:id,position_name',
+
+                'signatory_cash_available:id,user_id',
+                'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
+                'signatory_cash_available.detail' => function ($query) {
+                    $query->where('document', 'pr')
+                        ->where('signatory_type', 'cash_availability');
+                },
+
+                'signatory_approval:id,user_id',
+                'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+                'signatory_approval.detail' => function ($query) {
+                    $query->where('document', 'pr')
+                        ->where('signatory_type', 'approved_by');
+                }
             ])->find($prId);
             $filename = "PR-{$pr->pr_no}.pdf";
 
@@ -37,7 +59,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 'success' => true,
                 'blob' => $blob,
                 'filename' => $filename
-            ];try {
+            ];
         } catch (\Throwable $th) {
             return [
                 'success' => false,
@@ -100,7 +122,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.08, 0, 'Section:', 'L', 0, 'L');
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.31, 0, $data->section_name, '', 0, 'L');
+        $pdf->Cell($pageWidth * 0.31, 0, $data->section->section_name, '', 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.075, 0, 'SAI No.', 'L', 0, 'L');
         $pdf->SetFont($this->fontArial, 'U', 10);
@@ -165,7 +187,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     <td
                         width="8%"
                         align="center"
-                    >'. $item->unitIssue->unit_name .'</td>
+                    >'. $item->unit_issue->unit_name .'</td>
                     <td
                         width="47%"
                         align="left"
@@ -205,7 +227,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
             0, 0,
             $data->purpose . (
                 !empty($data->funding_source_title)
-                    ? " (Charged to {$data->funding_source_title})" : ''
+                    ? " (Charged to {$data->funding_source->title})" : ''
             ),
             'R', 'J', 0, 1, ishtml: true
         );
@@ -269,15 +291,15 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Printed Name:', 'LT', 0);
         $pdf->SetFont($this->fontArialBold, 'B', 9);
-        $pdf->Cell($pageWidth * 0.27, 0, strtoupper($data->requestor_fullname), 'LT', 0, 'C');
-        $pdf->Cell($pageWidth * 0.27, 0, strtoupper($data->cash_availability_fullname), 'LT', 0, 'C');
-        $pdf->Cell(0, 0, strtoupper($data->approver_fullname), 'LTR', 1, 'C');
+        $pdf->Cell($pageWidth * 0.27, 0, strtoupper($data->requestor->fullname), 'LT', 0, 'C');
+        $pdf->Cell($pageWidth * 0.27, 0, strtoupper($data->signatory_cash_available->user->fullname), 'LT', 0, 'C');
+        $pdf->Cell(0, 0, strtoupper($data->signatory_approval->user->fullname), 'LTR', 1, 'C');
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Designation:', 'LTB', 0);
-        $pdf->Cell($pageWidth * 0.27, 0, $data->requestor_position, 'LTB', 0, 'C');
-        $pdf->Cell($pageWidth * 0.27, 0, $data->cash_availability_position, 'LTB', 0, 'C');
-        $pdf->Cell(0, 0, $data->approver_position, 'LTRB', 1, 'C');
+        $pdf->Cell($pageWidth * 0.27, 0, $data->requestor->position->position_name, 'LTB', 0, 'C');
+        $pdf->Cell($pageWidth * 0.27, 0, $data->signatory_cash_available->detail->position, 'LTB', 0, 'C');
+        $pdf->Cell(0, 0, $data->signatory_approval->detail->position, 'LTRB', 1, 'C');
 
         $pdfBlob = $pdf->Output($filename, 'S');
         $pdfBase64 = base64_encode($pdfBlob);

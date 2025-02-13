@@ -66,12 +66,12 @@ class PrintController extends Controller
                     ]);
                 }
 
-                // $this->logRepository->create([
-                //     'message' => "Succefully generated the {$data['filename']} document.",
-                //     'log_id' => $documentId,
-                //     'log_module' => 'pr',
-                //     'data' => $data
-                // ]);
+                $this->logRepository->create([
+                    'message' => "Succefully generated the {$data['filename']} document.",
+                    'log_id' => $documentId,
+                    'log_module' => 'pr',
+                    'data' => $data
+                ]);
 
                 return response()->json([
                     'data' => [

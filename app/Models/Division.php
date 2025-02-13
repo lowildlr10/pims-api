@@ -23,20 +23,6 @@ class Division extends Model
         'active'
     ];
 
-    protected $appends = [
-        'headfullname',
-    ];
-
-    public function headfullname(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes)
-                => !empty($this->head)
-                    ? $this->head->fullname
-                    : "-",
-        );
-    }
-
     /**
      * The division that has many sections.
      */

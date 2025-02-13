@@ -30,20 +30,6 @@ class SignatoryDetail extends Model
         'position'
     ];
 
-    protected $appends = [
-        'fullname_designation'
-    ];
-
-    public function fullnameDesignation(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes)
-                => !empty($this->signatory) && !empty($this->signatory->user)
-                    ? "{$this->signatory->user->fullname} ({$this->position})"
-                    : "-",
-        );
-    }
-
     public function signatory(): BelongsTo
     {
         return $this->belongsTo(Signatory::class, 'signatory_id', 'id');

@@ -57,7 +57,7 @@ class PurchaseRequestItem extends Model
     /**
      * The purchase request item that belongs to purchase request.
      */
-    public function purchaseRequest(): BelongsTo
+    public function purchase_request(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
     }
@@ -65,7 +65,7 @@ class PurchaseRequestItem extends Model
     /**
      * The purchase request that has one requestor.
      */
-    public function unitIssue(): HasOne
+    public function unit_issue(): HasOne
     {
         return $this->hasOne(UnitIssue::class, 'id', 'unit_issue_id');
     }

@@ -268,9 +268,14 @@ class PurchaseRequestController extends Controller
         ]);
 
         try {
-            if ($purchaseRequest->status === PurchaseRequestStatus::DRAFT
-                || $purchaseRequest->status === PurchaseRequestStatus::DISAPPROVED) {
-                $message = 'Purchase request update failed, already processing or approved or cancelled.';
+            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
+
+            if ($currentStatus === PurchaseRequestStatus::CANCELLED
+                || $currentStatus === PurchaseRequestStatus::FOR_CANVASSING
+                || $currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                || $currentStatus === PurchaseRequestStatus::FOR_PO
+                || $currentStatus === PurchaseRequestStatus::COMPLETED) {
+                $message = 'Purchase request update failed, already processing or cancelled.';
 
                 $this->logRepository->create([
                     'message' => $message,
@@ -285,45 +290,51 @@ class PurchaseRequestController extends Controller
             }
 
             $message = 'Purchase request updated successfully.';
-            $items = json_decode($validated['items']);
+            $status = $purchaseRequest->status;
+
+            if ($currentStatus === PurchaseRequestStatus::DRAFT
+                || $currentStatus === PurchaseRequestStatus::DISAPPROVED) {
+                $status = PurchaseRequestStatus::DRAFT;
+
+                $items = json_decode($validated['items']);
+                $totalEstimatedCost = 0;
+
+                PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
+                    ->delete();
+
+                foreach ($items ?? [] as $key => $item) {
+                    $quantity = (int) $item->quantity;
+                    $unitCost = (float) $item->estimated_unit_cost;
+                    $cost = round($quantity * $unitCost, 2);
+
+                    PurchaseRequestItem::create([
+                        'purchase_request_id' => $purchaseRequest->id,
+                        'item_sequence' => $key,
+                        'quantity' => $quantity,
+                        'unit_issue_id' => $item->unit_issue_id,
+                        'description' => $item->description,
+                        'stock_no' => (int) $item->stock_no ?? $key + 1,
+                        'estimated_unit_cost' => $unitCost,
+                        'estimated_cost' => $cost
+                    ]);
+
+                    $totalEstimatedCost += $cost;
+                }
+
+                $purchaseRequest->update([
+                    'total_estimated_cost' => $totalEstimatedCost
+                ]);
+            }
 
             $purchaseRequest->update(array_merge(
                 $validated,
                 [
-                    'status' => PurchaseRequestStatus::DRAFT,
+                    'status' => $status,
                     'submitted_at' => NULL,
                     'approved_cash_available_at' => NULL,
                     'disapproved_at' => NULL
                 ]
             ));
-
-            $totalEstimatedCost = 0;
-
-            PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
-                ->delete();
-
-            foreach ($items ?? [] as $key => $item) {
-                $quantity = (int) $item->quantity;
-                $unitCost = (float) $item->estimated_unit_cost;
-                $cost = round($quantity * $unitCost, 2);
-
-                PurchaseRequestItem::create([
-                    'purchase_request_id' => $purchaseRequest->id,
-                    'item_sequence' => $key,
-                    'quantity' => $quantity,
-                    'unit_issue_id' => $item->unit_issue_id,
-                    'description' => $item->description,
-                    'stock_no' => (int) $item->stock_no ?? $key + 1,
-                    'estimated_unit_cost' => $unitCost,
-                    'estimated_cost' => $cost
-                ]);
-
-                $totalEstimatedCost += $cost;
-            }
-
-            $purchaseRequest->update([
-                'total_estimated_cost' => $totalEstimatedCost
-            ]);
 
             $this->logRepository->create([
                 'message' => $message,

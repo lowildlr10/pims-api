@@ -65,6 +65,10 @@ class SectionController extends Controller
                 ? $sections->get()
                 : $sections = $sections->limit($perPage)->get();
 
+            foreach ($sections ?? [] as $section) {
+                $section->division_section = "{$section->section_name} ({$section->division->division_name})";
+            }
+
             return response()->json([
                 'data' => $sections
             ]);

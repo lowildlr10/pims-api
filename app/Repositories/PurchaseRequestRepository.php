@@ -178,6 +178,9 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $htmlTable = '<table border="1" cellpadding="2"><tbody>';
 
         foreach ($data->items ?? [] as $item) {
+            $description = trim(str_replace("\r", '<br />', $item->description));
+            $description = str_replace("\n", '<br />', $description);
+
             $htmlTable .= '
                 <tr>
                     <td
@@ -191,7 +194,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     <td
                         width="47%"
                         align="left"
-                    >'. $item->description .'</td>
+                    >'. $description .'</td>
                     <td
                         width="8%"
                         align="center"
@@ -220,12 +223,15 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
+        $purpose = trim(str_replace("\r", '<br />', $data->purpose));
+        $purpose = str_replace("\n", '<br />', $purpose);
+
         $pdf->MultiCell($pageWidth * 0.1, 0, 'Purpose:', 'L', 'L', 0, 0);
         $pdf->SetTextColor(0, 0, 0);
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->MultiCell(
             0, 0,
-            $data->purpose . (
+            $purpose . (
                 !empty($data->funding_source_title)
                     ? " (Charged to {$data->funding_source->title})" : ''
             ),

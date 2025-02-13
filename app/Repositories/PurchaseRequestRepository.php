@@ -243,7 +243,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, '', 'LT', 0);
         $pdf->Cell($pageWidth * 0.27, 0, 'REQUESTED BY:', 'LT', 0, 'L');
-        $pdf->Cell($pageWidth * 0.27, 0, 'CASH AVAILABILITY', 'LT', 0, 'L');
+        $pdf->Cell($pageWidth * 0.27, 0, 'CASH AVAILABILITY:', 'LT', 0, 'L');
         $pdf->Cell(0, 0, 'APPROVED BY:', 'LTR', 1, 'L');
 
         $pdf->Cell($pageWidth * 0.19, 0, '', 'L', 0);

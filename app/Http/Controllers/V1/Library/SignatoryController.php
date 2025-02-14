@@ -188,7 +188,6 @@ class SignatoryController extends Controller
     public function update(Request $request, Signatory $signatory)
     {
         $validated = $request->validate([
-            'user_id' => 'required|unique:signatories,user_id,' . $signatory->id,
             'details' => 'required|string',
             'active' => 'required|in:true,false'
         ]);

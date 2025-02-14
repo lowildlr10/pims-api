@@ -45,7 +45,7 @@ class UserController extends Controller
         try {
             $documentEnum = DocumentPrintType::from($document);
         } catch (ValueError $e) {
-            $documentEnum = $document;
+            $documentEnum = DocumentPrintType::UNDEFINED;
         }
 
         $users = User::with([

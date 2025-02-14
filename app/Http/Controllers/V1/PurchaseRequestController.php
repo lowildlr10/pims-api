@@ -83,17 +83,17 @@ class PurchaseRequestController extends Controller
                     ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
                     ->orWhere('purpose', 'ILIKE', "%{$search}%")
                     ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('fundingSource', 'title', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('funding_source', 'title', 'ILIKE' , "%{$search}%")
                     ->orWhereRelation('section', 'section_name', 'ILIKE' , "%{$search}%")
                     ->orWhereRelation('requestor', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
-                    ->orWhereRelation('signatoryCashAvailability.user', function ($query) use ($search) {
+                    ->orWhereRelation('signatory_cash_available.user', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
-                    ->orWhereRelation('signatoryApprovedBy.user', function ($query) use ($search) {
+                    ->orWhereRelation('signatory_approval.user', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     });

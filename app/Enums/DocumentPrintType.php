@@ -16,4 +16,5 @@ enum DocumentPrintType: string
     case ARE = 'are';
     case SUMMARY = 'summary';
     case PAYMENT = 'payment';
+    case UNDEFINED = '';
 }

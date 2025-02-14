@@ -342,7 +342,7 @@ class PurchaseRequestController extends Controller
                 ], 422);
             }
 
-            $status = $purchaseRequest->status;
+            $status = $currentStatus;
 
             if ($currentStatus === PurchaseRequestStatus::DRAFT
                 || $currentStatus === PurchaseRequestStatus::DISAPPROVED) {

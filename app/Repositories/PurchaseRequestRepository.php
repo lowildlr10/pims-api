@@ -218,34 +218,21 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->writeHTML($htmlTable, ln: false);
         $pdf->Ln(0);
 
-        // $pdf->SetFont($this->fontArial, 'I', 9);
-        // $pdf->SetTextColor(201, 33, 30);
-
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
         $purpose = trim(str_replace("\r", '<br />', $data->purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
-
-        // $pdf->MultiCell($pageWidth * 0.1, 0, 'Purpose:', 'L', 'L', 0, 0, ishtml: true);
-        // $pdf->SetTextColor(0, 0, 0);
-        // $pdf->SetFont($this->fontArialBold, 'B', 10);
-        // $pdf->MultiCell(
-        //     0, 0,
-        //     $purpose . (
-        //         !empty($data->funding_source_title)
-        //             ? " (Charged to {$data->funding_source->title})" : ''
-        //     ),
-        //     'R', 'J', 0, 1, ishtml: true
-        // );
-        // $pdf->Cell(0, 0, '', 'LR', 1);
-
+        $purpose = $purpose . (
+            isset($data->funding_source->title) && !empty($data->funding_source->title)
+                ? " (Charged to {$data->funding_source->title})" : ''
+        );
         $html = '
             <div style="border: 1px solid black;">
                 <table cellpadding="2">
                     <tr>
                         <td style="color: red; font-size: 9px; font-style: italic;" width="9%">Purpose:</td>
-                        <td width="91%" style="font-weight: bold; text-align: justify;">'. $purpose .'</td>
+                        <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'. $purpose .'</td>
                     </tr>
                 </table>
             </div>

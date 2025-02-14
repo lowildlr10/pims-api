@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Helpers\FileHelper;
 use App\Interfaces\PurchaseRequestRepositoryInterface;
 use App\Models\Company;
 use App\Models\Log;
@@ -217,8 +218,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->writeHTML($htmlTable, ln: false);
         $pdf->Ln(0);
 
-        $pdf->SetFont($this->fontArial, 'I', 9);
-        $pdf->SetTextColor(201, 33, 30);
+        // $pdf->SetFont($this->fontArial, 'I', 9);
+        // $pdf->SetTextColor(201, 33, 30);
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -226,19 +227,32 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $purpose = trim(str_replace("\r", '<br />', $data->purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
 
-        $pdf->MultiCell($pageWidth * 0.1, 0, 'Purpose:', 'L', 'L', 0, 0);
-        $pdf->SetTextColor(0, 0, 0);
-        $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->MultiCell(
-            0, 0,
-            $purpose . (
-                !empty($data->funding_source_title)
-                    ? " (Charged to {$data->funding_source->title})" : ''
-            ),
-            'R', 'J', 0, 1, ishtml: true
-        );
-        $pdf->Cell(0, 0, '', 'LR', 1);
-        $pdf->Line($x, $y, $pdf->GetX(), $pdf->GetY());
+        // $pdf->MultiCell($pageWidth * 0.1, 0, 'Purpose:', 'L', 'L', 0, 0, ishtml: true);
+        // $pdf->SetTextColor(0, 0, 0);
+        // $pdf->SetFont($this->fontArialBold, 'B', 10);
+        // $pdf->MultiCell(
+        //     0, 0,
+        //     $purpose . (
+        //         !empty($data->funding_source_title)
+        //             ? " (Charged to {$data->funding_source->title})" : ''
+        //     ),
+        //     'R', 'J', 0, 1, ishtml: true
+        // );
+        // $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $html = '
+            <div style="border: 1px solid black;">
+                <table cellpadding="2">
+                    <tr>
+                        <td style="color: red; font-size: 9px; font-style: italic;" width="9%">Purpose:</td>
+                        <td width="91%" style="font-weight: bold; text-align: justify;">'. $purpose .'</td>
+                    </tr>
+                </table>
+            </div>
+        ';
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->writeHTML($html, ln: false);
+        $pdf->Ln(0);
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, '', 'LT', 0);
@@ -252,47 +266,68 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->Cell(0, 0, '', 'LTR', 1, 'L');
 
         $pdf->Cell($pageWidth * 0.19, 0, 'Signature:', 'LT', 0);
-        $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
 
-        // if ($data->requestor->allow_signature && $data->requestor->signature) {
-        //     $pdf->Image(
-        //         $data->requestor->signature,
-        //         $pdf->GetX(),
-        //         $pdf->GetY(),
-        //         h: 0.6,
-        //         type: 'PNG',
-        //         resize: true,
-        //         dpi: 500
-        //     );
-        // }
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
 
         $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
 
-        // if ($data->signatoryCashAvailability->user->allow_signature && $data->signatoryCashAvailability->user->signature) {
-        //     $pdf->Image(
-        //         $data->signatoryCashAvailability->user->signature,
-        //         $pdf->GetX(),
-        //         $pdf->GetY(),
-        //         h: $pdf->getPageHeight() * 0.05,
-        //         type: 'PNG',
-        //         resize: true,
-        //         dpi: 300
-        //     );
-        // }
+        if ($data->requestor->allow_signature && $data->requestor->signature) {
+            $imagePath = FileHelper::getPublicPath(
+                $data->requestor->signature
+            );
+            $pdf->Image(
+                $imagePath,
+                $x + $pageWidth * 0.07,
+                $y - ($pdf->getPageHeight() * 0.02),
+                w: $pageWidth * 0.1,
+                type: 'PNG',
+                resize: true,
+                dpi: 500,
+            );
+        }
+
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
+
+        $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
+
+        if ($data->signatory_cash_available->user->allow_signature
+            && $data->signatory_cash_available->user->signature) {
+            $imagePath = FileHelper::getPublicPath(
+                $data->signatory_cash_available->user->signature
+            );
+            $pdf->Image(
+                $imagePath,
+                $x + $pageWidth * 0.07,
+                $y - ($pdf->getPageHeight() * 0.02),
+                w: $pageWidth * 0.1,
+                type: 'PNG',
+                resize: true,
+                dpi: 500,
+            );
+        }
+
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
 
         $pdf->Cell(0, 0, '', 'LR', 1, 'L');
 
-        // if ($data->signatoryApprovedBy->user->allow_signature && $data->signatoryApprovedBy->user->signature) {
-        //     $pdf->Image(
-        //         $data->signatoryApprovedBy->user->signature,
-        //         $pdf->GetX(),
-        //         $pdf->GetY(),
-        //         h: 0.6,
-        //         type: 'PNG',
-        //         resize: true,
-        //         dpi: 500
-        //     );
-        // }
+        if ($data->signatory_approval->user->allow_signature
+            && $data->signatory_approval->user->signature) {
+            $imagePath = FileHelper::getPublicPath(
+                $data->signatory_approval->user->signature
+            );
+            $pdf->Image(
+                $imagePath,
+                $x + $pageWidth * 0.07,
+                $y - ($pdf->getPageHeight() * 0.02),
+                w: $pageWidth * 0.1,
+                type: 'PNG',
+                resize: true,
+                dpi: 500,
+            );
+        }
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Printed Name:', 'LT', 0);

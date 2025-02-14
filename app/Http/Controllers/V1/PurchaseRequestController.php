@@ -297,25 +297,28 @@ class PurchaseRequestController extends Controller
         try {
             $message = 'Purchase request updated successfully.';
 
-            $cantAccess = in_array(true, [
-                $user->tokenCant('super:*'),
-                $user->tokenCant('supply:*')
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
             ]);
 
-            if ($cantAccess && $purchaseRequest->requested_by_id !== $user->id) {
-                $message =
-                    'Purchase request update failed.
-                    User is not authorized to update purchase requests for others.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $validated
-                ], isError: true);
+            if ($canAccess) {}
+            else {
+                if ($purchaseRequest->requested_by_id !== $user->id) {
+                    $message =
+                        'Purchase request update failed.
+                    User is not authorized to update purchase requests for others.' . $cantAccess;
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_id' => $purchaseRequest->id,
+                        'log_module' => 'pr',
+                        'data' => $validated
+                    ], isError: true);
 
-                return response()->json([
-                    'message' => $message
-                ], 422);
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
             }
 
             $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
@@ -425,25 +428,28 @@ class PurchaseRequestController extends Controller
         try {
             $message = 'Purchase request has been successfully marked as "Pending".';
 
-            $cantAccess = in_array(true, [
-                $user->tokenCant('super:*'),
-                $user->tokenCant('supply:*')
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
             ]);
 
-            if ($cantAccess && $purchaseRequest->requested_by_id !== $user->id) {
-                $message =
-                    'Purchase request submit failed.
+            if ($canAccess) {}
+            else {
+                if ($purchaseRequest->requested_by_id !== $user->id) {
+                    $message =
+                        'Purchase request submit failed.
                     User is not authorized to submit purchase requests for others.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest
-                ], isError: true);
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_id' => $purchaseRequest->id,
+                        'log_module' => 'pr',
+                        'data' => $purchaseRequest
+                    ], isError: true);
 
-                return response()->json([
-                    'message' => $message
-                ], 422);
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
             }
 
             $purchaseRequest->update([
@@ -694,23 +700,26 @@ class PurchaseRequestController extends Controller
         try {
             $message = 'Purchase request successfully marked as "Cancelled".';
 
-            $cantAccess = in_array(true, [
-                $user->tokenCant('super:*'),
-                $user->tokenCant('supply:*')
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
             ]);
 
-            if ($cantAccess && $purchaseRequest->requested_by_id !== $user->id) {
-                $message = 'Purchase request cancel failed. User is not authorized to cancel purchase requests for others.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest
-                ], isError: true);
+            if ($canAccess) {}
+            else {
+                if ($purchaseRequest->requested_by_id !== $user->id) {
+                    $message = 'Purchase request cancel failed. User is not authorized to cancel purchase requests for others.';
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_id' => $purchaseRequest->id,
+                        'log_module' => 'pr',
+                        'data' => $purchaseRequest
+                    ], isError: true);
 
-                return response()->json([
-                    'message' => $message
-                ], 422);
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
             }
 
             $purchaseRequest->update([

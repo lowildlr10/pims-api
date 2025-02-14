@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1\Account;
 
+use App\Enums\DocumentPrintType;
 use App\Http\Controllers\Controller;
 use App\Models\Designation;
 use App\Models\Position;
@@ -39,6 +40,13 @@ class UserController extends Controller
         $columnSort = $request->get('column_sort', 'firstname');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $document = $request->get('document', '');
+
+        try {
+            $documentEnum = DocumentPrintType::from($document);
+        } catch (ValueError $e) {
+            $documentEnum = $document;
+        }
 
         $users = User::with([
             'division:id,division_name',
@@ -48,13 +56,20 @@ class UserController extends Controller
             'roles:id,role_name'
         ]);
 
-        if ($user->tokenCan('super:*')
-            || $user->tokenCan('head:*')
-            || $user->tokenCan('supply:*')
-            || $user->tokenCan('budget:*')
-            || $user->tokenCan('accounting:*')
-        ) {} else {
-            $users = $users->where('id', $user->id);
+        switch ($documentEnum) {
+            case DocumentPrintType::PR:
+                $cantAccess = in_array(true, [
+                    $user->tokenCant('super:*'),
+                    $user->tokenCant('supply:*')
+                ]);
+
+                if ($cantAccess) {
+                    $users = $users->where('id', $user->id);
+                }
+                break;
+
+            default:
+                break;
         }
 
         if (!empty($search)) {

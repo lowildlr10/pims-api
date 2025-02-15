@@ -208,8 +208,8 @@ class PurchaseRequestController extends Controller
             $totalEstimatedCost = 0;
 
             foreach ($items ?? [] as $key => $item) {
-                $quantity = (int) $item->quantity;
-                $unitCost = (float) $item->estimated_unit_cost;
+                $quantity = intval($item->quantity);
+                $unitCost = floatval($item->estimated_unit_cost);
                 $cost = round($quantity * $unitCost, 2);
 
                 PurchaseRequestItem::create([
@@ -229,6 +229,8 @@ class PurchaseRequestController extends Controller
             $purchaseRequest->update([
                 'total_estimated_cost' => $totalEstimatedCost
             ]);
+
+            $purchaseRequest->items = json_decode($validated['items']) ?? [];
 
             $this->logRepository->create([
                 'message' => $message,
@@ -355,8 +357,8 @@ class PurchaseRequestController extends Controller
                     ->delete();
 
                 foreach ($items ?? [] as $key => $item) {
-                    $quantity = (int) $item->quantity;
-                    $unitCost = (float) $item->estimated_unit_cost;
+                    $quantity = intval($item->quantity);
+                    $unitCost = floatval($item->estimated_unit_cost);
                     $cost = round($quantity * $unitCost, 2);
 
                     PurchaseRequestItem::create([
@@ -387,6 +389,8 @@ class PurchaseRequestController extends Controller
                     'disapproved_at' => NULL
                 ]
             ));
+
+            $purchaseRequest->items = json_decode($validated['items']) ?? [];
 
             $this->logRepository->create([
                 'message' => $message,

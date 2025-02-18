@@ -177,22 +177,25 @@ class PurchaseRequestController extends Controller
         try {
             $message = 'Purchase request created successfully.';
 
-            $cantAccess = in_array(true, [
-                $user->tokenCant('super:*'),
-                $user->tokenCant('supply:*')
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
             ]);
 
-            if ($cantAccess && $validated['requested_by_id'] !== $user->id) {
-                $message = 'Purchase request creation failed. User is not authorized to create purchase requests for others.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_module' => 'pr',
-                    'data' => $validated
-                ], isError: true);
+            if ($canAccess) {}
+            else {
+                if ($validated['requested_by_id'] !== $user->id) {
+                    $message = 'Purchase request creation failed. User is not authorized to create purchase requests for others.';
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_module' => 'pr',
+                        'data' => $validated
+                    ], isError: true);
 
-                return response()->json([
-                    'message' => $message
-                ], 422);
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
             }
 
             $items = json_decode($validated['items']);
@@ -763,10 +766,12 @@ class PurchaseRequestController extends Controller
 
     private function generateNewPrNumber(): string
     {
-        $sequence = PurchaseRequest::count() + 1;
         $month = date('m');
         $year = date('Y');
+        $sequence = PurchaseRequest::whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->count() + 1;
 
-        return "{$year}-{$month}-{$sequence}";
+        return "{$year}-{$sequence}-{$month}";
     }
 }

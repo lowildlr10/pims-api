@@ -40,15 +40,7 @@ class PurchaseRequest extends Model
     ];
 
     protected $appends = [
-        'total_estimated_cost_formatted',
-        // 'section_name',
-        // 'funding_source_title',
-        // 'requestor_fullname',
-        // 'requestor_position',
-        // 'cash_availability_fullname',
-        // 'cash_availability_position',
-        // 'approver_fullname',
-        // 'approver_position'
+        'total_estimated_cost_formatted'
     ];
 
     protected function totalEstimatedCostFormatted(): Attribute
@@ -57,98 +49,6 @@ class PurchaseRequest extends Model
             get: fn () => '₱' . number_format($this->total_estimated_cost, 2)
         );
     }
-
-    // protected function sectionName(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($this->section)
-    //                 ? $this->section->section_name
-    //                 : "-",
-    //     );
-    // }
-
-    // protected function fundingSourceTitle(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($this->fundingSource)
-    //                 ? $this->fundingSource->title
-    //                 : "-",
-    //     );
-    // }
-
-    // protected function requestorFullname(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($this->requestor)
-    //                 ? $this->requestor->fullname
-    //                 : "-",
-    //     );
-    // }
-
-    // protected function requestorPosition(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($this->requestor)
-    //                 ? $this->requestor->position->position_name
-    //                 : "-",
-    //     );
-    // }
-
-    // protected function cashAvailabilityFullname(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($this->signatoryCashAvailability)
-    //                 ? $this->signatoryCashAvailability->fullname
-    //                 : "-",
-    //     );
-    // }
-
-    // protected function cashAvailabilityPosition(): Attribute
-    // {
-    //     $detail = isset($this->signatoryCashAvailability->details) ?
-    //         $this->signatoryCashAvailability->details
-    //             ->where('document', 'pr')
-    //             ->where('signatory_type', 'cash_availability')
-    //             ->first() : NULL;
-
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($detail)
-    //                 ? $detail->position
-    //                 : "-",
-    //     );
-    // }
-
-    // protected function approverFullname(): Attribute
-    // {
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($this->signatoryApprovedBy)
-    //                 ? $this->signatoryApprovedBy->fullname
-    //                 : "-",
-    //     );
-    // }
-
-    // protected function approverPosition(): Attribute
-    // {
-    //     $detail = isset($this->signatoryApprovedBy->details)
-    //         ? $this->signatoryApprovedBy->details
-    //             ->where('document', 'pr')
-    //             ->where('signatory_type', 'approved_by')
-    //             ->first() : NULL;
-
-    //     return Attribute::make(
-    //         get: fn ($value, $attributes)
-    //             => !empty($detail)
-    //                 ? $detail->position
-    //                 : "-",
-    //     );
-    // }
 
     /**
      * The purchase request that has one section.
@@ -196,5 +96,13 @@ class PurchaseRequest extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseRequestItem::class);
+    }
+
+    /**
+     * The purchase request that has many rfqs.
+     */
+    public function rfqs(): HasMany
+    {
+        return $this->hasMany(RequestQuotation::class);
     }
 }

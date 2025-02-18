@@ -58,12 +58,13 @@ class UserController extends Controller
 
         switch ($documentEnum) {
             case DocumentPrintType::PR:
-                $cantAccess = in_array(true, [
-                    $user->tokenCant('super:*'),
-                    $user->tokenCant('supply:*')
+                $canAccess = in_array(true, [
+                    $user->tokenCan('super:*'),
+                    $user->tokenCan('supply:*')
                 ]);
 
-                if ($cantAccess) {
+                if ($canAccess) {}
+                else {
                     $users = $users->where('id', $user->id);
                 }
                 break;

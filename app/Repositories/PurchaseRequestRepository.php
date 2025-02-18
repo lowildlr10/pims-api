@@ -96,6 +96,26 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         $pageWidth = $pdf->getPageWidth() * 0.86;
 
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
+
+        try {
+            if ($company->company_logo) {
+                $imagePath = FileHelper::getPublicPath(
+                    $company->company_logo
+                );
+                $pdf->Image(
+                    $imagePath,
+                    $x + ($pageWidth * 0.015),
+                    $y + ($pdf->getPageHeight() * 0.0055),
+                    w: $pageWidth * 0.075,
+                    type: 'PNG',
+                    resize: true,
+                    dpi: 500,
+                );
+            }
+        } catch (\Throwable $th) {}
+
         $pdf->setCellHeightRatio(0.5);
         $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002]);
         $pdf->Cell(0, 0, '', 'LTR', 1, 'C');
@@ -259,62 +279,68 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
 
-        if ($data->requestor->allow_signature && $data->requestor->signature) {
-            $imagePath = FileHelper::getPublicPath(
-                $data->requestor->signature
-            );
-            $pdf->Image(
-                $imagePath,
-                $x + $pageWidth * 0.07,
-                $y - ($pdf->getPageHeight() * 0.02),
-                w: $pageWidth * 0.1,
-                type: 'PNG',
-                resize: true,
-                dpi: 500,
-            );
-        }
+        try {
+            if ($data->requestor->allow_signature && $data->requestor->signature) {
+                $imagePath = FileHelper::getPublicPath(
+                    $data->requestor->signature
+                );
+                $pdf->Image(
+                    $imagePath,
+                    $x + $pageWidth * 0.07,
+                    $y - ($pdf->getPageHeight() * 0.02),
+                    w: $pageWidth * 0.1,
+                    type: 'PNG',
+                    resize: true,
+                    dpi: 500,
+                );
+            }
+        } catch (\Throwable $th) {}
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
         $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
 
-        if ($data->signatory_cash_available->user->allow_signature
-            && $data->signatory_cash_available->user->signature) {
-            $imagePath = FileHelper::getPublicPath(
-                $data->signatory_cash_available->user->signature
-            );
-            $pdf->Image(
-                $imagePath,
-                $x + $pageWidth * 0.07,
-                $y - ($pdf->getPageHeight() * 0.02),
-                w: $pageWidth * 0.1,
-                type: 'PNG',
-                resize: true,
-                dpi: 500,
-            );
-        }
+        try {
+            if ($data->signatory_cash_available->user->allow_signature
+                && $data->signatory_cash_available->user->signature) {
+                $imagePath = FileHelper::getPublicPath(
+                    $data->signatory_cash_available->user->signature
+                );
+                $pdf->Image(
+                    $imagePath,
+                    $x + $pageWidth * 0.07,
+                    $y - ($pdf->getPageHeight() * 0.02),
+                    w: $pageWidth * 0.1,
+                    type: 'PNG',
+                    resize: true,
+                    dpi: 500,
+                );
+            }
+        } catch (\Throwable $th) {}
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
         $pdf->Cell(0, 0, '', 'LR', 1, 'L');
 
-        if ($data->signatory_approval->user->allow_signature
-            && $data->signatory_approval->user->signature) {
-            $imagePath = FileHelper::getPublicPath(
-                $data->signatory_approval->user->signature
-            );
-            $pdf->Image(
-                $imagePath,
-                $x + $pageWidth * 0.07,
-                $y - ($pdf->getPageHeight() * 0.02),
-                w: $pageWidth * 0.1,
-                type: 'PNG',
-                resize: true,
-                dpi: 500,
-            );
-        }
+        try {
+            if ($data->signatory_approval->user->allow_signature
+                && $data->signatory_approval->user->signature) {
+                $imagePath = FileHelper::getPublicPath(
+                    $data->signatory_approval->user->signature
+                );
+                $pdf->Image(
+                    $imagePath,
+                    $x + $pageWidth * 0.07,
+                    $y - ($pdf->getPageHeight() * 0.02),
+                    w: $pageWidth * 0.1,
+                    type: 'PNG',
+                    resize: true,
+                    dpi: 500,
+                );
+            }
+        } catch (\Throwable $th) {}
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Printed Name:', 'LT', 0);

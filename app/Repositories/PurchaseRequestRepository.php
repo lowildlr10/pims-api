@@ -75,8 +75,6 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         string $filename, array $pageConfig, PurchaseRequest $data, Company $company
     ): string
     {
-
-
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
         $pdf->SetCreator(PDF_CREATOR);
@@ -106,9 +104,11 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 );
                 $pdf->Image(
                     $imagePath,
-                    $x + ($pageWidth * 0.015),
-                    $y + ($pdf->getPageHeight() * 0.0055),
-                    w: $pageWidth * 0.075,
+                    $x + ($x * 0.15),
+                    $y + ($y * 0.09),
+                    w: $pageConfig['orientation'] === 'P'
+                        ? $x - ($x * 0.04)
+                        : $y  + ($y * 0.4),
                     type: 'PNG',
                     resize: true,
                     dpi: 500,
@@ -276,6 +276,11 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
+        $xIncrement = $x * 0.25;
+        $yIncrement = $x * 0.12;
+        $signatureWidth =  $pageConfig['orientation'] === 'P'
+            ? $x - ($x * 0.63)
+            : $x - ($x * 0.69);
 
         $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
 
@@ -286,12 +291,12 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 );
                 $pdf->Image(
                     $imagePath,
-                    $x + $pageWidth * 0.07,
-                    $y - ($pdf->getPageHeight() * 0.02),
-                    w: $pageWidth * 0.1,
+                    $x + $xIncrement,
+                    $y - $yIncrement,
+                    w: $signatureWidth,
                     type: 'PNG',
                     resize: true,
-                    dpi: 500,
+                    dpi: 500
                 );
             }
         } catch (\Throwable $th) {}
@@ -309,9 +314,9 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 );
                 $pdf->Image(
                     $imagePath,
-                    $x + $pageWidth * 0.07,
-                    $y - ($pdf->getPageHeight() * 0.02),
-                    w: $pageWidth * 0.1,
+                    $x + $xIncrement,
+                    $y - $yIncrement,
+                    w: $signatureWidth,
                     type: 'PNG',
                     resize: true,
                     dpi: 500,
@@ -332,9 +337,9 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 );
                 $pdf->Image(
                     $imagePath,
-                    $x + $pageWidth * 0.07,
-                    $y - ($pdf->getPageHeight() * 0.02),
-                    w: $pageWidth * 0.1,
+                    $x + $xIncrement,
+                    $y - $yIncrement,
+                    w: $signatureWidth,
                     type: 'PNG',
                     resize: true,
                     dpi: 500,

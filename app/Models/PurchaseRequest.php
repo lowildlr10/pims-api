@@ -36,6 +36,8 @@ class PurchaseRequest extends Model
         'approved_cash_available_at',
         'approved_at',
         'disapproved_at',
+        'approved_canvass_at',
+        'awarded_at',
         'cancelled_at'
     ];
 

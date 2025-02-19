@@ -108,7 +108,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     $y + ($y * 0.09),
                     w: $pageConfig['orientation'] === 'P'
                         ? $x - ($x * 0.04)
-                        : $y  + ($y * 0.4),
+                        : $y + ($y * 0.4),
                     type: 'PNG',
                     resize: true,
                     dpi: 500,

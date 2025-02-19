@@ -10,6 +10,7 @@ use App\Models\PurchaseRequestItem;
 use App\Models\RequestQuotation;
 use App\Models\RequestQuotationCanvasser;
 use App\Models\RequestQuotationItem;
+use App\Models\User;
 use App\Repositories\LogRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -221,6 +222,27 @@ class RequestQuotationController extends Controller
         try {
             $message = 'Request for quotation created successfully.';
 
+            $existingSupplierCount = !empty($validated['supplier_id'])
+                ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
+                    ->where('purchase_request_id', $validated['purchase_request_id'])
+                    ->whereNull('cancelled_at')
+                    ->count()
+                : 0;
+
+            if ($existingSupplierCount > 0) {
+                $message = 'Request quotation creation failed due to an existing RFQ with the supplier.';
+
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_module' => 'rfq',
+                    'data' => $validated
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
             $items = json_decode($validated['items']);
             $canvassers = json_decode($validated['canvassers']);
 
@@ -249,7 +271,9 @@ class RequestQuotationController extends Controller
             }
 
             $requestQuotation->items = json_decode($validated['items']) ?? [];
-            $requestQuotation->canvassers = json_decode($validated['canvassers']) ?? [];
+            $requestQuotation->canvassers = User::select('id', 'firstname', 'middlename', 'lastname')
+                ->whereIn('id', json_decode($validated['canvassers']) ?? [])
+                ->get();
 
             $this->logRepository->create([
                 'message' => $message,
@@ -315,6 +339,28 @@ class RequestQuotationController extends Controller
         try {
             $message = 'Request for quotation updated successfully.';
 
+            $existingSupplierCount = !empty($validated['supplier_id'])
+                ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
+                    ->where('purchase_request_id', $requestQuotation->purchase_request_id)
+                    ->whereNull('cancelled_at')
+                    ->count()
+                : 0;
+
+            if ($existingSupplierCount > 0) {
+                $message = 'Request quotation update failed due to an existing RFQ with the supplier.';
+
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $requestQuotation->id,
+                    'log_module' => 'rfq',
+                    'data' => $validated
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
             $currentStatus = RequestQuotationStatus::from($requestQuotation->status);
 
             if ($currentStatus === RequestQuotationStatus::CANCELLED) {
@@ -377,7 +423,9 @@ class RequestQuotationController extends Controller
             ));
 
             $requestQuotation->items = json_decode($validated['items']) ?? [];
-            $requestQuotation->canvassers = json_decode($validated['canvassers']) ?? [];
+            $requestQuotation->canvassers = User::select('id', 'firstname', 'middlename', 'lastname')
+                ->whereIn('id', json_decode($validated['canvassers']) ?? [])
+                ->get();
 
             $this->logRepository->create([
                 'message' => $message,
@@ -398,6 +446,7 @@ class RequestQuotationController extends Controller
             $this->logRepository->create([
                 'message' => $message,
                 'details' => $th->getMessage(),
+                'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
                 'data' => $validated
             ], isError: true);

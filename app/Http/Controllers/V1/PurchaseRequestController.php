@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\V1;
 
 use App\Enums\PurchaseRequestStatus;
+use App\Enums\RequestQuotationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
+use App\Models\RequestQuotation;
 use App\Models\User;
 use App\Repositories\LogRepository;
 use Carbon\Carbon;
@@ -749,6 +751,92 @@ class PurchaseRequestController extends Controller
             ]);
         } catch (\Throwable $th) {
             $message = 'Purchase request cancellation failed.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function approveRequestQuotations(PurchaseRequest $purchaseRequest): JsonResponse
+    {
+        $user = auth()->user();
+
+        try {
+            $message = 'Purchase request successfully marked as "For Abstract".';
+
+            $rfqProcessing = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
+                ->whereIn('status', [
+                    RequestQuotationStatus::CANVASSING,
+                    RequestQuotationStatus::DRAFT
+                ]);
+            $rfqProcessingCount = $rfqProcessing->count();
+            $rfqProcessing = $rfqProcessing->get();
+
+            $rfqCompleted = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
+                ->where('status', RequestQuotationStatus::COMPLETED);
+            $rfqCompletedCount = $rfqCompleted->count();
+            $rfqCompleted = $rfqCompleted->get();
+
+            if ($rfqProcessingCount > 0) {
+                $message = 'Failed to mark the purchase request as "For Abstract" due to pending RFQs in canvassing or draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $rfqProcessing
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            if ($rfqCompletedCount < 3) {
+                $message = 'Failed to mark the purchase request as "For Abstract" due to fewer than three RFQs have been completed or canvassed.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $rfqCompleted
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $purchaseRequest->update([
+                'approved_rfq_at' => Carbon::now(),
+                'status' => PurchaseRequestStatus::FOR_ABSTRACT
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseRequest,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Failed to mark the purchase request as "For Abstract".';
 
             $this->logRepository->create([
                 'message' => $message,

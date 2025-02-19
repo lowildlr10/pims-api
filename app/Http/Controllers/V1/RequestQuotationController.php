@@ -317,9 +317,8 @@ class RequestQuotationController extends Controller
 
             $currentStatus = RequestQuotationStatus::from($requestQuotation->status);
 
-            if ($currentStatus === RequestQuotationStatus::COMPLETED
-                || $currentStatus === RequestQuotationStatus::CANCELLED) {
-                $message = 'Request for quotation update failed, already completed or cancelled.';
+            if ($currentStatus === RequestQuotationStatus::CANCELLED) {
+                $message = 'Request for quotation update failed, already cancelled.';
 
                 $this->logRepository->create([
                     'message' => $message,
@@ -369,7 +368,12 @@ class RequestQuotationController extends Controller
 
             $requestQuotation->update(array_merge(
                 $validated,
-                ['grand_total_cost' => $grandTotalCost]
+                [
+                    'supplier_id' => $currentStatus === RequestQuotationStatus::COMPLETED
+                        ? $requestQuotation->supplier_id
+                        : $validated['supplier_id'],
+                    'grand_total_cost' => $grandTotalCost
+                ]
             ));
 
             $requestQuotation->items = json_decode($validated['items']) ?? [];

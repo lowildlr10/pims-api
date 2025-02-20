@@ -53,7 +53,7 @@ class RequestQuotationController extends Controller
             'rfqs' => function ($query) {
                 $query->orderByRaw("CAST(REPLACE(rfq_no, '-', '') AS VARCHAR) asc");
             },
-            'rfqs.supplier:id,supplier_name',
+            'rfqs.supplier:id,supplier_name,address',
             'rfqs.signatory_approval:id,user_id',
             'rfqs.signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
             'rfqs.signatory_approval.detail' => function ($query) {
@@ -338,6 +338,7 @@ class RequestQuotationController extends Controller
 
         try {
             $message = 'Request for quotation updated successfully.';
+            $currentStatus = RequestQuotationStatus::from($requestQuotation->status);
 
             $existingSupplierCount = !empty($validated['supplier_id'])
                 ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
@@ -346,7 +347,9 @@ class RequestQuotationController extends Controller
                     ->count()
                 : 0;
 
-            if ($existingSupplierCount > 0) {
+            if ($existingSupplierCount > 0
+                && (!empty($validated['supplier_id']) && $requestQuotation->supplier_id !== $validated['supplier_id'] )
+                && $currentStatus !== RequestQuotationStatus::COMPLETED) {
                 $message = 'Request quotation update failed due to an existing RFQ with the supplier.';
 
                 $this->logRepository->create([
@@ -360,8 +363,6 @@ class RequestQuotationController extends Controller
                     'message' => $message
                 ], 422);
             }
-
-            $currentStatus = RequestQuotationStatus::from($requestQuotation->status);
 
             if ($currentStatus === RequestQuotationStatus::CANCELLED) {
                 $message = 'Request for quotation update failed, already cancelled.';

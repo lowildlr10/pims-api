@@ -7,20 +7,26 @@ use App\Http\Controllers\Controller;
 use App\Models\PaperSize;
 use App\Repositories\LogRepository;
 use App\Repositories\PurchaseRequestRepository;
+use App\Repositories\RequestQuotationRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+
+use function Laravel\Prompts\error;
 
 class PrintController extends Controller
 {
     private LogRepository $logRepository;
     private PurchaseRequestRepository $purchaseRequestRepository;
+    private RequestQuotationRepository $requestQuotationRepository;
 
     public function __construct(
         LogRepository $logRepository,
-        PurchaseRequestRepository $purchaseRequestRepository
+        PurchaseRequestRepository $purchaseRequestRepository,
+        RequestQuotationRepository $requestQuotationRepository
     ) {
         $this->logRepository = $logRepository;
         $this->purchaseRequestRepository = $purchaseRequestRepository;
+        $this->requestQuotationRepository = $requestQuotationRepository;
     }
 
     /**
@@ -30,6 +36,7 @@ class PrintController extends Controller
     {
         $paperId = $request->get('paper_id', '');
         $pageOrientation = $request->get('page_orientation', 'P');
+        $showSignatures = filter_var($request->get('show_signatures', true), FILTER_VALIDATE_BOOLEAN);
 
         $paperData = $this->getPaperData($paperId);
 
@@ -42,7 +49,8 @@ class PrintController extends Controller
         $pageConfig = [
             'orientation' => $pageOrientation,
             'unit' => $paperData['unit'],
-            'dimension' => $paperData['dimension']
+            'dimension' => $paperData['dimension'],
+            'show_signatures' => $showSignatures
         ];
 
         try {
@@ -58,6 +66,8 @@ class PrintController extends Controller
                 $data = $this->purchaseRequestRepository->print($pageConfig, $documentId);
 
                 if (!$data['success']) {
+                    $this->logError($documentId, $documentEnum, $data);
+
                     return response()->json([
                         'data' => [
                             'blob' => $data['blob'],
@@ -81,10 +91,30 @@ class PrintController extends Controller
                 ]);
 
             case DocumentPrintType::RFQ:
+                $data = $this->requestQuotationRepository->print($pageConfig, $documentId);
+
+                if (!$data['success']) {
+                    $this->logError($documentId, $documentEnum, $data);
+
+                    return response()->json([
+                        'data' => [
+                            'blob' => $data['blob'],
+                            'filename' => $data['filename']
+                        ]
+                    ]);
+                }
+
+                $this->logRepository->create([
+                    'message' => "Succefully generated the {$data['filename']} document.",
+                    'log_id' => $documentId,
+                    'log_module' => 'rfq',
+                    'data' => $data
+                ]);
+
                 return response()->json([
                     'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf'
+                        'blob' => $data['blob'],
+                        'filename' => $data['filename']
                     ]
                 ]);
 
@@ -193,5 +223,16 @@ class PrintController extends Controller
             'unit' => $measurementUnit,
             'dimension' => $dimension
         ];
+    }
+
+    private function logError(string $documentId, DocumentPrintType $documentType, array $data): void
+    {
+        $this->logRepository->create([
+            'message' => "Failed to generated the document.",
+            'details' => $data['message'],
+            'log_id' => $documentId,
+            'log_module' => $documentType,
+            'data' => $data
+        ], isError: true);
     }
 }

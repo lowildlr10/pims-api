@@ -52,8 +52,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                         ->where('signatory_type', 'approved_by');
                 }
             ])->find($prId);
-            $filename = "PR-{$pr->pr_no}.pdf";
 
+            $filename = "PR-{$pr->pr_no}.pdf";
             $blob = $this->generatePurchaseRequestDoc($filename, $pageConfig, $pr, $company);
 
             return [
@@ -285,7 +285,9 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
 
         try {
-            if ($data->requestor->allow_signature && $data->requestor->signature) {
+            if ($pageConfig['show_signatures']
+                && $data->requestor->allow_signature
+                && $data->requestor->signature) {
                 $imagePath = FileHelper::getPublicPath(
                     $data->requestor->signature
                 );
@@ -307,7 +309,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->Cell($pageWidth * 0.27, 0, '', 'L', 0, 'L');
 
         try {
-            if ($data->signatory_cash_available->user->allow_signature
+            if ($pageConfig['show_signatures']
+                && $data->signatory_cash_available->user->allow_signature
                 && $data->signatory_cash_available->user->signature) {
                 $imagePath = FileHelper::getPublicPath(
                     $data->signatory_cash_available->user->signature
@@ -330,7 +333,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->Cell(0, 0, '', 'LR', 1, 'L');
 
         try {
-            if ($data->signatory_approval->user->allow_signature
+            if ($pageConfig['show_signatures']
+                && $data->signatory_approval->user->allow_signature
                 && $data->signatory_approval->user->signature) {
                 $imagePath = FileHelper::getPublicPath(
                     $data->signatory_approval->user->signature

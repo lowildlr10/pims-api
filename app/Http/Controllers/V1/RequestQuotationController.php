@@ -109,7 +109,8 @@ class RequestQuotationController extends Controller
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('pr_no', 'ILIKE', "%{$search}%")
+                $query->where('id', 'ILIKE', "%{$search}%")
+                    ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_date', 'ILIKE', "%{$search}%")
@@ -132,7 +133,8 @@ class RequestQuotationController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('rfqs', function ($query) use ($search) {
-                        $query->where('rfq_no', 'ILIKE', "%{$search}%")
+                        $query->where('id', 'ILIKE', "%{$search}%")
+                            ->orWhere('rfq_no', 'ILIKE', "%{$search}%")
                             ->orWhere('rfq_date', 'ILIKE', "%{$search}%")
                             ->orWhere('status', 'ILIKE', "%{$search}%");
                     })
@@ -210,14 +212,16 @@ class RequestQuotationController extends Controller
             'signed_type' => 'required|string',
             'rfq_date' => 'required',
             'supplier_id' => 'nullable',
-            'openning_dt' => 'nullable',
+            'opening_dt' => 'nullable',
             'sig_approval_id' => 'required',
-            'canvassers' => 'required|string',
+            'canvassers' => 'nullable|string',
             'items' => 'required|string',
-            'vat_registered' =>  'required|in:true,false',
+            'vat_registered' =>  'nullable|in:true,false',
         ]);
 
-        $validated['vat_registered'] = filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN);
+        $validated['vat_registered'] = !empty($validated['vat_registered'])
+            ? filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN)
+            : NULL;
 
         try {
             $message = 'Request for quotation created successfully.';
@@ -327,14 +331,16 @@ class RequestQuotationController extends Controller
             'signed_type' => 'required|string',
             'rfq_date' => 'required',
             'supplier_id' => 'nullable',
-            'openning_dt' => 'nullable',
+            'opening_dt' => 'nullable',
             'sig_approval_id' => 'required',
-            'canvassers' => 'required|string',
+            'canvassers' => 'nullable|string',
             'items' => 'required|string',
-            'vat_registered' =>  'required|in:true,false',
+            'vat_registered' =>  'nullable|in:true,false',
         ]);
 
-        $validated['vat_registered'] = filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN);
+        $validated['vat_registered'] = !empty($validated['vat_registered'])
+            ? filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN)
+            : NULL;
 
         try {
             $message = 'Request for quotation updated successfully.';

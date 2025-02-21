@@ -24,12 +24,12 @@ return new class extends Migration
             $table->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');
-            $table->dateTime('openning_dt')->nullable();
+            $table->dateTime('opening_dt')->nullable();
             $table->uuid('sig_approval_id')->nullable();
             $table->foreign('sig_approval_id')
                 ->references('id')
                 ->on('signatories');
-            $table->boolean('vat_registered');
+            $table->boolean('vat_registered')->nullable();
             $table->string('status');
             $table->decimal('grand_total_cost', 20, 2)->default(0.00);
             $table->timestamp('canvassing_at')->nullable();

@@ -23,7 +23,7 @@ class RequestQuotation extends Model
         'rfq_date',
         'rfq_no',
         'supplier_id',
-        'openning_dt',
+        'opening_dt',
         'sig_approval_id',
         'vat_registered',
         'status',

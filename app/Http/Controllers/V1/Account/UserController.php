@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1\Account;
 
+use App\Enums\DocumentPrintType;
 use App\Http\Controllers\Controller;
 use App\Models\Designation;
 use App\Models\Position;
@@ -30,6 +31,8 @@ class UserController extends Controller
      */
     public function index(Request $request): JsonResponse | LengthAwarePaginator
     {
+        $user = auth()->user();
+
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -37,6 +40,13 @@ class UserController extends Controller
         $columnSort = $request->get('column_sort', 'firstname');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $document = $request->get('document', '');
+
+        try {
+            $documentEnum = DocumentPrintType::from($document);
+        } catch (ValueError $e) {
+            $documentEnum = DocumentPrintType::UNDEFINED;
+        }
 
         $users = User::with([
             'division:id,division_name',
@@ -45,6 +55,23 @@ class UserController extends Controller
             'designation:id,designation_name',
             'roles:id,role_name'
         ]);
+
+        switch ($documentEnum) {
+            case DocumentPrintType::PR:
+                $canAccess = in_array(true, [
+                    $user->tokenCan('super:*'),
+                    $user->tokenCan('supply:*')
+                ]);
+
+                if ($canAccess) {}
+                else {
+                    $users = $users->where('id', $user->id);
+                }
+                break;
+
+            default:
+                break;
+        }
 
         if (!empty($search)) {
             $users = $users->where(function($query) use ($search){
@@ -85,18 +112,7 @@ class UserController extends Controller
         if ($paginated) {
             return $users->paginate($perPage);
         } else {
-            $user = auth()->user();
-
             if (!$showInactive) $users = $users->where('restricted', false);
-
-            if ($user->tokenCant('super:*')
-                || $user->tokenCant('head:*')
-                || $user->tokenCant('supply:*')
-                || $user->tokenCant('budget:*')
-                || $user->tokenCant('accounting:*')
-            ) {
-                $users = $users->where('id', $user->id);
-            }
 
             $users = $showAll
                 ? $users->get()
@@ -124,7 +140,7 @@ class UserController extends Controller
             'designation' => 'nullable',
             'username' => 'required|unique:users',
             'email' => 'email|unique:users|nullable',
-            'phone' => 'string|unique:users|max:13|nullable',
+            'phone' => 'string|max:13|nullable',
             'password' => 'required|min:6',
             'avatar' => 'nullable|string',
             'signature' => 'nullable|string',
@@ -237,7 +253,7 @@ class UserController extends Controller
                     'designation' => 'nullable',
                     'username' => 'required|unique:users,username,' . $user->id,
                     'email' => 'email|unique:users,email,' . $user->id . '|nullable',
-                    'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
+                    'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                 ]);
                 break;
@@ -261,7 +277,7 @@ class UserController extends Controller
                     'designation' => 'nullable',
                     'username' => 'required|unique:users,username,' . $user->id,
                     'email' => 'email|unique:users,email,' . $user->id . '|nullable',
-                    'phone' => 'nullable|string|unique:users,phone,' . $user->id . '|max:13',
+                    'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                     'restricted' => 'required|in:true,false',
                     'roles' => 'required|string'
@@ -332,6 +348,7 @@ class UserController extends Controller
                             ? ['password' => bcrypt($password)]
                             : []
                     );
+                    $user->tokens()->delete();
                     break;
             }
 

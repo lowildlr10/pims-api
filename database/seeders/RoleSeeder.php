@@ -18,7 +18,7 @@ class RoleSeeder extends Seeder
                 'account-division:view',
                 'account-section:view',
                 'company:*',
-                'pr:view,approve,disapprove,print',
+                'pr:view,create,update,approve,disapprove,approve-rfq,print',
                 'rfq:view,print',
                 'aoq:view,print',
                 'po:view,print',
@@ -35,7 +35,8 @@ class RoleSeeder extends Seeder
                 'lib-paper-size:*',
                 'lib-uacs-class:view',
                 'lib-uacs-code:view',
-                'lib-unit-issue:*'
+                'lib-unit-issue:*',
+                'system-log:*'
             ]
         ],
         [
@@ -43,7 +44,8 @@ class RoleSeeder extends Seeder
             'permissions' => [
                 'user:*',
                 'comapny:view',
-                'pr:view,create,update,submit,cancel,delete,print',
+                'account-section:view',
+                'pr:view,create,update,submit,cancel,print',
                 'rfq:view,receive,submit,print',
                 'aoq:view,print',
                 'po:view,print',
@@ -54,7 +56,8 @@ class RoleSeeder extends Seeder
                 'lib-paper-size:view',
                 'lib-signatory:view',
                 'lib-supplier:view',
-                'lib-unit-issue:view'
+                'lib-unit-issue:view',
+                'system-log:*'
             ]
         ],
         [
@@ -84,16 +87,18 @@ class RoleSeeder extends Seeder
                 'lib-supplier:*',
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
-                'lib-unit-issue:*'
+                'lib-unit-issue:*',
+                'system-log:*'
             ]
         ],
         [
             'role_name' => 'Supply Officer',
             'permissions' => [
                 'supply:*',
+                'account-section:view',
                 'account-user:view',
                 'comapny:view',
-                'pr:view,create,update,cancel,delete,print',
+                'pr:view,create,update,cancel,approve-rfq,print',
                 'rfq:*',
                 'aoq:*',
                 'po:*',
@@ -107,16 +112,18 @@ class RoleSeeder extends Seeder
                 'lib-paper-size:*',
                 'lib-signatory:*',
                 'lib-supplier:*',
-                'lib-unit-issue:*'
+                'lib-unit-issue:*',
+                'system-log:*'
             ]
         ],
         [
             'role_name' => 'Budget',
             'permissions' => [
                 'budget:*',
+                'account-section:view',
                 'account-user:view',
                 'comapny:view',
-                'pr:view,print',
+                'pr:view,create,update,approve-cash-available,cancel,submit,print',
                 'rfq:view,print',
                 'aoq:view,print',
                 'po:view,print',
@@ -130,16 +137,18 @@ class RoleSeeder extends Seeder
                 'lib-supplier:view',
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
-                'lib-unit-issue:view'
+                'lib-unit-issue:view',
+                'system-log:*'
             ]
         ],
         [
             'role_name' => 'Accounting',
             'permissions' => [
                 'accounting:*',
+                'account-section:view',
                 'account-user:view',
                 'comapny:view',
-                'pr:view,print',
+                'pr:view,create,update,approve-cash-available,cancel,submit,print',
                 'rfq:view,print',
                 'aoq:view,print',
                 'po:view,print',
@@ -153,16 +162,18 @@ class RoleSeeder extends Seeder
                 'lib-paper-size:*',
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
-                'lib-unit-issue:view'
+                'lib-unit-issue:view',
+                'system-log:*'
             ]
         ],
         [
             'role_name' => 'Cashier',
             'permissions' => [
                 'cashier:*',
+                'account-section:view',
                 'account-user:view',
                 'comapny:view',
-                'pr:view,print',
+                'pr:view,create,update,approve-cash-available,cancel,submit,print',
                 'rfq:view,print',
                 'aoq:view,print',
                 'po:view,print',
@@ -176,7 +187,8 @@ class RoleSeeder extends Seeder
                 'lib-supplier:view',
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
-                'lib-unit-issue:view'
+                'lib-unit-issue:view',
+                'system-log:*'
             ]
         ]
     ];

@@ -36,72 +36,19 @@ class PurchaseRequest extends Model
         'approved_cash_available_at',
         'approved_at',
         'disapproved_at',
+        'approved_canvass_at',
+        'awarded_at',
         'cancelled_at'
     ];
 
     protected $appends = [
-        'total_estimated_cost_formatted',
-        'section_name',
-        'funding_source_title',
-        'requestor_fullname',
-        'cash_availability_fullname',
-        'approver_fullname'
+        'total_estimated_cost_formatted'
     ];
 
     protected function totalEstimatedCostFormatted(): Attribute
     {
         return new Attribute(
             get: fn () => '₱' . number_format($this->total_estimated_cost, 2)
-        );
-    }
-
-    protected function sectionName(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes)
-                => !empty($this->section)
-                    ? $this->section->section_name
-                    : "-",
-        );
-    }
-
-    protected function fundingSourceTitle(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes)
-                => !empty($this->fundingSource)
-                    ? $this->fundingSource->title
-                    : "-",
-        );
-    }
-
-    protected function requestorFullname(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes)
-                => !empty($this->requestor)
-                    ? $this->requestor->fullname
-                    : "-",
-        );
-    }
-
-    protected function cashAvailabilityFullname(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes)
-                => !empty($this->signatoryCashAvailability)
-                    ? $this->signatoryCashAvailability->fullname
-                    : "-",
-        );
-    }
-
-    protected function approverFullname(): Attribute
-    {
-        return Attribute::make(
-            get: fn ($value, $attributes)
-                => !empty($this->signatoryApprovedBy)
-                    ? $this->signatoryApprovedBy->fullname
-                    : "-",
         );
     }
 
@@ -116,7 +63,7 @@ class PurchaseRequest extends Model
     /**
      * The purchase request that has one funding source.
      */
-    public function fundingSource(): HasOne
+    public function funding_source(): HasOne
     {
         return $this->hasOne(FundingSource::class, 'id', 'funding_source_id');
     }
@@ -132,7 +79,7 @@ class PurchaseRequest extends Model
     /**
      * The purchase request that has one cash availability signatory.
      */
-    public function signatoryCashAvailability(): HasOne
+    public function signatory_cash_available(): HasOne
     {
         return $this->hasOne(Signatory::class, 'id', 'sig_cash_availability_id');
     }
@@ -140,7 +87,7 @@ class PurchaseRequest extends Model
     /**
      * The purchase request that has one approval signatory.
      */
-    public function signatoryApprovedBy(): HasOne
+    public function signatory_approval(): HasOne
     {
         return $this->hasOne(Signatory::class, 'id', 'sig_approved_by_id');
     }
@@ -151,5 +98,13 @@ class PurchaseRequest extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseRequestItem::class);
+    }
+
+    /**
+     * The purchase request that has many rfqs.
+     */
+    public function rfqs(): HasMany
+    {
+        return $this->hasMany(RequestQuotation::class);
     }
 }

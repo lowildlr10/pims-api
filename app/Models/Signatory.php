@@ -23,18 +23,19 @@ class Signatory extends Model
         'active'
     ];
 
-    protected $appends = [
-        'fullname'
-    ];
-
-    public function fullname(): Attribute
+    public function signature(): Attribute
     {
         return Attribute::make(
             get: fn ($value, $attributes)
                 => !empty($this->user)
-                    ? $this->user->fullname
+                    ? $this->user->signature
                     : "-",
         );
+    }
+
+    public function detail(): HasOne
+    {
+        return $this->hasOne(SignatoryDetail::class);
     }
 
     public function details(): HasMany

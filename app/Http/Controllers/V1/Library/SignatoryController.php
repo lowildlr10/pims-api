@@ -49,6 +49,11 @@ class SignatoryController extends Controller
                 ? $signatories->get()
                 : $signatories = $signatories->limit($perPage)->get();
 
+            foreach ($signatories ?? [] as $signatory) {
+                $user = User::find($signatory->signatory->user_id);
+                $signatory->fullname_designation = "{$user->fullname} ({$signatory->position})";
+            }
+
             return response()->json([
                 'data' => $signatories
             ]);
@@ -183,7 +188,6 @@ class SignatoryController extends Controller
     public function update(Request $request, Signatory $signatory)
     {
         $validated = $request->validate([
-            'user_id' => 'required|unique:signatories,user_id,' . $signatory->id,
             'details' => 'required|string',
             'active' => 'required|in:true,false'
         ]);

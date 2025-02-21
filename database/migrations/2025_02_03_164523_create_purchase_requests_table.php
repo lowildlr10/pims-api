@@ -46,6 +46,8 @@ return new class extends Migration
             $table->timestamp('approved_cash_available_at')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('disapproved_at')->nullable();
+            $table->timestamp('approved_rfq_at')->nullable();
+            $table->timestamp('awarded_at')->nullable();
             $table->timestamp('cancelled_at')->nullable();
             $table->timestamps();
         });

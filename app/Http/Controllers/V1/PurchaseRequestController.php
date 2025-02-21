@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\V1;
 
 use App\Enums\PurchaseRequestStatus;
+use App\Enums\RequestQuotationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
+use App\Models\RequestQuotation;
+use App\Models\User;
 use App\Repositories\LogRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -36,45 +40,45 @@ class PurchaseRequestController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()->with([
-            // 'fundingSource:id,title',
-            // 'section:id,section_name',
+            'funding_source:id,title',
+            'section:id,section_name',
 
             'items' => function ($query) {
                 $query->orderBy('item_sequence');
             },
-            'items.unitIssue:id,unit_name',
+            'items.unit_issue:id,unit_name',
 
-            // 'requestor:id,firstname,lastname',
-            // 'requestor.position:id,position_name',
-            // 'requestor.designation:id,designation_name',
+            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
+            'requestor.position:id,position_name',
 
-            // 'signatoryCashAvailability:id,user_id',
-            // 'signatoryCashAvailability.user:id,firstname,lastname',
-            // 'signatoryCashAvailability.details' => function ($query) {
-            //     $query->where('document', 'pr')
-            //         ->where('signatory_type', 'cash_availability');
-            // },
+            'signatory_cash_available:id,user_id',
+            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_cash_available.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'cash_availability');
+            },
 
-            // 'signatoryApprovedBy:id,user_id',
-            // 'signatoryApprovedBy.user:id,firstname,lastname',
-            // 'signatoryApprovedBy.details' => function ($query) {
-            //     $query->where('document', 'pr')
-            //         ->where('signatory_type', 'approved_by');
-            // }
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'approved_by');
+            }
         ]);
 
-        if ($user->tokenCant('super:*')
-            || $user->tokenCant('head:*')
-            || $user->tokenCant('supply:*')
-            || $user->tokenCant('budget:*')
-            || $user->tokenCant('accounting:*')
-        ) {
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accounting:*')
+        ) {} else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
         }
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('pr_no', 'ILIKE', "%{$search}%")
+                $query->where('id', 'ILIKE', "%{$search}%")
+                    ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_date', 'ILIKE', "%{$search}%")
@@ -82,17 +86,17 @@ class PurchaseRequestController extends Controller
                     ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
                     ->orWhere('purpose', 'ILIKE', "%{$search}%")
                     ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('fundingSource', 'title', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('funding_source', 'title', 'ILIKE' , "%{$search}%")
                     ->orWhereRelation('section', 'section_name', 'ILIKE' , "%{$search}%")
                     ->orWhereRelation('requestor', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
-                    ->orWhereRelation('signatoryCashAvailability.user', function ($query) use ($search) {
+                    ->orWhereRelation('signatory_cash_available.user', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
-                    ->orWhereRelation('signatoryApprovedBy.user', function ($query) use ($search) {
+                    ->orWhereRelation('signatory_approval.user', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     });
@@ -106,7 +110,29 @@ class PurchaseRequestController extends Controller
                     break;
 
                 case 'pr_date_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('pr_date');
+                    $purchaseRequests = $purchaseRequests->orderBy('pr_date', $sortDirection);
+                    break;
+
+                case 'funding_source_title':
+                    $purchaseRequests = $purchaseRequests->orderBy(
+                        FundingSource::select('title')->whereColumn('funding_sources.id', 'purchase_requests.funding_source_id'),
+                        $sortDirection
+                    );
+                    break;
+
+                case 'purpose_formatted':
+                    $purchaseRequests = $purchaseRequests->orderBy('purpose', $sortDirection);
+                    break;
+
+                case 'requestor_fullname':
+                    $purchaseRequests = $purchaseRequests->orderBy(
+                        User::select('firstname')->whereColumn('users.id', 'purchase_requests.requested_by_id'),
+                        $sortDirection
+                    );
+                    break;
+
+                case 'status_formatted':
+                    $purchaseRequests = $purchaseRequests->orderBy('status', $sortDirection);
                     break;
 
                 default:
@@ -133,6 +159,8 @@ class PurchaseRequestController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        $user = auth()->user();
+
         $validated = $request->validate([
             'section_id' => 'required|string',
             'pr_date' => 'required',
@@ -151,6 +179,28 @@ class PurchaseRequestController extends Controller
 
         try {
             $message = 'Purchase request created successfully.';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                if ($validated['requested_by_id'] !== $user->id) {
+                    $message = 'Purchase request creation failed. User is not authorized to create purchase requests for others.';
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_module' => 'pr',
+                        'data' => $validated
+                    ], isError: true);
+
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
+            }
+
             $items = json_decode($validated['items']);
 
             $purchaseRequest = PurchaseRequest::create(array_merge(
@@ -164,23 +214,29 @@ class PurchaseRequestController extends Controller
             $totalEstimatedCost = 0;
 
             foreach ($items ?? [] as $key => $item) {
+                $quantity = intval($item->quantity);
+                $unitCost = floatval($item->estimated_unit_cost);
+                $cost = round($quantity * $unitCost, 2);
+
                 PurchaseRequestItem::create([
                     'purchase_request_id' => $purchaseRequest->id,
                     'item_sequence' => $key,
-                    'quantity' => (int) $item->quantity,
+                    'quantity' => $quantity,
                     'unit_issue_id' => $item->unit_issue_id,
                     'description' => $item->description,
                     'stock_no' => (int) $item->stock_no ?? $key + 1,
-                    'estimated_unit_cost' => (float) $item->estimated_unit_cost,
-                    'estimated_cost' => (float) $item->estimated_cost
+                    'estimated_unit_cost' => $unitCost,
+                    'estimated_cost' => $cost
                 ]);
 
-                $totalEstimatedCost += $item->estimated_cost;
+                $totalEstimatedCost += $cost;
             }
 
             $purchaseRequest->update([
                 'total_estimated_cost' => $totalEstimatedCost
             ]);
+
+            $purchaseRequest->items = json_decode($validated['items']) ?? [];
 
             $this->logRepository->create([
                 'message' => $message,
@@ -228,6 +284,8 @@ class PurchaseRequestController extends Controller
      */
     public function update(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         $validated = $request->validate([
             'section_id' => 'required|string',
             'pr_date' => 'required',
@@ -245,9 +303,40 @@ class PurchaseRequestController extends Controller
         ]);
 
         try {
-            if ($purchaseRequest->status === PurchaseRequestStatus::DRAFT
-                || $purchaseRequest->status === PurchaseRequestStatus::DISAPPROVED) {
-                $message = 'Purchase request update failed, already processing or approved or cancelled.';
+            $message = 'Purchase request updated successfully.';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                if ($purchaseRequest->requested_by_id !== $user->id) {
+                    $message =
+                        'Purchase request update failed.
+                    User is not authorized to update purchase requests for others.' . $cantAccess;
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_id' => $purchaseRequest->id,
+                        'log_module' => 'pr',
+                        'data' => $validated
+                    ], isError: true);
+
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
+            }
+
+            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
+
+            if ($currentStatus === PurchaseRequestStatus::CANCELLED
+                || $currentStatus === PurchaseRequestStatus::FOR_CANVASSING
+                || $currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                || $currentStatus === PurchaseRequestStatus::FOR_PO
+                || $currentStatus === PurchaseRequestStatus::COMPLETED) {
+                $message = 'Purchase request update failed, already processing or cancelled.';
 
                 $this->logRepository->create([
                     'message' => $message,
@@ -261,42 +350,53 @@ class PurchaseRequestController extends Controller
                 ], 422);
             }
 
-            $message = 'Purchase request updated successfully.';
-            $items = json_decode($validated['items']);
+            $status = $currentStatus;
+
+            if ($currentStatus === PurchaseRequestStatus::DRAFT
+                || $currentStatus === PurchaseRequestStatus::DISAPPROVED) {
+                $status = PurchaseRequestStatus::DRAFT;
+
+                $items = json_decode($validated['items']);
+                $totalEstimatedCost = 0;
+
+                PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
+                    ->delete();
+
+                foreach ($items ?? [] as $key => $item) {
+                    $quantity = intval($item->quantity);
+                    $unitCost = floatval($item->estimated_unit_cost);
+                    $cost = round($quantity * $unitCost, 2);
+
+                    PurchaseRequestItem::create([
+                        'purchase_request_id' => $purchaseRequest->id,
+                        'item_sequence' => $key,
+                        'quantity' => $quantity,
+                        'unit_issue_id' => $item->unit_issue_id,
+                        'description' => $item->description,
+                        'stock_no' => (int) $item->stock_no ?? $key + 1,
+                        'estimated_unit_cost' => $unitCost,
+                        'estimated_cost' => $cost
+                    ]);
+
+                    $totalEstimatedCost += $cost;
+                }
+
+                $purchaseRequest->update([
+                    'total_estimated_cost' => $totalEstimatedCost
+                ]);
+            }
 
             $purchaseRequest->update(array_merge(
                 $validated,
                 [
-                    'status' => PurchaseRequestStatus::DRAFT,
+                    'status' => $status,
                     'submitted_at' => NULL,
                     'approved_cash_available_at' => NULL,
                     'disapproved_at' => NULL
                 ]
             ));
 
-            $totalEstimatedCost = 0;
-
-            PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
-                ->delete();
-
-            foreach ($items ?? [] as $key => $item) {
-                PurchaseRequestItem::create([
-                    'purchase_request_id' => $purchaseRequest->id,
-                    'item_sequence' => $key,
-                    'quantity' => (int) $item->quantity,
-                    'unit_issue_id' => $item->unit_issue_id,
-                    'description' => $item->description,
-                    'stock_no' => (int) $item->stock_no ?? $key + 1,
-                    'estimated_unit_cost' => (float) $item->estimated_unit_cost,
-                    'estimated_cost' => (float) $item->estimated_cost
-                ]);
-
-                $totalEstimatedCost += $item->estimated_cost;
-            }
-
-            $purchaseRequest->update([
-                'total_estimated_cost' => $totalEstimatedCost
-            ]);
+            $purchaseRequest->items = json_decode($validated['items']) ?? [];
 
             $this->logRepository->create([
                 'message' => $message,
@@ -333,8 +433,34 @@ class PurchaseRequestController extends Controller
      */
     public function submitForApproval(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Pending" for approval.';
+            $message = 'Purchase request has been successfully marked as "Pending".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                if ($purchaseRequest->requested_by_id !== $user->id) {
+                    $message =
+                        'Purchase request submit failed.
+                    User is not authorized to submit purchase requests for others.';
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_id' => $purchaseRequest->id,
+                        'log_module' => 'pr',
+                        'data' => $purchaseRequest
+                    ], isError: true);
+
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
+            }
 
             $purchaseRequest->update([
                 'submitted_at' => Carbon::now(),
@@ -377,8 +503,35 @@ class PurchaseRequestController extends Controller
      */
     public function approveForCashAvailability(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Approved for Cash Availability".';
+            $message = 'Purchase request has been successfully marked as "Approved for Cash Availability".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*'),
+                $user->tokenCan('budget:*'),
+                $user->tokenCan('accounting:*'),
+                $user->tokenCan('cashier:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                $message =
+                    'Purchase request approval for cash availability failed.
+                    User is not authorized.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'approved_cash_available_at' => Carbon::now(),
@@ -420,8 +573,31 @@ class PurchaseRequestController extends Controller
      */
     public function approve(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Approved".';
+            $message = 'Purchase request has been successfully marked as "Approved".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*'),
+                $user->tokenCan('head:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                $message = 'Purchase request approve failed. User is not authorized.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'approved_at' => Carbon::now(),
@@ -463,8 +639,31 @@ class PurchaseRequestController extends Controller
      */
     public function disapprove(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
-            $message = 'Purchase request successfully marked as "Disapproved".';
+            $message = 'Purchase request has been successfully marked as "Disapproved".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*'),
+                $user->tokenCan('head:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                $message = 'Purchase request disapprove failed. User is not authorized.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $purchaseRequest->update([
                 'disapproved_at' => Carbon::now(),
@@ -506,8 +705,32 @@ class PurchaseRequestController extends Controller
      */
     public function cancel(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $user = auth()->user();
+
         try {
             $message = 'Purchase request successfully marked as "Cancelled".';
+
+            $canAccess = in_array(true, [
+                $user->tokenCan('super:*'),
+                $user->tokenCan('supply:*')
+            ]);
+
+            if ($canAccess) {}
+            else {
+                if ($purchaseRequest->requested_by_id !== $user->id) {
+                    $message = 'Purchase request cancel failed. User is not authorized to cancel purchase requests for others.';
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_id' => $purchaseRequest->id,
+                        'log_module' => 'pr',
+                        'data' => $purchaseRequest
+                    ], isError: true);
+
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
+            }
 
             $purchaseRequest->update([
                 'cancelled_at' => Carbon::now(),
@@ -544,12 +767,100 @@ class PurchaseRequestController extends Controller
         }
     }
 
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function approveRequestQuotations(PurchaseRequest $purchaseRequest): JsonResponse
+    {
+        $user = auth()->user();
+
+        try {
+            $message = 'Purchase request successfully marked as "For Abstract".';
+
+            $rfqProcessing = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
+                ->whereIn('status', [
+                    RequestQuotationStatus::CANVASSING,
+                    RequestQuotationStatus::DRAFT
+                ]);
+            $rfqProcessingCount = $rfqProcessing->count();
+            $rfqProcessing = $rfqProcessing->get();
+
+            $rfqCompleted = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
+                ->where('status', RequestQuotationStatus::COMPLETED);
+            $rfqCompletedCount = $rfqCompleted->count();
+            $rfqCompleted = $rfqCompleted->get();
+
+            if ($rfqProcessingCount > 0) {
+                $message = 'Failed to mark the purchase request as "For Abstract" due to pending RFQs in canvassing or draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $rfqProcessing
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            if ($rfqCompletedCount < 3) {
+                $message = 'Failed to mark the purchase request as "For Abstract" due to fewer than three RFQs have been completed or canvassed.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $rfqCompleted
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $purchaseRequest->update([
+                'approved_rfq_at' => Carbon::now(),
+                'status' => PurchaseRequestStatus::FOR_ABSTRACT
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseRequest,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Failed to mark the purchase request as "For Abstract".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
+    }
+
     private function generateNewPrNumber(): string
     {
-        $sequence = PurchaseRequest::count() + 1;
         $month = date('m');
         $year = date('Y');
+        $sequence = PurchaseRequest::whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->count() + 1;
 
-        return "{$year}-{$month}-{$sequence}";
+        return "{$year}-{$sequence}-{$month}";
     }
 }

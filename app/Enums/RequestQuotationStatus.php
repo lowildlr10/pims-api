@@ -2,9 +2,10 @@
 
 namespace App\Enums;
 
-enum RequestQuotation: string
+enum RequestQuotationStatus: string
 {
     case DRAFT = 'draft';
-    case ONGOING = 'ongoing';
+    case CANVASSING = 'canvassing';
     case COMPLETED = 'completed';
+    case CANCELLED = 'cancelled';
 }

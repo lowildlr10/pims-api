@@ -27,6 +27,10 @@ return new class extends Migration
             $table->integer('stock_no');
             $table->decimal('estimated_unit_cost', 20, 2);
             $table->decimal('estimated_cost', 20, 2);
+            $table->uuid('awarded_to_id')->nullable();
+            $table->foreign('awarded_to_id')
+                ->references('id')
+                ->on('suppliers');
         });
     }
 

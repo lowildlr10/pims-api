@@ -9,9 +9,11 @@ enum PurchaseRequestStatus: string
     case APPROVED_CASH_AVAILABLE = 'approved_cash_available';
     case APPROVED = 'approved';
     case DISAPPROVED = 'disapproved';
-    case CANCELLED = 'cancelled';
     case FOR_CANVASSING = 'for_canvassing';
+    case FOR_RECANVASSING = 'for_recanvassing';
     case FOR_ABSTRACT = 'for_abstract';
-    case FOR_PO = 'for_po';
+    case PARTIALLY_AWARDED = 'partially_awarded';
+    case AWARDED = 'awarded';
     case COMPLETED = 'completed';
+    case CANCELLED = 'cancelled';
 }

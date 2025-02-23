@@ -30,6 +30,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('signatories');
             $table->boolean('vat_registered')->nullable();
+            $table->tinyInteger('batch')->default(1);
             $table->string('status');
             $table->decimal('grand_total_cost', 20, 2)->default(0.00);
             $table->timestamp('canvassing_at')->nullable();

@@ -51,7 +51,8 @@ class RequestQuotationController extends Controller
             'items.unit_issue:id,unit_name',
 
             'rfqs' => function ($query) {
-                $query->orderByRaw("CAST(REPLACE(rfq_no, '-', '') AS VARCHAR) asc");
+                $query->orderBy('batch')
+                    ->orderByRaw("CAST(REPLACE(rfq_no, '-', '') AS VARCHAR) asc");
             },
             'rfqs.supplier:id,supplier_name,address',
             'rfqs.signatory_approval:id,user_id',
@@ -93,8 +94,10 @@ class RequestQuotationController extends Controller
         ])->whereIn('status', [
             PurchaseRequestStatus::APPROVED,
             PurchaseRequestStatus::FOR_CANVASSING,
+            PurchaseRequestStatus::FOR_RECANVASSING,
             PurchaseRequestStatus::FOR_ABSTRACT,
-            PurchaseRequestStatus::FOR_PO,
+            PurchaseRequestStatus::PARTIALLY_AWARDED,
+            PurchaseRequestStatus::AWARDED,
             PurchaseRequestStatus::COMPLETED
         ]);
 
@@ -225,10 +228,12 @@ class RequestQuotationController extends Controller
 
         try {
             $message = 'Request for quotation created successfully.';
+            $purchaseRequest = PurchaseRequest::find($validated['purchase_request_id']);
 
             $existingSupplierCount = !empty($validated['supplier_id'])
                 ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
                     ->where('purchase_request_id', $validated['purchase_request_id'])
+                    ->where('batch', $purchaseRequest->rfq_batch)
                     ->whereNull('cancelled_at')
                     ->count()
                 : 0;
@@ -254,6 +259,7 @@ class RequestQuotationController extends Controller
                 $validated,
                 [
                     'rfq_no' => $this->generateNewRfqNumber(),
+                    'batch' => $purchaseRequest->rfq_batch,
                     'status' => RequestQuotationStatus::DRAFT
                 ]
             ));
@@ -345,10 +351,12 @@ class RequestQuotationController extends Controller
         try {
             $message = 'Request for quotation updated successfully.';
             $currentStatus = RequestQuotationStatus::from($requestQuotation->status);
+            $purchaseRequest = PurchaseRequest::find($requestQuotation->purchase_request_id);
 
             $existingSupplierCount = !empty($validated['supplier_id'])
                 ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
                     ->where('purchase_request_id', $requestQuotation->purchase_request_id)
+                    ->where('batch', $purchaseRequest->rfq_batch)
                     ->whereNull('cancelled_at')
                     ->count()
                 : 0;

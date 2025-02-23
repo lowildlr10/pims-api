@@ -32,7 +32,8 @@ class PurchaseRequestItem extends Model
         'description',
         'stock_no',
         'estimated_unit_cost',
-        'estimated_cost'
+        'estimated_cost',
+        'awarded_to_id'
     ];
 
     protected $appends = [
@@ -63,10 +64,18 @@ class PurchaseRequestItem extends Model
     }
 
     /**
-     * The purchase request that has one requestor.
+     * The purchase request that has one unit of issue.
      */
     public function unit_issue(): HasOne
     {
         return $this->hasOne(UnitIssue::class, 'id', 'unit_issue_id');
+    }
+
+    /**
+     * The purchase request that has one awarder to.
+     */
+    public function awarded_to(): HasOne
+    {
+        return $this->hasOne(UnitIssue::class, 'id', 'awarded_to_id');
     }
 }

@@ -781,12 +781,14 @@ class PurchaseRequestController extends Controller
                 ->whereIn('status', [
                     RequestQuotationStatus::CANVASSING,
                     RequestQuotationStatus::DRAFT
-                ]);
+                ])
+                ->where('batch', $purchaseRequest->rfq_batch);
             $rfqProcessingCount = $rfqProcessing->count();
             $rfqProcessing = $rfqProcessing->get();
 
             $rfqCompleted = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
-                ->where('status', RequestQuotationStatus::COMPLETED);
+                ->where('status', RequestQuotationStatus::COMPLETED)
+                ->where('batch', $purchaseRequest->rfq_batch);
             $rfqCompletedCount = $rfqCompleted->count();
             $rfqCompleted = $rfqCompleted->get();
 

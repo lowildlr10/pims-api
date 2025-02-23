@@ -10,29 +10,90 @@ use Illuminate\Database\Seeder;
 
 class SignatorySeeder extends Seeder
 {
+    private $signatories = [
+        [
+            'employee_id' => '1112',
+            'details' => [
+                [
+                    'document' => 'pr',
+                    'signatory_type' => 'approved_by',
+                    'position' => 'Municipal Mayor'
+                ],
+                [
+                    'document' => 'rfq',
+                    'signatory_type' => 'approval',
+                    'position' => 'Municipal Mayor'
+                ]
+            ]
+        ],
+        [
+            'employee_id' => '1114',
+            'details' => [
+                [
+                    'document' => 'pr',
+                    'signatory_type' => 'cash_availability',
+                    'position' => 'Municipal Treasurer'
+                ]
+            ]
+        ],
+        [
+            'employee_id' => '1113',
+            'details' => [
+                [
+                    'document' => 'rfq',
+                    'signatory_type' => 'approval',
+                    'position' => 'BAC Chairman'
+                ]
+            ]
+        ],
+        [
+            'employee_id' => '1115',
+            'details' => [
+                [
+                    'document' => 'pr',
+                    'signatory_type' => 'cash_availability',
+                    'position' => 'Municipal Treasurer'
+                ],
+                [
+                    'document' => 'rfq',
+                    'signatory_type' => 'approval',
+                    'position' => 'BAC Chairman'
+                ]
+            ]
+        ],
+        [
+            'employee_id' => '1116',
+            'details' => [
+                [
+                    'document' => 'pr',
+                    'signatory_type' => 'cash_availability',
+                    'position' => 'Municipal Treasurer'
+                ]
+            ]
+        ]
+    ];
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        $user = User::first();
+        foreach ($this->signatories as $signatory) {
+            $user = User::where('employee_id', $signatory['employee_id'])
+                ->first();
 
-        $signatory = Signatory::create([
-            'user_id' => $user->id
-        ]);
+            $sigData = Signatory::create([
+                'user_id' => $user->id
+            ]);
 
-        SignatoryDetail::create([
-            'signatory_id' => $signatory->id,
-            'document' => 'pr',
-            'signatory_type' => 'cash_availability',
-            'position' => 'Test Position'
-        ]);
-
-        SignatoryDetail::create([
-            'signatory_id' => $signatory->id,
-            'document' => 'pr',
-            'signatory_type' => 'approved_by',
-            'position' => 'Test Position'
-        ]);
+            foreach ($signatory['details'] as $detail) {
+                SignatoryDetail::create([
+                    'signatory_id' => $sigData->id,
+                    'document' => $detail['document'],
+                    'signatory_type' => $detail['signatory_type'],
+                    'position' => $detail['position']
+                ]);
+            }
+        }
     }
 }

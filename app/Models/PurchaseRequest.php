@@ -30,6 +30,7 @@ class PurchaseRequest extends Model
         'requested_by_id',
         'sig_cash_availability_id',
         'sig_approved_by_id',
+        'rfq_batch',
         'status',
         'total_estimated_cost',
         'submitted_at',

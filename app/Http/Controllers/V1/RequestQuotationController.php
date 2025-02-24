@@ -73,7 +73,7 @@ class RequestQuotationController extends Controller
                     'asc'
                 );
             },
-            'rfqs.items.pr_item:id,item_sequence,quantity,description,stock_no',
+            'rfqs.items.pr_item:id,item_sequence,quantity,description,stock_no,awarded_to_id',
 
             'requestor:id,firstname,lastname,position_id,allow_signature,signature',
             'requestor.position:id,position_name',
@@ -211,6 +211,7 @@ class RequestQuotationController extends Controller
         $user = auth()->user();
 
         $validated = $request->validate([
+            'rfq_no' => 'required',
             'purchase_request_id' => 'required',
             'signed_type' => 'required|string',
             'rfq_date' => 'required',
@@ -258,7 +259,7 @@ class RequestQuotationController extends Controller
             $requestQuotation = RequestQuotation::create(array_merge(
                 $validated,
                 [
-                    'rfq_no' => $this->generateNewRfqNumber(),
+                    // 'rfq_no' => $this->generateNewRfqNumber(),
                     'batch' => $purchaseRequest->rfq_batch,
                     'status' => RequestQuotationStatus::DRAFT
                 ]
@@ -334,6 +335,7 @@ class RequestQuotationController extends Controller
         $user = auth()->user();
 
         $validated = $request->validate([
+            'rfq_no' => 'required',
             'signed_type' => 'required|string',
             'rfq_date' => 'required',
             'supplier_id' => 'nullable',
@@ -404,8 +406,11 @@ class RequestQuotationController extends Controller
 
             foreach ($items ?? [] as $key => $item) {
                 $quantity = intval($item->quantity);
-                $unitCost = floatval($item->unit_cost);
-                $cost = round($quantity * $unitCost, 2);
+                $unitCost =
+                    isset($item->unit_cost) && !empty($item->unit_cost)
+                        ? floatval($item->unit_cost)
+                        : NULL;
+                $cost = round($quantity * ($unitCost ?? 0), 2);
 
                 RequestQuotationItem::create([
                     'request_quotation_id' => $requestQuotation->id,

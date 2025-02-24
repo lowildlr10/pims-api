@@ -333,8 +333,10 @@ class PurchaseRequestController extends Controller
 
             if ($currentStatus === PurchaseRequestStatus::CANCELLED
                 || $currentStatus === PurchaseRequestStatus::FOR_CANVASSING
+                || $currentStatus === PurchaseRequestStatus::FOR_RECANVASSING
                 || $currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
-                || $currentStatus === PurchaseRequestStatus::FOR_PO
+                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED
+                || $currentStatus === PurchaseRequestStatus::AWARDED
                 || $currentStatus === PurchaseRequestStatus::COMPLETED) {
                 $message = 'Purchase request update failed, already processing or cancelled.';
 

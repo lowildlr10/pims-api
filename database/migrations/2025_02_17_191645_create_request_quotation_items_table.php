@@ -26,8 +26,8 @@ return new class extends Migration
                 ->references('id')
                 ->on('suppliers');
             $table->string('brand_model')->nullable();
-            $table->decimal('unit_cost', 20, 2)->default(0.00);
-            $table->decimal('total_cost', 20, 2)->default(0.00);
+            $table->decimal('unit_cost', 20, 2)->nullable();
+            $table->decimal('total_cost', 20, 2)->nullable();
             $table->boolean('included')->default(true);
         });
     }

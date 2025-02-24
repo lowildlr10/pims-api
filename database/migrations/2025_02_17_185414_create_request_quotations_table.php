@@ -18,7 +18,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('purchase_requests');
             $table->enum('signed_type', ['bac', 'lce']);
-            $table->string('rfq_no')->unique();
+            $table->string('rfq_no');
             $table->date('rfq_date');
             $table->uuid('supplier_id')->nullable();
             $table->foreign('supplier_id')

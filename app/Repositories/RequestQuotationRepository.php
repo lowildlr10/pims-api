@@ -348,12 +348,15 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
             $pdf->SetFont($this->fontArial, '', 12);
         }
 
+        $pdf->setCellHeightRatio(1.25);
         $pdf->writeHTML($htmlTable, ln: false);
         $pdf->Ln(0);
 
         $htmlTable = '<table border="1" cellpadding="2"><tbody>';
 
         foreach ($data->items ?? [] as $item) {
+            if (!$item->included) continue;
+
             $description = trim(str_replace("\r", '<br />', $item->pr_item->description));
             $description = str_replace("\n", '<br />', $description);
 

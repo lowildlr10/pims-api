@@ -10,6 +10,7 @@ use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\RequestQuotation;
 use App\Models\User;
+use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -19,10 +20,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class PurchaseRequestController extends Controller
 {
     private LogRepository $logRepository;
+    private AbstractQuotationRepository $abstractQuotationRepository;
 
-    public function __construct(LogRepository $logRepository)
+    public function __construct(
+        LogRepository $logRepository,
+        AbstractQuotationRepository $abstractQuotationRepository
+    )
     {
         $this->logRepository = $logRepository;
+        $this->abstractQuotationRepository = $abstractQuotationRepository;
     }
 
     /**
@@ -772,12 +778,13 @@ class PurchaseRequestController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function approveRequestQuotations(PurchaseRequest $purchaseRequest): JsonResponse
+    public function approveRequestQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
         $user = auth()->user();
 
         try {
             $message = 'Purchase request successfully marked as "For Abstract".';
+            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
 
             $rfqProcessing = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
                 ->whereIn('status', [
@@ -823,20 +830,54 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
+                'rfq_batch' => $purchaseRequest->rfq_batch + 1,
                 'approved_rfq_at' => Carbon::now(),
                 'status' => PurchaseRequestStatus::FOR_ABSTRACT
+            ]);
+
+            $prReturnData = $purchaseRequest;
+            $purchaseRequest->load('items');
+
+            $abstractQuotation = $this->abstractQuotationRepository->storeUpdate([
+                'purchase_request_id' => $purchaseRequest->id,
+                'solicitation_no' => isset($rfqCompleted[0]->rfq_no)
+                    ? $rfqCompleted[0]->rfq_no : '',
+                'solicitation_date' => Carbon::now()->toDateString(),
+                'items' => $purchaseRequest->items->map(function(PurchaseRequestItem $item) use($rfqCompleted) {
+                    return (Object)[
+                        'pr_item_id' => $item->id,
+                        'included' => empty($item->awarded_to) ? true : false,
+                        'details' => json_encode(
+                            $rfqCompleted->map(function(RequestQuotation $rfq) use($item) {
+                                $rfq->load([
+                                    'items' => function($query) use($item) {
+                                        $query->where('pr_item_id', $item->id);
+                                    }
+                                ]);
+                                $rfqItem = $rfq->items[0];
+
+                                return (Object)[
+                                    'supplier_id' => $rfqItem->supplier_id,
+                                    'brand_model' => $rfqItem->brand_model,
+                                    'unit_cost' => $rfqItem->unit_cost,
+                                    'total_cost' => $rfqItem->total_cost
+                                ];
+                            })
+                        )
+                    ];
+                })
             ]);
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $purchaseRequest->id,
                 'log_module' => 'pr',
-                'data' => $purchaseRequest
+                'data' => $prReturnData
             ]);
 
             return response()->json([
                 'data' => [
-                    'data' => $purchaseRequest,
+                    'data' => $prReturnData,
                     'message' => $message
                 ]
             ]);

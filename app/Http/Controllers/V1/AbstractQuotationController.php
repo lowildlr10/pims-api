@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Http\Controllers\V1;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
+use App\Models\AbstractQuotation;
 use Illuminate\Http\Request;
 
 class AbstractQuotationController extends Controller
@@ -26,7 +26,7 @@ class AbstractQuotationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(AbstractQuotation $abstractQuotation)
     {
         //
     }
@@ -34,7 +34,7 @@ class AbstractQuotationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, AbstractQuotation $abstractQuotation)
     {
         //
     }
@@ -42,7 +42,7 @@ class AbstractQuotationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(AbstractQuotation $abstractQuotation)
     {
         //
     }

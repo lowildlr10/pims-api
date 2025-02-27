@@ -885,6 +885,13 @@ class PurchaseRequestController extends Controller
             ]);
 
             $this->logRepository->create([
+                'message' => 'Abstract of quotation created successfully.',
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation
+            ]);
+
+            $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $purchaseRequest->id,
                 'log_module' => 'pr',

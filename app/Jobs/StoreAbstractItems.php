@@ -66,6 +66,18 @@ class StoreAbstractItems implements ShouldQueue
                 ]);
             }
         }
+
+        $this->abstractQuotation->load([
+            'items', 'items.details'
+        ]);
+
+        $this->logRepository->create([
+            'message' => 'Items for Abstract of Quotation were created successfully.',
+            'details' => count($this->items) . ' items',
+            'log_id' => $this->abstractQuotation->id,
+            'log_module' => 'aoq',
+            'data' => $this->abstractQuotation->items
+        ]);
     }
 
     /**
@@ -74,7 +86,8 @@ class StoreAbstractItems implements ShouldQueue
     public function failed(?Throwable $exception): void
     {
         $this->logRepository->create([
-            'message' => $exception->getMessage(),
+            'message' => 'Failed to create Abstract of Quotation items.',
+            'details' => $exception->getMessage(),
             'log_id' => $this->abstractQuotation->id,
             'log_module' => 'aoq',
             'data' => $this->items

@@ -37,7 +37,7 @@ class PurchaseRequest extends Model
         'approved_cash_available_at',
         'approved_at',
         'disapproved_at',
-        'approved_canvass_at',
+        'approved_rfq_at',
         'awarded_at',
         'cancelled_at'
     ];
@@ -102,10 +102,18 @@ class PurchaseRequest extends Model
     }
 
     /**
-     * The purchase request that has many rfqs.
+     * The purchase request that has many RFQs.
      */
     public function rfqs(): HasMany
     {
         return $this->hasMany(RequestQuotation::class);
+    }
+
+    /**
+     * The purchase request that has many AOQs.
+     */
+    public function aoqs(): HasMany
+    {
+        return $this->hasMany(AbstractQuotation::class);
     }
 }

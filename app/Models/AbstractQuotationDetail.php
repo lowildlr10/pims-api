@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class AbstractQuotationDetail extends Model
 {
@@ -29,4 +31,28 @@ class AbstractQuotationDetail extends Model
         'unit_cost',
         'total_cost'
     ];
+
+    /**
+     * The abstract of quotation detail that has one supplier.
+     */
+    public function supplier(): HasOne
+    {
+        return $this->hasOne(Supplier::class, 'id', 'supplier_id');
+    }
+
+    /**
+     * The abstract of quotation detail that belongs to abstract of quoation.
+     */
+    public function abstract_quotation(): BelongsTo
+    {
+        return $this->belongsTo(AbstractQuotation::class);
+    }
+
+    /**
+     * The abstract of quotation detail that belongs to abstract of quoation item.
+     */
+    public function aoq_item(): BelongsTo
+    {
+        return $this->belongsTo(AbstractQuotationItem::class, 'aoq_item_id');
+    }
 }

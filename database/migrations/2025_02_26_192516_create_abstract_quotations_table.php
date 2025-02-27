@@ -65,6 +65,7 @@ return new class extends Migration
             $table->string('status');
             $table->timestamp('pending_at')->nullable();
             $table->timestamp('approved_at')->nullable();
+            $table->timestamp('awarded_at')->nullable();
             $table->timestamps();
         });
     }

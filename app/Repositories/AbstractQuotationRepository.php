@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Enums\AbstractQuotationStatus;
 use App\Helpers\FileHelper;
 use App\Interfaces\AbstractQuotationRepositoryInterface;
+use App\Jobs\StoreAbstractItems;
 use App\Models\AbstractQuotation;
 use App\Models\AbstractQuotationDetail;
 use App\Models\AbstractQuotationItem;
@@ -47,9 +48,6 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             );
         }
 
-        AbstractQuotationItem::where('abstract_quotation_id', $abstractQuotation->id)
-            ->delete();
-
         $this->storeItems(collect($items ?? []), $abstractQuotation);
 
         return $abstractQuotation;
@@ -59,27 +57,11 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
     {
         $itemChunks = $items->chunk(20);
 
-        foreach ($itemChunks as $items) {
-            foreach ($items as $item) {
-                $details = json_decode($item->details);
+        AbstractQuotationItem::where('abstract_quotation_id', $abstractQuotation->id)
+            ->delete();
 
-                $aoqItem = AbstractQuotationItem::create([
-                    'abstract_quotation_id' => $abstractQuotation->id,
-                    'pr_item_id' => $item->pr_item_id,
-                    'included' => $item->included
-                ]);
-
-                foreach ($details ?? [] as $detail) {
-                    AbstractQuotationDetail::create([
-                        'abstract_quotation_id' => $abstractQuotation->id,
-                        'aoq_item_id' => $aoqItem->id,
-                        'supplier_id' => $detail->supplier_id,
-                        'brand_model' => $detail->brand_model,
-                        'unit_cost' => $detail->unit_cost,
-                        'total_cost' => $detail->total_cost
-                    ]);
-                }
-            }
+        foreach ($itemChunks as $itemChunk) {
+            StoreAbstractItems::dispatch($itemChunk, $abstractQuotation);
         }
     }
 

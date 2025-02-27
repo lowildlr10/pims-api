@@ -786,6 +786,22 @@ class PurchaseRequestController extends Controller
             $message = 'Purchase request successfully marked as "For Abstract".';
             $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
 
+            if ($currentStatus === PurchaseRequestStatus::FOR_CANVASSING
+                || $currentStatus === PurchaseRequestStatus::FOR_RECANVASSING) {}
+            else {
+                $message = 'Failed to mark the purchase request as "For Abstract" because it is already set to this status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
             $rfqProcessing = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
                 ->whereIn('status', [
                     RequestQuotationStatus::CANVASSING,
@@ -857,10 +873,10 @@ class PurchaseRequestController extends Controller
                                 $rfqItem = $rfq->items[0];
 
                                 return (Object)[
+                                    'quantity' => $item->quantity,
                                     'supplier_id' => $rfqItem->supplier_id,
                                     'brand_model' => $rfqItem->brand_model,
-                                    'unit_cost' => $rfqItem->unit_cost,
-                                    'total_cost' => $rfqItem->total_cost
+                                    'unit_cost' => $rfqItem->unit_cost
                                 ];
                             })
                         )

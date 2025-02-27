@@ -493,13 +493,25 @@ class RequestQuotationController extends Controller
             $purchaseRequest = PurchaseRequest::find($requestQuotation->purchase_request_id);
             $prCurrentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
 
-            if ($purchaseRequest && $prCurrentStatus === PurchaseRequestStatus::APPROVED) {
+            if ($purchaseRequest
+                && ($prCurrentStatus === PurchaseRequestStatus::APPROVED
+                    || $prCurrentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                    || $prCurrentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED)) {
+                $newStatus = PurchaseRequestStatus::FOR_CANVASSING;
+                $prMessage = 'Purchase request successfully marked as "For Canvassing".';
+
+                if ($prCurrentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                    || $prCurrentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
+                    $prMessage = 'Purchase request successfully marked as "For Recanvassing".';
+                    $newStatus = PurchaseRequestStatus::FOR_RECANVASSING;
+                }
+
                 $purchaseRequest->update([
-                    'status' => PurchaseRequestStatus::FOR_CANVASSING
+                    'status' => $newStatus
                 ]);
 
                 $this->logRepository->create([
-                    'message' => 'Purchase request successfully marked as "For Canvassing".',
+                    'message' => $prMessage,
                     'log_id' => $purchaseRequest->id,
                     'log_module' => 'pr',
                     'data' => $purchaseRequest

@@ -33,6 +33,19 @@ class AbstractQuotationDetail extends Model
     ];
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'unit_cost' => 'decimal:2',
+            'total_cost' => 'decimal:2'
+        ];
+    }
+
+    /**
      * The abstract of quotation detail that has one supplier.
      */
     public function supplier(): HasOne

@@ -111,6 +111,7 @@ class AbstractQuotationController extends Controller
             },
             'aoqs.items.pr_item:id,item_sequence,quantity,description,stock_no,awarded_to_id',
             'aoqs.items.details',
+            'aoqs.items.details.supplier:id,supplier_name',
 
             'requestor:id,firstname,lastname,position_id,allow_signature,signature',
             'requestor.position:id,position_name',

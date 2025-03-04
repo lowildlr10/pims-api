@@ -9,6 +9,7 @@ use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\User;
+use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,10 +18,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class AbstractQuotationController extends Controller
 {
     private LogRepository $logRepository;
+    private AbstractQuotationRepository $abstractQuotationRepository;
 
-    public function __construct(LogRepository $logRepository)
+    public function __construct(
+        LogRepository $logRepository,
+        AbstractQuotationRepository $abstractQuotationRepository
+    )
     {
         $this->logRepository = $logRepository;
+        $this->abstractQuotationRepository = $abstractQuotationRepository;
     }
 
     /**
@@ -109,7 +115,9 @@ class AbstractQuotationController extends Controller
                     'asc'
                 );
             },
-            'aoqs.items.pr_item:id,item_sequence,quantity,description,stock_no,awarded_to_id',
+            'aoqs.items.awardee:id,supplier_name',
+            'aoqs.items.pr_item:id,unit_issue_id,item_sequence,quantity,description,stock_no',
+            'aoqs.items.pr_item.unit_issue:id,unit_name',
             'aoqs.items.details',
             'aoqs.items.details.supplier:id,supplier_name',
 
@@ -274,10 +282,10 @@ class AbstractQuotationController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
-    {
-        //
-    }
+    // public function store(Request $request)
+    // {
+    //     //
+    // }
 
     /**
      * Display the specified resource.
@@ -296,7 +304,61 @@ class AbstractQuotationController extends Controller
      */
     public function update(Request $request, AbstractQuotation $abstractQuotation)
     {
-        //
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'bids_awards_committee_id' => 'required',
+            'mode_procurement_id' => 'required',
+            'solicitation_no' => 'required|string',
+            'solicitation_date' => 'required',
+            'opened_on' => 'nullable',
+            'bac_action' => 'nullable',
+            'sig_twg_chairperson_id' => 'required',
+            'sig_twg_member_1_id' => 'required',
+            'sig_twg_member_2_id' => 'required',
+            'sig_chairman_id' => 'required',
+            'sig_vice_chairman_id' => 'required',
+            'sig_member_1_id' => 'required',
+            'sig_member_2_id' => 'required',
+            'sig_member_3_id' => 'required',
+            'items' => 'required|string',
+        ]);
+
+        try {
+            $message = 'Abstract of bids and quotation updated successfully.';
+
+            $this->abstractQuotationRepository->storeUpdate($validated, $abstractQuotation);
+
+            $abstractQuotation->load('items');
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $abstractQuotation,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Abstract of bids or quotation update failed.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $validated
+            ], isError: true);
+
+            return response()->json([
+                'message' => "$message Please try again."
+            ], 422);
+        }
     }
 
     /**

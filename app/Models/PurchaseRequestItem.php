@@ -72,10 +72,10 @@ class PurchaseRequestItem extends Model
     }
 
     /**
-     * The purchase request that has one awarder to.
+     * The purchase request that has one awaraded to.
      */
     public function awarded_to(): HasOne
     {
-        return $this->hasOne(UnitIssue::class, 'id', 'awarded_to_id');
+        return $this->hasOne(Supplier::class, 'id', 'awarded_to_id');
     }
 }

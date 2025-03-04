@@ -27,6 +27,7 @@ class AbstractQuotationItem extends Model
     protected $fillable = [
         'abstract_quotation_id',
         'pr_item_id',
+        'awardee_id',
         'included'
     ];
 
@@ -52,5 +53,13 @@ class AbstractQuotationItem extends Model
     public function abstract_quotation(): BelongsTo
     {
         return $this->belongsTo(AbstractQuotation::class);
+    }
+
+    /**
+     * The abstract of quotation that has one awardee.
+     */
+    public function awardee(): HasOne
+    {
+        return $this->hasOne(Supplier::class, 'id', 'awardee_id');
     }
 }

@@ -32,7 +32,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
 
     public function storeUpdate(array $data, ?AbstractQuotation $abstractQuotation = NULL): AbstractQuotation
     {
-        $items = json_decode($data['items']);
+        $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
 
         if (!empty($abstractQuotation)) {
             $abstractQuotation->update($data);

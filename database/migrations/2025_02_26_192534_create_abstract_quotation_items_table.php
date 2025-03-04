@@ -21,6 +21,10 @@ return new class extends Migration
             $table->foreign('pr_item_id')
                 ->references('id')
                 ->on('purchase_request_items');
+            $table->uuid('awardee_id')->nullable();
+            $table->foreign('awardee_id')
+                ->references('id')
+                ->on('suppliers');
             $table->boolean('included')->default(true);
         });
     }

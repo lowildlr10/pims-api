@@ -313,7 +313,9 @@ class RequestQuotationController extends Controller
                 );
             },
             'items.pr_item:id,item_sequence,quantity,description,stock_no,awarded_to_id',
-            'purchase_request:id,purpose'
+            'purchase_request:id,pr_no,purpose,funding_source_id',
+            'purchase_request.funding_source:id,title,location_id',
+            'purchase_request.funding_source.location:id,location_name'
         ]);
 
         return response()->json([

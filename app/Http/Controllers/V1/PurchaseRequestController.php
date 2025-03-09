@@ -259,7 +259,8 @@ class PurchaseRequestController extends Controller
     public function show(PurchaseRequest $purchaseRequest): JsonResponse
     {
         $purchaseRequest->load([
-            'funding_source:id,title',
+            'funding_source:id,title,location_id',
+            'funding_source.location:id,location_name',
             'section:id,section_name',
 
             'items' => function ($query) {

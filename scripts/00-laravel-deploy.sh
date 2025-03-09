@@ -15,5 +15,5 @@ php artisan migrate --force
 echo "Linking public storage..."
 php artisan storage:link
 
-echo "Running queue job work..."
-php artisan queue:work --tries=3
+# echo "Running queue job work..."
+# php artisan queue:work --tries=3

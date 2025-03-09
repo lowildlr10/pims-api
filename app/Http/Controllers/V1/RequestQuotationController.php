@@ -40,66 +40,38 @@ class RequestQuotationController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $purchaseRequests = PurchaseRequest::query()->with([
-            'funding_source:id,title,location_id',
-            'funding_source.location:id,location_name',
-            'section:id,section_name',
+        $purchaseRequests = PurchaseRequest::query()
+            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->with([
+                'funding_source:id,title',
+                'requestor:id,firstname,lastname',
 
-            'items' => function ($query) {
-                $query->orderBy('item_sequence');
-            },
-            'items.unit_issue:id,unit_name',
-
-            'rfqs' => function ($query) {
-                $query->orderBy('batch')
-                    ->orderByRaw("CAST(REPLACE(rfq_no, '-', '') AS VARCHAR) asc");
-            },
-            'rfqs.supplier:id,supplier_name,address',
-            'rfqs.signatory_approval:id,user_id',
-            'rfqs.signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'rfqs.signatory_approval.detail' => function ($query) {
-                $query->where('document', 'rfq')
-                    ->where('signatory_type', 'approval');
-            },
-            'rfqs.canvassers',
-            'rfqs.canvassers.user:id,firstname,lastname,position_id,allow_signature,signature',
-            'rfqs.canvassers.user.position:id,position_name',
-            'rfqs.items' => function($query) {
-                $query->orderBy(
-                    PurchaseRequestItem::select('item_sequence')
-                        ->whereColumn(
-                            'request_quotation_items.pr_item_id', 'purchase_request_items.id'
-                        ),
-                    'asc'
-                );
-            },
-            'rfqs.items.pr_item:id,item_sequence,quantity,description,stock_no,awarded_to_id',
-
-            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
-            'requestor.position:id,position_name',
-
-            'signatory_cash_available:id,user_id',
-            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_cash_available.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'cash_availability');
-            },
-
-            'signatory_approval:id,user_id',
-            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_approval.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'approved_by');
-            }
-        ])->whereIn('status', [
-            PurchaseRequestStatus::APPROVED,
-            PurchaseRequestStatus::FOR_CANVASSING,
-            PurchaseRequestStatus::FOR_RECANVASSING,
-            PurchaseRequestStatus::FOR_ABSTRACT,
-            PurchaseRequestStatus::PARTIALLY_AWARDED,
-            PurchaseRequestStatus::AWARDED,
-            PurchaseRequestStatus::COMPLETED
-        ]);
+                'rfqs' => function ($query) {
+                    $query->select(
+                            'id',
+                            'purchase_request_id',
+                            'batch',
+                            'rfq_no',
+                            'rfq_date',
+                            'signed_type',
+                            'supplier_id',
+                            'status'
+                        )
+                        ->orderBy('batch')
+                        ->orderByRaw("CAST(REPLACE(rfq_no, '-', '') AS VARCHAR) asc");
+                },
+                'rfqs.supplier:id,supplier_name',
+                'rfqs.canvassers',
+                'rfqs.canvassers.user:id,firstname,lastname'
+            ])->whereIn('status', [
+                PurchaseRequestStatus::APPROVED,
+                PurchaseRequestStatus::FOR_CANVASSING,
+                PurchaseRequestStatus::FOR_RECANVASSING,
+                PurchaseRequestStatus::FOR_ABSTRACT,
+                PurchaseRequestStatus::PARTIALLY_AWARDED,
+                PurchaseRequestStatus::AWARDED,
+                PurchaseRequestStatus::COMPLETED
+            ]);
 
         if ($user->tokenCan('super:*')
             || $user->tokenCan('head:*')
@@ -320,6 +292,30 @@ class RequestQuotationController extends Controller
      */
     public function show(RequestQuotation $requestQuotation): JsonResponse
     {
+        $requestQuotation->load([
+            'supplier:id,supplier_name,address',
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail' => function ($query) {
+                $query->where('document', 'rfq')
+                    ->where('signatory_type', 'approval');
+            },
+            'canvassers',
+            'canvassers.user:id,firstname,lastname,position_id,allow_signature,signature',
+            'canvassers.user.position:id,position_name',
+            'items' => function($query) {
+                $query->orderBy(
+                    PurchaseRequestItem::select('item_sequence')
+                        ->whereColumn(
+                            'request_quotation_items.pr_item_id', 'purchase_request_items.id'
+                        ),
+                    'asc'
+                );
+            },
+            'items.pr_item:id,item_sequence,quantity,description,stock_no,awarded_to_id',
+            'purchase_request:id,purpose'
+        ]);
+
         return response()->json([
             'data' => [
                 'data' => $requestQuotation

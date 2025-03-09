@@ -45,32 +45,12 @@ class PurchaseRequestController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $purchaseRequests = PurchaseRequest::query()->with([
-            'funding_source:id,title',
-            'section:id,section_name',
-
-            'items' => function ($query) {
-                $query->orderBy('item_sequence');
-            },
-            'items.unit_issue:id,unit_name',
-
-            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
-            'requestor.position:id,position_name',
-
-            'signatory_cash_available:id,user_id',
-            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_cash_available.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'cash_availability');
-            },
-
-            'signatory_approval:id,user_id',
-            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_approval.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'approved_by');
-            }
-        ]);
+        $purchaseRequests = PurchaseRequest::query()
+            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->with([
+                'funding_source:id,title',
+                'requestor:id,firstname,lastname'
+            ]);
 
         if ($user->tokenCan('super:*')
             || $user->tokenCan('head:*')
@@ -278,6 +258,33 @@ class PurchaseRequestController extends Controller
      */
     public function show(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $purchaseRequest->load([
+            'funding_source:id,title',
+            'section:id,section_name',
+
+            'items' => function ($query) {
+                $query->orderBy('item_sequence');
+            },
+            'items.unit_issue:id,unit_name',
+
+            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
+            'requestor.position:id,position_name',
+
+            'signatory_cash_available:id,user_id',
+            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_cash_available.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'cash_availability');
+            },
+
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'approved_by');
+            }
+        ]);
+
         return response()->json([
             'data' => [
                 'data' => $purchaseRequest

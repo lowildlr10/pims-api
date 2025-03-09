@@ -22,7 +22,7 @@ class LogController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $logId = $request->get('log_id', '');
 
-        $logs = Log::with('user');
+        $logs = Log::with('user:id,firstname,middlename,lastname');
 
         if ($user->tokenCan('super:*')) {} else {
             if (empty($logId)) $logs = $logs->where('user_id', $user->id);

@@ -215,14 +215,13 @@ class UserController extends Controller
      */
     public function show(User $user): JsonResponse
     {
-        $user = $user->with([
+        $user->load([
             'division:id,division_name',
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
             'roles:id,role_name'
-        ])
-        ->find($user->id);
+        ]);
 
         return response()->json([
             'data' => [

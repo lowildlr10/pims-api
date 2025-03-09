@@ -43,107 +43,33 @@ class AbstractQuotationController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $purchaseRequests = PurchaseRequest::query()->with([
-            'funding_source:id,title,location_id',
-            'funding_source.location:id,location_name',
-            'section:id,section_name',
-
-            'items' => function ($query) {
-                $query->orderBy('item_sequence');
-            },
-            'items.unit_issue:id,unit_name',
-
-            'aoqs' => function ($query) {
-                $query->orderByRaw("CAST(REPLACE(abstract_no, '-', '') AS VARCHAR) asc");
-            },
-            'aoqs.bids_awards_committee:id,committee_name',
-            'aoqs.mode_procurement:id,mode_name',
-            'aoqs.signatory_twg_chairperson:id,user_id',
-            'aoqs.signatory_twg_chairperson.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_twg_chairperson.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'twg_chairperson');
-            },
-            'aoqs.signatory_twg_member_1:id,user_id',
-            'aoqs.signatory_twg_member_1.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_twg_member_1.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'twg_member_1');
-            },
-            'aoqs.signatory_twg_member_2:id,user_id',
-            'aoqs.signatory_twg_member_2.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_twg_member_2.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'twg_member_2');
-            },
-            'aoqs.signatory_chairman:id,user_id',
-            'aoqs.signatory_chairman.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_chairman.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'chairman');
-            },
-            'aoqs.signatory_vice_chairman:id,user_id',
-            'aoqs.signatory_vice_chairman.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_vice_chairman.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'vice_chairman');
-            },
-            'aoqs.signatory_member_1:id,user_id',
-            'aoqs.signatory_member_1.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_member_1.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'member_1');
-            },
-            'aoqs.signatory_member_2:id,user_id',
-            'aoqs.signatory_member_2.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_member_2.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'member_2');
-            },
-            'aoqs.signatory_member_3:id,user_id',
-            'aoqs.signatory_member_3.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'aoqs.signatory_member_3.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'member_3');
-            },
-            'aoqs.items' => function($query) {
-                $query->orderBy(
-                    PurchaseRequestItem::select('item_sequence')
-                        ->whereColumn(
-                            'abstract_quotation_items.pr_item_id', 'purchase_request_items.id'
-                        ),
-                    'asc'
-                );
-            },
-            'aoqs.items.awardee:id,supplier_name',
-            'aoqs.items.pr_item:id,unit_issue_id,item_sequence,quantity,description,stock_no',
-            'aoqs.items.pr_item.unit_issue:id,unit_name',
-            'aoqs.items.details',
-            'aoqs.items.details.supplier:id,supplier_name',
-
-            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
-            'requestor.position:id,position_name',
-
-            'signatory_cash_available:id,user_id',
-            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_cash_available.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'cash_availability');
-            },
-
-            'signatory_approval:id,user_id',
-            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_approval.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'approved_by');
-            }
-        ])->whereIn('status', [
-            PurchaseRequestStatus::FOR_RECANVASSING,
-            PurchaseRequestStatus::FOR_ABSTRACT,
-            PurchaseRequestStatus::PARTIALLY_AWARDED,
-            PurchaseRequestStatus::AWARDED,
-            PurchaseRequestStatus::COMPLETED
-        ]);
+        $purchaseRequests = PurchaseRequest::query()
+            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->with([
+                'funding_source:id,title',
+                'requestor:id,firstname,lastname',
+                'aoqs' => function ($query) {
+                    $query->select(
+                            'id',
+                            'purchase_request_id',
+                            'solicitation_no',
+                            'solicitation_date',
+                            'abstract_no',
+                            'opened_on',
+                            'mode_procurement_id',
+                            'bac_action',
+                            'status'
+                        )
+                        ->orderByRaw("CAST(REPLACE(abstract_no, '-', '') AS VARCHAR) asc");
+                },
+                'aoqs.mode_procurement:id,mode_name'
+            ])->whereIn('status', [
+                PurchaseRequestStatus::FOR_RECANVASSING,
+                PurchaseRequestStatus::FOR_ABSTRACT,
+                PurchaseRequestStatus::PARTIALLY_AWARDED,
+                PurchaseRequestStatus::AWARDED,
+                PurchaseRequestStatus::COMPLETED
+            ]);
 
         if ($user->tokenCan('super:*')
             || $user->tokenCan('head:*')
@@ -290,8 +216,76 @@ class AbstractQuotationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(AbstractQuotation $abstractQuotation)
+    public function show(AbstractQuotation $abstractQuotation): JsonResponse
     {
+        $abstractQuotation->load([
+            'bids_awards_committee:id,committee_name',
+            'mode_procurement:id,mode_name',
+            'signatory_twg_chairperson:id,user_id',
+            'signatory_twg_chairperson.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_twg_chairperson.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'twg_chairperson');
+            },
+            'signatory_twg_member_1:id,user_id',
+            'signatory_twg_member_1.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_twg_member_1.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'twg_member_1');
+            },
+            'signatory_twg_member_2:id,user_id',
+            'signatory_twg_member_2.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_twg_member_2.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'twg_member_2');
+            },
+            'signatory_chairman:id,user_id',
+            'signatory_chairman.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_chairman.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'chairman');
+            },
+            'signatory_vice_chairman:id,user_id',
+            'signatory_vice_chairman.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_vice_chairman.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'vice_chairman');
+            },
+            'signatory_member_1:id,user_id',
+            'signatory_member_1.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_member_1.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'member_1');
+            },
+            'signatory_member_2:id,user_id',
+            'signatory_member_2.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_member_2.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'member_2');
+            },
+            'signatory_member_3:id,user_id',
+            'signatory_member_3.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_member_3.detail' => function ($query) {
+                $query->where('document', 'aoq')
+                    ->where('signatory_type', 'member_3');
+            },
+            'items' => function($query) {
+                $query->orderBy(
+                    PurchaseRequestItem::select('item_sequence')
+                        ->whereColumn(
+                            'abstract_quotation_items.pr_item_id', 'purchase_request_items.id'
+                        ),
+                    'asc'
+                );
+            },
+            'items.awardee:id,supplier_name',
+            'items.pr_item:id,unit_issue_id,item_sequence,quantity,description,stock_no',
+            'items.pr_item.unit_issue:id,unit_name',
+            'items.details',
+            'items.details.supplier:id,supplier_name',
+            'purchase_request:id,purpose'
+        ]);
+
         return response()->json([
             'data' => [
                 'data' => $abstractQuotation
@@ -302,7 +296,7 @@ class AbstractQuotationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, AbstractQuotation $abstractQuotation)
+    public function update(Request $request, AbstractQuotation $abstractQuotation): JsonResponse
     {
         $user = auth()->user();
 
@@ -359,13 +353,5 @@ class AbstractQuotationController extends Controller
                 'message' => "$message Please try again."
             ], 422);
         }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AbstractQuotation $abstractQuotation)
-    {
-        //
     }
 }

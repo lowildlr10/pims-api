@@ -122,6 +122,8 @@ class UacsCodeController extends Controller
      */
     public function show(UacsCode $uacsCode)
     {
+        $uacsCode->load('classification');
+
         return response()->json([
             'data' => [
                 'data' => $uacsCode

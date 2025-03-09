@@ -63,7 +63,7 @@ class SignatoryController extends Controller
             'details' => function ($query) {
                 $query->orderBy('document');
             },
-            'user'
+            'user:id,firstname,middlename,lastname'
         ]);
 
         if (!empty($search)) {
@@ -175,6 +175,13 @@ class SignatoryController extends Controller
      */
     public function show(Signatory $signatory)
     {
+        $signatory->load([
+            'details' => function ($query) {
+                $query->orderBy('document');
+            },
+            'user:id,firstname,middlename,lastname'
+        ]);
+
         return response()->json([
             'data' => [
                 'data' => $signatory

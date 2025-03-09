@@ -40,6 +40,7 @@ return new class extends Migration
             $table->foreign('sig_approved_by_id')
                 ->references('id')
                 ->on('signatories');
+            $table->tinyInteger('rfq_batch')->default(1);
             $table->string('status');
             $table->decimal('total_estimated_cost', 20, 2)->default(0.00);
             $table->timestamp('submitted_at')->nullable();

@@ -35,7 +35,8 @@ class UacsCodeController extends Controller
 
         if (!empty($search)) {
             $uacsCodes = $uacsCodes->where(function($query) use ($search){
-                $query->where('account_title', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
+                    ->orWhere('account_title', 'ILIKE', "%{$search}%")
                     ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('classification', 'classification_name', 'ILIKE', "%{$search}%");
@@ -122,6 +123,8 @@ class UacsCodeController extends Controller
      */
     public function show(UacsCode $uacsCode)
     {
+        $uacsCode->load('classification');
+
         return response()->json([
             'data' => [
                 'data' => $uacsCode

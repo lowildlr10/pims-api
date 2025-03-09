@@ -63,12 +63,13 @@ class SignatoryController extends Controller
             'details' => function ($query) {
                 $query->orderBy('document');
             },
-            'user'
+            'user:id,firstname,middlename,lastname'
         ]);
 
         if (!empty($search)) {
             $signatories = $signatories->where(function($query) use ($search){
-                $query->whereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
+                    ->orWhereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'middlename', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('details', 'position', 'ILIKE', "%{$search}%");;
@@ -175,6 +176,13 @@ class SignatoryController extends Controller
      */
     public function show(Signatory $signatory)
     {
+        $signatory->load([
+            'details' => function ($query) {
+                $query->orderBy('document');
+            },
+            'user:id,firstname,middlename,lastname'
+        ]);
+
         return response()->json([
             'data' => [
                 'data' => $signatory

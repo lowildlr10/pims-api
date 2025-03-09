@@ -2,16 +2,23 @@
 
 namespace App\Repositories;
 
+use App\Enums\AbstractQuotationStatus;
 use App\Helpers\FileHelper;
-use App\Interfaces\RequestQuotationRepositoryInterface;
+use App\Interfaces\AbstractQuotationRepositoryInterface;
+use App\Jobs\StoreAbstractItems;
+use App\Models\AbstractQuotation;
+use App\Models\AbstractQuotationDetail;
+use App\Models\AbstractQuotationItem;
 use App\Models\Company;
 use App\Models\Log;
 use App\Models\PurchaseRequestItem;
 use App\Models\RequestQuotation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
-class RequestQuotationRepository implements RequestQuotationRepositoryInterface
+class AbstractQuotationRepository implements AbstractQuotationRepositoryInterface
 {
     public function __construct() {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
@@ -21,6 +28,52 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         $this->fontArialBoldItalic = TCPDF_FONTS::addTTFfont('fonts/arialbi.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialNarrow = TCPDF_FONTS::addTTFfont('fonts/arialn.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
+    }
+
+    public function storeUpdate(array $data, ?AbstractQuotation $abstractQuotation = NULL): AbstractQuotation
+    {
+        $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
+
+        if (!empty($abstractQuotation)) {
+            $abstractQuotation->update($data);
+        } else {
+            $abstractQuotation = AbstractQuotation::create(
+                array_merge(
+                    $data,
+                    [
+                        'abstract_no' => $this->generateNewAoqNumber(),
+                        'status' => AbstractQuotationStatus::DRAFT
+                    ]
+                )
+            );
+        }
+
+        $this->storeItems(collect($items ?? []), $abstractQuotation);
+
+        return $abstractQuotation;
+    }
+
+    private function storeItems(Collection $items, AbstractQuotation $abstractQuotation): void
+    {
+        $itemChunks = $items->chunk(20);
+
+        AbstractQuotationItem::where('abstract_quotation_id', $abstractQuotation->id)
+            ->delete();
+
+        foreach ($itemChunks as $itemChunk) {
+            StoreAbstractItems::dispatch($itemChunk, $abstractQuotation);
+        }
+    }
+
+    private function generateNewAoqNumber(): string
+    {
+        $month = date('m');
+        $year = date('Y');
+        $sequence = AbstractQuotation::whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->count() + 1;
+
+        return "AOQ-{$year}-{$sequence}-{$month}";
     }
 
     public function print(array $pageConfig, string $rfqId): array

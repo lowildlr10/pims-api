@@ -30,13 +30,14 @@ class PurchaseRequest extends Model
         'requested_by_id',
         'sig_cash_availability_id',
         'sig_approved_by_id',
+        'rfq_batch',
         'status',
         'total_estimated_cost',
         'submitted_at',
         'approved_cash_available_at',
         'approved_at',
         'disapproved_at',
-        'approved_canvass_at',
+        'approved_rfq_at',
         'awarded_at',
         'cancelled_at'
     ];
@@ -101,10 +102,18 @@ class PurchaseRequest extends Model
     }
 
     /**
-     * The purchase request that has many rfqs.
+     * The purchase request that has many RFQs.
      */
     public function rfqs(): HasMany
     {
         return $this->hasMany(RequestQuotation::class);
+    }
+
+    /**
+     * The purchase request that has many AOQs.
+     */
+    public function aoqs(): HasMany
+    {
+        return $this->hasMany(AbstractQuotation::class);
     }
 }

@@ -41,9 +41,13 @@ class DivisionController extends Controller
         ]);
 
         if (!empty($search)) {
-            $divisions = $divisions->where(function($query) use ($search){
-                $query->where('division_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('sections', 'section_name', 'ILIKE', "%{$search}%");
+            $divisions = $divisions->where(function($query) use ($search) {
+                $query->where('id', $search)
+                    ->orWhere('division_name', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('sections', function($query) use ($search) {
+                        $query->where('id', $search)
+                            ->orWhere('section_name', 'ILIKE', "%{$search}%");
+                    });
             });
         }
 
@@ -125,6 +129,8 @@ class DivisionController extends Controller
      */
     public function show(Division $division): JsonResponse
     {
+        $division->load('head');
+
         return response()->json([
             'data' => [
                 'data' => $division

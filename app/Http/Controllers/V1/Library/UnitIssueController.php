@@ -35,7 +35,8 @@ class UnitIssueController extends Controller
 
         if (!empty($search)) {
             $unitIssues = $unitIssues->where(function($query) use ($search){
-                $query->where('unit_name', 'ILIKE', "%{$search}%");
+                $query->where('id', $search)
+                    ->orWhere('unit_name', 'ILIKE', "%{$search}%");
             });
         }
 

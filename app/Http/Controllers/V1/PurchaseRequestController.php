@@ -10,6 +10,7 @@ use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\RequestQuotation;
 use App\Models\User;
+use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -19,10 +20,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class PurchaseRequestController extends Controller
 {
     private LogRepository $logRepository;
+    private AbstractQuotationRepository $abstractQuotationRepository;
 
-    public function __construct(LogRepository $logRepository)
+    public function __construct(
+        LogRepository $logRepository,
+        AbstractQuotationRepository $abstractQuotationRepository
+    )
     {
         $this->logRepository = $logRepository;
+        $this->abstractQuotationRepository = $abstractQuotationRepository;
     }
 
     /**
@@ -39,32 +45,12 @@ class PurchaseRequestController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $purchaseRequests = PurchaseRequest::query()->with([
-            'funding_source:id,title',
-            'section:id,section_name',
-
-            'items' => function ($query) {
-                $query->orderBy('item_sequence');
-            },
-            'items.unit_issue:id,unit_name',
-
-            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
-            'requestor.position:id,position_name',
-
-            'signatory_cash_available:id,user_id',
-            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_cash_available.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'cash_availability');
-            },
-
-            'signatory_approval:id,user_id',
-            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_approval.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'approved_by');
-            }
-        ]);
+        $purchaseRequests = PurchaseRequest::query()
+            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->with([
+                'funding_source:id,title',
+                'requestor:id,firstname,lastname'
+            ]);
 
         if ($user->tokenCan('super:*')
             || $user->tokenCan('head:*')
@@ -77,7 +63,7 @@ class PurchaseRequestController extends Controller
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('id', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
@@ -272,6 +258,34 @@ class PurchaseRequestController extends Controller
      */
     public function show(PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $purchaseRequest->load([
+            'funding_source:id,title,location_id',
+            'funding_source.location:id,location_name',
+            'section:id,section_name',
+
+            'items' => function ($query) {
+                $query->orderBy('item_sequence');
+            },
+            'items.unit_issue:id,unit_name',
+
+            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
+            'requestor.position:id,position_name',
+
+            'signatory_cash_available:id,user_id',
+            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_cash_available.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'cash_availability');
+            },
+
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'approved_by');
+            }
+        ]);
+
         return response()->json([
             'data' => [
                 'data' => $purchaseRequest
@@ -333,8 +347,10 @@ class PurchaseRequestController extends Controller
 
             if ($currentStatus === PurchaseRequestStatus::CANCELLED
                 || $currentStatus === PurchaseRequestStatus::FOR_CANVASSING
+                || $currentStatus === PurchaseRequestStatus::FOR_RECANVASSING
                 || $currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
-                || $currentStatus === PurchaseRequestStatus::FOR_PO
+                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED
+                || $currentStatus === PurchaseRequestStatus::AWARDED
                 || $currentStatus === PurchaseRequestStatus::COMPLETED) {
                 $message = 'Purchase request update failed, already processing or cancelled.';
 
@@ -770,23 +786,42 @@ class PurchaseRequestController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function approveRequestQuotations(PurchaseRequest $purchaseRequest): JsonResponse
+    public function approveRequestQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
         $user = auth()->user();
 
         try {
             $message = 'Purchase request successfully marked as "For Abstract".';
+            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
+
+            if ($currentStatus === PurchaseRequestStatus::FOR_CANVASSING
+                || $currentStatus === PurchaseRequestStatus::FOR_RECANVASSING) {}
+            else {
+                $message = 'Failed to mark the purchase request as "For Abstract" because it is already set to this status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
 
             $rfqProcessing = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
                 ->whereIn('status', [
                     RequestQuotationStatus::CANVASSING,
                     RequestQuotationStatus::DRAFT
-                ]);
+                ])
+                ->where('batch', $purchaseRequest->rfq_batch);
             $rfqProcessingCount = $rfqProcessing->count();
             $rfqProcessing = $rfqProcessing->get();
 
             $rfqCompleted = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
-                ->where('status', RequestQuotationStatus::COMPLETED);
+                ->where('status', RequestQuotationStatus::COMPLETED)
+                ->where('batch', $purchaseRequest->rfq_batch);
             $rfqCompletedCount = $rfqCompleted->count();
             $rfqCompleted = $rfqCompleted->get();
 
@@ -819,20 +854,61 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
+                'rfq_batch' => $purchaseRequest->rfq_batch + 1,
                 'approved_rfq_at' => Carbon::now(),
                 'status' => PurchaseRequestStatus::FOR_ABSTRACT
+            ]);
+
+            $prReturnData = $purchaseRequest;
+            $purchaseRequest->load('items');
+
+            $abstractQuotation = $this->abstractQuotationRepository->storeUpdate([
+                'purchase_request_id' => $purchaseRequest->id,
+                'solicitation_no' => isset($rfqCompleted[0]->rfq_no)
+                    ? $rfqCompleted[0]->rfq_no : '',
+                'solicitation_date' => Carbon::now()->toDateString(),
+                'items' => $purchaseRequest->items->map(function(PurchaseRequestItem $item) use($rfqCompleted) {
+                    return (Object)[
+                        'pr_item_id' => $item->id,
+                        'included' => empty($item->awarded_to) ? true : false,
+                        'details' => json_encode(
+                            $rfqCompleted->map(function(RequestQuotation $rfq) use($item) {
+                                $rfq->load([
+                                    'items' => function($query) use($item) {
+                                        $query->where('pr_item_id', $item->id);
+                                    }
+                                ]);
+                                $rfqItem = $rfq->items[0];
+
+                                return (Object)[
+                                    'quantity' => $item->quantity,
+                                    'supplier_id' => $rfqItem->supplier_id,
+                                    'brand_model' => $rfqItem->brand_model,
+                                    'unit_cost' => $rfqItem->unit_cost
+                                ];
+                            })
+                        )
+                    ];
+                })
+            ]);
+
+            $this->logRepository->create([
+                'message' => 'Abstract of quotation created successfully.',
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation
             ]);
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $purchaseRequest->id,
                 'log_module' => 'pr',
-                'data' => $purchaseRequest
+                'data' => $prReturnData
             ]);
 
             return response()->json([
                 'data' => [
-                    'data' => $purchaseRequest,
+                    'data' => $prReturnData,
                     'message' => $message
                 ]
             ]);

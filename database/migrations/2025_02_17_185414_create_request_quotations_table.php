@@ -18,7 +18,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('purchase_requests');
             $table->enum('signed_type', ['bac', 'lce']);
-            $table->string('rfq_no')->unique();
+            $table->string('rfq_no');
             $table->date('rfq_date');
             $table->uuid('supplier_id')->nullable();
             $table->foreign('supplier_id')
@@ -30,6 +30,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('signatories');
             $table->boolean('vat_registered')->nullable();
+            $table->tinyInteger('batch')->default(1);
             $table->string('status');
             $table->decimal('grand_total_cost', 20, 2)->default(0.00);
             $table->timestamp('canvassing_at')->nullable();

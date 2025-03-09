@@ -35,7 +35,8 @@ class ResponsibilityCenterController extends Controller
 
         if (!empty($search)) {
             $responsibilityCenter = $responsibilityCenter->where(function($query) use ($search){
-                $query->where('code', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
+                    ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
             });
         }

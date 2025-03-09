@@ -48,7 +48,7 @@ class SectionController extends Controller
         }
 
         if ($paginated) {
-            $sections = $sections->paginate($perPage);
+            return $sections->paginate($perPage);
         } else {
             if (!$showInactive) $sections = $sections->where('active', true);
 
@@ -132,6 +132,8 @@ class SectionController extends Controller
      */
     public function show(Section $section)
     {
+        $section->load(['division', 'head']);
+
         return response()->json([
             'data' => [
                 'data' => $section

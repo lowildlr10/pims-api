@@ -11,23 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('request_quotation_items', function (Blueprint $table) {
+        Schema::create('abstract_quotation_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('request_quotation_id');
-            $table->foreign('request_quotation_id')
+            $table->uuid('abstract_quotation_id');
+            $table->foreign('abstract_quotation_id')
                 ->references('id')
-                ->on('request_quotations');
+                ->on('abstract_quotations');
             $table->uuid('pr_item_id');
             $table->foreign('pr_item_id')
                 ->references('id')
                 ->on('purchase_request_items');
-            $table->uuid('supplier_id')->nullable();
-            $table->foreign('supplier_id')
+            $table->uuid('awardee_id')->nullable();
+            $table->foreign('awardee_id')
                 ->references('id')
                 ->on('suppliers');
-            $table->string('brand_model')->nullable();
-            $table->decimal('unit_cost', 20, 2)->nullable();
-            $table->decimal('total_cost', 20, 2)->nullable();
             $table->boolean('included')->default(true);
         });
     }
@@ -37,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('request_quotation_items');
+        Schema::dropIfExists('abstract_quotation_items');
     }
 };

@@ -26,6 +26,7 @@ class RequestQuotation extends Model
         'opening_dt',
         'sig_approval_id',
         'vat_registered',
+        'batch',
         'status',
         'grand_total_cost',
         'canvassing_at',

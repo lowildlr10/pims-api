@@ -15,6 +15,10 @@ class CompanySeeder extends Seeder
     {
         Company::create([
             'company_name' => 'LGU - Atok',
+            'municipality' => 'Atok',
+            'province' => 'Benguet',
+            'region' => 'CAR',
+            'company_type' => 'LGU',
             'theme_colors' => [
                 'primary' => [
                     '#EDF3FA',

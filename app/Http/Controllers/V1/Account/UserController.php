@@ -75,7 +75,8 @@ class UserController extends Controller
 
         if (!empty($search)) {
             $users = $users->where(function($query) use ($search){
-                $query->where('firstname', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
+                    ->orWhere('firstname', 'ILIKE', "%{$search}%")
                     ->orWhere('middlename', 'ILIKE', "%{$search}%")
                     ->orWhere('lastname', 'ILIKE', "%{$search}%")
                     ->orWhere('email', 'ILIKE', "%{$search}%")

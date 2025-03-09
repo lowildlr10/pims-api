@@ -35,7 +35,7 @@ class BidsAwardsCommitteeController extends Controller
 
         if (!empty($search)) {
             $bidsAwardsCommittees = $bidsAwardsCommittees->where(function($query) use ($search){
-                $query->where('id', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
                     ->orWhere('committee_name', 'ILIKE', "%{$search}%");
             });
         }

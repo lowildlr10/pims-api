@@ -63,7 +63,7 @@ class PurchaseRequestController extends Controller
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('id', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")

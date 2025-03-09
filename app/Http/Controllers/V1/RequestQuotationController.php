@@ -84,7 +84,7 @@ class RequestQuotationController extends Controller
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('id', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
@@ -108,7 +108,7 @@ class RequestQuotationController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('rfqs', function ($query) use ($search) {
-                        $query->where('id', 'ILIKE', "%{$search}%")
+                        $query->where('id', $search)
                             ->orWhere('rfq_no', 'ILIKE', "%{$search}%")
                             ->orWhere('rfq_date', 'ILIKE', "%{$search}%")
                             ->orWhere('status', 'ILIKE', "%{$search}%");

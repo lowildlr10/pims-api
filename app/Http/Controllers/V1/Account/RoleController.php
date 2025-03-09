@@ -35,7 +35,8 @@ class RoleController extends Controller
 
         if (!empty($search)) {
             $roles = $roles->where(function($query) use ($search){
-                $query->where('role_name', 'ILIKE', "%{$search}%");
+                $query->where('id', $search)
+                    ->orWhere('role_name', 'ILIKE', "%{$search}%");
             });
         }
 

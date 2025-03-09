@@ -35,7 +35,8 @@ class ProcurementModeController extends Controller
 
         if (!empty($search)) {
             $procurementModes = $procurementModes->where(function($query) use ($search){
-                $query->where('mode_name', 'ILIKE', "%{$search}%");
+                $query->where('id', $search)
+                    ->orWhere('mode_name', 'ILIKE', "%{$search}%");
             });
         }
 

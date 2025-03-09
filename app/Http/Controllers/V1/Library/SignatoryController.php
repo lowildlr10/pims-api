@@ -68,7 +68,8 @@ class SignatoryController extends Controller
 
         if (!empty($search)) {
             $signatories = $signatories->where(function($query) use ($search){
-                $query->whereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
+                    ->orWhereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'middlename', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('details', 'position', 'ILIKE', "%{$search}%");;

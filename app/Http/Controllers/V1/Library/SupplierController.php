@@ -35,7 +35,8 @@ class SupplierController extends Controller
 
         if (!empty($search)) {
             $suppliers = $suppliers->where(function($query) use ($search){
-                $query->where('supplier_name', 'ILIKE', "%{$search}%")
+                $query->where('id', $search)
+                    ->orWhere('supplier_name', 'ILIKE', "%{$search}%")
                     ->orWhere('address', 'ILIKE', "%{$search}%")
                     ->orWhere('tin_no', 'ILIKE', "%{$search}%")
                     ->orWhere('phone', 'ILIKE', "%{$search}%")

@@ -48,7 +48,7 @@ class PurchaseRequestController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
             ->with([
                 'funding_source:id,title',
                 'requestor:id,firstname,lastname'
@@ -970,8 +970,7 @@ class PurchaseRequestController extends Controller
                 $this->logRepository->create([
                     'message' => $message,
                     'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $rfqCompleted
+                    'log_module' => 'pr'
                 ], isError: true);
 
                 return response()->json([
@@ -982,7 +981,6 @@ class PurchaseRequestController extends Controller
             foreach ($aoqApproved ?? [] as $aoq) {
                 foreach ($aoq->items ?? [] as $item) {
                     if (empty($item->awardee_id)) {
-                        $prStatus = PurchaseRequestStatus::PARTIALLY_AWARDED;
                         continue;
                     }
 
@@ -1007,13 +1005,23 @@ class PurchaseRequestController extends Controller
                 ]);
             }
 
+            $countItems = PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
+                ->count();
+            $countAwardedItems = PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
+                ->whereNotNull('awarded_to_id')
+                ->count();
+
+            if ($countAwardedItems !== $countItems) {
+                $prStatus = PurchaseRequestStatus::PARTIALLY_AWARDED;
+            }
+
             $purchaseRequest->update([
                 'awarded_at' => Carbon::now(),
                 'status' => $prStatus
             ]);
 
             $this->logRepository->create([
-                'message' => $message,
+                'message' => $message . ($prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED ? '"Partially Awarded".' : '"Awarded".'),
                 'log_id' => $purchaseRequest->id,
                 'log_module' => 'pr',
                 'data' => $purchaseRequest

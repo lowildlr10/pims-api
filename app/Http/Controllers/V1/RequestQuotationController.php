@@ -41,7 +41,7 @@ class RequestQuotationController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
             ->with([
                 'funding_source:id,title',
                 'requestor:id,firstname,lastname',

@@ -46,7 +46,7 @@ class StoreAbstractItems implements ShouldQueue
             $aoqItem = AbstractQuotationItem::create([
                 'abstract_quotation_id' => $this->abstractQuotation->id,
                 'pr_item_id' => $item->pr_item_id,
-                'awardee_id' => isset($item->awardee_id) ? $item->awardee_id : NULL,
+                'awardee_id' => isset($item->awardee_id) && !empty($item->awardee_id) ? $item->awardee_id : NULL,
                 'included' => $item->included
             ]);
 

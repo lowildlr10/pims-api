@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Enums\AbstractQuotationStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
 use App\Http\Controllers\Controller;
+use App\Models\AbstractQuotation;
 use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
@@ -914,6 +916,117 @@ class PurchaseRequestController extends Controller
             ]);
         } catch (\Throwable $th) {
             $message = 'Failed to mark the purchase request as "For Abstract".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function awardAbstractQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
+    {
+        $user = auth()->user();
+
+        try {
+            $message = 'Purchase request successfully marked as ';
+            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
+
+            if ($currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {}
+            else {
+                $message = 'Failed to award the approved Abstract of Quotation(s) because it is already set to this status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $prStatus = PurchaseRequestStatus::AWARDED;
+            $aoqApproved = AbstractQuotation::with('items')
+                ->where('purchase_request_id', $purchaseRequest->id)
+                ->where('status', AbstractQuotationStatus::APPROVED);
+            $aoqApprovedCount = $aoqApproved->count();
+            $aoqApproved = $aoqApproved->get();
+
+            if ($aoqApprovedCount === 0) {
+                $message = 'Nothing to award. The Abstract of Quotation(s) may still be pending or have already been awarded.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $rfqCompleted
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            foreach ($aoqApproved ?? [] as $aoq) {
+                foreach ($aoq->items ?? [] as $item) {
+                    if (empty($item->awardee_id)) {
+                        $prStatus = PurchaseRequestStatus::PARTIALLY_AWARDED;
+                        continue;
+                    }
+
+                    $prItem = PurchaseRequestItem::find($item->pr_item_id);
+                    $prItem->update([
+                        'awarded_to_id' => $item->awardee_id
+                    ]);
+                }
+
+                // TODO: PO/JO creation here
+
+                $aoq->update([
+                    'status' => AbstractQuotationStatus::AWARDED,
+                    'awarded_at' => Carbon::now()
+                ]);
+
+                $this->logRepository->create([
+                    'message' => 'Abstract of quotation awarded successfully.',
+                    'log_id' => $aoq->id,
+                    'log_module' => 'aoq',
+                    'data' => $aoq
+                ]);
+            }
+
+            $purchaseRequest->update([
+                'awarded_at' => Carbon::now(),
+                'status' => $prStatus
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseRequest,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Failed to award the approved Abstract of Quotation(s).';
 
             $this->logRepository->create([
                 'message' => $message,

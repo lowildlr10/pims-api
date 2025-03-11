@@ -7,6 +7,7 @@ use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\AbstractQuotation;
+use App\Models\AbstractQuotationDetail;
 use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
@@ -979,18 +980,49 @@ class PurchaseRequestController extends Controller
             }
 
             foreach ($aoqApproved ?? [] as $aoq) {
+                $poData = [];
+                $poItems = [];
+
                 foreach ($aoq->items ?? [] as $item) {
-                    if (empty($item->awardee_id)) {
-                        continue;
-                    }
+                    if (empty($item->awardee_id)) continue;
 
                     $prItem = PurchaseRequestItem::find($item->pr_item_id);
                     $prItem->update([
                         'awarded_to_id' => $item->awardee_id
                     ]);
+
+                    $aorItemDetail = AbstractQuotationDetail::where('abstract_quotation_id', $aoq->id)
+                        ->where('aoq_item_id', $item->id)
+                        ->where('supplier_id', $item->awardee_id)
+                        ->first();
+
+                    $poItems[$item->awardee_id][] = (Object)[
+                        'pr_item_id' => $prItem->id,
+                        'brand_model' => $aorItemDetail->brand_model,
+                        'description' => $prItem->description,
+                        'unit_cost' => $aorItemDetail->unit_cost,
+                        'total_cost' => $aorItemDetail->total_cost
+                    ];
+
+                    $poData[$item->awardee_id] = (Object)[
+                        'purchase_request_id' => $purchaseRequest->id,
+                        'mode_procurement_id' => $aoq->mode_procurement_id,
+                        'supplier_id' => $item->awardee_id,
+                        'document_type' => 'po',
+                        'items' => json_encode($poItems[$item->awardee_id])
+                    ];
                 }
 
                 // TODO: PO/JO creation here
+                foreach ($poData ?? [] as $po) {
+                    // $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($po);
+                    // $this->logRepository->create([
+                    //     'message' => 'Purchase Order created successfully.',
+                    //     'log_id' => $purchaseOrder->id,
+                    //     'log_module' => 'po',
+                    //     'data' => $purchaseOrder
+                    // ]);
+                }
 
                 $aoq->update([
                     'status' => AbstractQuotationStatus::AWARDED,

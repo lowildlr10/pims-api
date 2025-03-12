@@ -6,7 +6,7 @@ use App\Http\Controllers\V1 as MainControllers;
 
 Route::middleware('auth:sanctum')->group(function() {
     Route::name('documents_prints.')->prefix('/documents')->group(function () {
-        Route::get('/{document}/prints/{documentId}', [MainControllers\PrintController::class, 'index'])
+        Route::post('/{document}/prints/{documentId}', [MainControllers\PrintController::class, 'index'])
             ->name('index');
     });
 });

@@ -19,6 +19,8 @@ class PurchaseOrder extends Model
      */
     protected $fillable = [
         'purchase_request_id',
+        'po_no',
+        'po_date',
         'mode_procurement_id',
         'supplier_id',
         'place_delivery_id',
@@ -30,10 +32,19 @@ class PurchaseOrder extends Model
         'sig_approval_id',
         'document_type',
         'status',
+        'pending_at',
         'approved_at',
         'issued_at',
         'received_at'
     ];
+
+    /**
+     * The purchase order that has one supplier.
+     */
+    public function supplier(): HasOne
+    {
+        return $this->hasOne(Supplier::class, 'id', 'supplier_id');
+    }
 
     /**
      * The purchase order that has one mode procurement.
@@ -49,6 +60,30 @@ class PurchaseOrder extends Model
     public function items(): HasMany
     {
         return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    /**
+     * The purchase order that has one place of delivery.
+     */
+    public function place_delivery(): HasOne
+    {
+        return $this->hasOne(Location::class, 'id', 'place_delivery_id');
+    }
+
+    /**
+     * The purchase order that has one delivery term.
+     */
+    public function delivery_term(): HasOne
+    {
+        return $this->hasOne(DeliveryTerm::class, 'id', 'delivery_term_id');
+    }
+
+    /**
+     * The purchase order that has one payment term.
+     */
+    public function payment_term(): HasOne
+    {
+        return $this->hasOne(PaymentTerm::class, 'id', 'payment_term_id');
     }
 
     /**

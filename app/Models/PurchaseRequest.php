@@ -116,4 +116,12 @@ class PurchaseRequest extends Model
     {
         return $this->hasMany(AbstractQuotation::class);
     }
+
+    /**
+     * The purchase request that has many POs.
+     */
+    public function pos(): HasMany
+    {
+        return $this->hasMany(PurchaseOrder::class);
+    }
 }

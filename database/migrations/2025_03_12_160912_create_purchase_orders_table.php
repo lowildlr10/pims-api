@@ -17,6 +17,8 @@ return new class extends Migration
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
+            $table->string('po_no');
+            $table->string('po_date')->nullable();
             $table->uuid('mode_procurement_id');
             $table->foreign('mode_procurement_id')
                 ->references('id')

@@ -3,7 +3,6 @@
 namespace App\Interfaces;
 
 use App\Models\AbstractQuotation;
-use Illuminate\Http\Request;
 
 interface AbstractQuotationRepositoryInterface
 {

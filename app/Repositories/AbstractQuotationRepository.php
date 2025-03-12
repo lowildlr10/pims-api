@@ -173,14 +173,14 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $purchaseRequest = $data->purchase_request;
         $bidsAwardsCommittee = $data->bids_awards_committee;
         $modeProcurement = $data->mode_procurement;
-        $signatoryTwgChairperson = $data->signatory_twg_chairperson->user;
-        $signatoryTwgMember1 = $data->signatory_twg_member_1->user;
-        $signatoryTwgMember2 = $data->signatory_twg_member_2->user;
-        $signatoryChairman = $data->signatory_chairman->user;
-        $signatoryViceChairman = $data->signatory_vice_chairman->user;
-        $signatoryMember1 = $data->signatory_member_1->user;
-        $signatoryMember2 = $data->signatory_member_2->user;
-        $signatoryMember3 = $data->signatory_member_3->user;
+        $signatoryTwgChairperson = $data->signatory_twg_chairperson?->user;
+        $signatoryTwgMember1 = $data->signatory_twg_member_1?->user;
+        $signatoryTwgMember2 = $data->signatory_twg_member_2?->user;
+        $signatoryChairman = $data->signatory_chairman?->user;
+        $signatoryViceChairman = $data->signatory_vice_chairman?->user;
+        $signatoryMember1 = $data->signatory_member_1?->user;
+        $signatoryMember2 = $data->signatory_member_2?->user;
+        $signatoryMember3 = $data->signatory_member_3?->user;
 
         $items = $data->items;
         $details = $data->items[0]->details ?? [];
@@ -252,8 +252,8 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell(0, 0, "Republic of the Philippines", 0, 1, 'C');
-        $pdf->Cell(0, 0, "BIDS AND AWARDS COMMITTEE ({$bidsAwardsCommittee->committee_name})", 0, 1, 'C');
-        $pdf->Cell(0, 0, "ABSTRACT OF BIDS OR QUOTATION ({$modeProcurement->mode_name})", 0, 1, 'C');
+        $pdf->Cell(0, 0, "BIDS AND AWARDS COMMITTEE ({$bidsAwardsCommittee?->committee_name})", 0, 1, 'C');
+        $pdf->Cell(0, 0, "ABSTRACT OF BIDS OR QUOTATION ({$modeProcurement?->mode_name})", 0, 1, 'C');
 
         $pdf->Ln();
         $pdf->Ln();
@@ -502,7 +502,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                 0.04 + ($supplierHeadersCount > 3 ? 0.185 : 0.235)
             ),
             h: 0,
-            txt: strtoupper($signatoryTwgChairperson->fullname),
+            txt: strtoupper($signatoryTwgChairperson?->fullname),
             border: 'B',
             ln: 0,
             align: 'C'
@@ -558,7 +558,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                 )
             ),
             h: 0,
-            txt: strtoupper($signatoryTwgMember1->fullname),
+            txt: strtoupper($signatoryTwgMember1?->fullname),
             border: 'B',
             ln: 0,
             align: 'C'
@@ -580,7 +580,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                 )
             ),
             h: 0,
-            txt: strtoupper($signatoryTwgMember2->fullname),
+            txt: strtoupper($signatoryTwgMember2?->fullname),
             border: 'B',
             ln: 0,
             align: 'C'
@@ -636,7 +636,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $pdf->Cell(
             w: $pageWidth * 0.22,
             h: 0,
-            txt: strtoupper($signatoryChairman->fullname),
+            txt: strtoupper($signatoryChairman?->fullname),
             border: 'B',
             ln: 0,
             align: 'C'
@@ -648,7 +648,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $pdf->Cell(
             w: $pageWidth * 0.22,
             h: 0,
-            txt: strtoupper($signatoryViceChairman->fullname),
+            txt: strtoupper($signatoryViceChairman?->fullname),
             border: 'B',
             ln: 0,
             align: 'C'
@@ -689,7 +689,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $pdf->Cell(
             w: $pageWidth * 0.22,
             h: 0,
-            txt: strtoupper($signatoryMember1->fullname),
+            txt: strtoupper($signatoryMember1?->fullname),
             border: 'B',
             ln: 0,
             align: 'C'
@@ -701,7 +701,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $pdf->Cell(
             w: $pageWidth * 0.22,
             h: 0,
-            txt: strtoupper($signatoryMember2->fullname),
+            txt: strtoupper($signatoryMember2?->fullname),
             border: 'B',
             ln: 0,
             align: 'C'
@@ -713,7 +713,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $pdf->Cell(
             w: 0,
             h: 0,
-            txt: strtoupper($signatoryMember3->fullname),
+            txt: strtoupper($signatoryMember3?->fullname),
             border: 'B',
             ln: 1,
             align: 'C'

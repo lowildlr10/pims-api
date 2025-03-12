@@ -15,6 +15,7 @@ use App\Models\RequestQuotation;
 use App\Models\User;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\PurchaseOrderRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,14 +25,17 @@ class PurchaseRequestController extends Controller
 {
     private LogRepository $logRepository;
     private AbstractQuotationRepository $abstractQuotationRepository;
+    private PurchaseOrderRepository $purchaseOrderRepository;
 
     public function __construct(
         LogRepository $logRepository,
-        AbstractQuotationRepository $abstractQuotationRepository
+        AbstractQuotationRepository $abstractQuotationRepository,
+        PurchaseOrderRepository $purchaseOrderRepository
     )
     {
         $this->logRepository = $logRepository;
         $this->abstractQuotationRepository = $abstractQuotationRepository;
+        $this->purchaseOrderRepository = $purchaseOrderRepository;
     }
 
     /**
@@ -1004,7 +1008,7 @@ class PurchaseRequestController extends Controller
                         'total_cost' => $aorItemDetail->total_cost
                     ];
 
-                    $poData[$item->awardee_id] = (Object)[
+                    $poData[$item->awardee_id] = [
                         'purchase_request_id' => $purchaseRequest->id,
                         'mode_procurement_id' => $aoq->mode_procurement_id,
                         'supplier_id' => $item->awardee_id,
@@ -1013,15 +1017,14 @@ class PurchaseRequestController extends Controller
                     ];
                 }
 
-                // TODO: PO/JO creation here
                 foreach ($poData ?? [] as $po) {
-                    // $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($po);
-                    // $this->logRepository->create([
-                    //     'message' => 'Purchase Order created successfully.',
-                    //     'log_id' => $purchaseOrder->id,
-                    //     'log_module' => 'po',
-                    //     'data' => $purchaseOrder
-                    // ]);
+                    $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($po);
+                    $this->logRepository->create([
+                        'message' => 'Purchase Order created successfully.',
+                        'log_id' => $purchaseOrder->id,
+                        'log_module' => 'po',
+                        'data' => $purchaseOrder
+                    ]);
                 }
 
                 $aoq->update([

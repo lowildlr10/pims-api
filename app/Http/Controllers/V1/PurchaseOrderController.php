@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\PurchaseOrder;
 use Illuminate\Http\Request;
 
 class PurchaseOrderController extends Controller
@@ -15,18 +16,18 @@ class PurchaseOrderController extends Controller
         //
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+    // /**
+    //  * Store a newly created resource in storage.
+    //  */
+    // public function store(Request $request)
+    // {
+    //     //
+    // }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(PurchaseOrder $purchaseOrder)
     {
         //
     }
@@ -34,16 +35,40 @@ class PurchaseOrderController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
         //
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Update the status of the specified resource in storage.
      */
-    public function destroy(string $id)
+    public function pending(PurchaseOrder $purchaseOrder)
     {
-        //
+
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function approve(PurchaseOrder $purchaseOrder)
+    {
+
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function issue(PurchaseOrder $purchaseOrder)
+    {
+
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function receive(PurchaseOrder $purchaseOrder)
+    {
+
     }
 }

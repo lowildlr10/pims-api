@@ -28,6 +28,7 @@ class AbstractQuotationItem extends Model
         'abstract_quotation_id',
         'pr_item_id',
         'awardee_id',
+        'document_type',
         'included'
     ];
 

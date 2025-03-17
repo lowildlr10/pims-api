@@ -25,6 +25,7 @@ return new class extends Migration
             $table->foreign('awardee_id')
                 ->references('id')
                 ->on('suppliers');
+            $table->enum('document_type', ['po', 'jo'])->nullable();
             $table->boolean('included')->default(true);
         });
     }

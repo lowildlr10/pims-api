@@ -9,6 +9,7 @@ use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Repositories\LogRepository;
+use App\Repositories\PurchaseOrderRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,12 +17,15 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class PurchaseOrderController extends Controller
 {
     private LogRepository $logRepository;
+    private PurchaseOrderRepository $purchaseOrderRepository;
 
     public function __construct(
-        LogRepository $logRepository
+        LogRepository $logRepository,
+        PurchaseOrderRepository $purchaseOrderRepository
     )
     {
         $this->logRepository = $logRepository;
+        $this->purchaseOrderRepository = $purchaseOrderRepository;
     }
 
     /**
@@ -207,6 +211,12 @@ class PurchaseOrderController extends Controller
             },
             'items.pr_item:id,unit_issue_id,item_sequence,quantity,description,stock_no',
             'items.pr_item.unit_issue:id,unit_name',
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail' => function ($query) {
+                $query->where('document', 'po')
+                    ->where('signatory_type', '	authorized_official');
+            },
             'purchase_request:id,purpose'
         ]);
 
@@ -222,7 +232,58 @@ class PurchaseOrderController extends Controller
      */
     public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
-        //
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'po_date' => 'required',
+            'place_delivery' => 'required',
+            'delivery_date' => 'required',
+            'delivery_term' => 'required',
+            'payment_term' => 'required',
+            'total_amount_words' => 'string|required',
+            'sig_approval_id' => 'required',
+            'items' => 'required|string'
+        ]);
+
+        try {
+            $message = $purchaseOrder->document_type === 'po'
+                ? 'Purchase order updated successfully.'
+                : 'Job order updated successfully.';
+
+            $this->purchaseOrderRepository->storeUpdate($validated, $purchaseOrder);
+
+            $purchaseOrder->load('items');
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseOrder,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = $purchaseOrder->document_type === 'po'
+                ? 'Purchase order update failed.'
+                : 'Job order update failed.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $validated
+            ], isError: true);
+
+            return response()->json([
+                'message' => "$message Please try again."
+            ], 422);
+        }
     }
 
     /**

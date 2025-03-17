@@ -44,7 +44,7 @@ class StorePoItems implements ShouldQueue
                 ->where('pr_item_id', $item->pr_item_id)
                 ->delete();
 
-            $aoqItem = PurchaseOrderItem::create([
+            PurchaseOrderItem::create([
                 'purchase_order_id' => $this->purchaseOrder->id,
                 'pr_item_id' => $item->pr_item_id,
                 'brand_model' => $item->brand_model,

@@ -7,10 +7,14 @@ use App\Helpers\FileHelper;
 use App\Interfaces\PurchaseOrderRepositoryInterface;
 use App\Jobs\StorePoItems;
 use App\Models\Company;
+use App\Models\DeliveryTerm;
+use App\Models\Location;
 use App\Models\Log;
+use App\Models\PaymentTerm;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
+use Exception;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
@@ -32,14 +36,38 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
 
         if (!empty($purchaseOrder)) {
+            $placeDelivery = Location::where('location_name', $data['place_delivery'])->first();
+            $deliveryTerm = DeliveryTerm::where('term_name', $data['delivery_term'])->first();
+            $paymentTerm = PaymentTerm::where('term_name', $data['payment_term'])->first();
+
+            if (!$placeDelivery) {
+                $placeDelivery = Location::create([
+                    'location_name' => $data['place_delivery']
+                ]);
+            }
+
+            if (!$deliveryTerm) {
+                $deliveryTerm = DeliveryTerm::create([
+                    'term_name' => $data['delivery_term']
+                ]);
+            }
+
+            if (!$paymentTerm) {
+                $paymentTerm = PaymentTerm::create([
+                    'term_name' => $data['payment_term']
+                ]);
+            }
+
             $purchaseOrder->update(array_merge(
                 $data,
                 [
-                    'po_no' =>
-                        strtoupper($purchaseOrder->document_type) .
-                        substr($purchaseOrder->po_no, 2)
+                    'place_delivery_id' => $placeDelivery->id,
+                    'delivery_term_id' => $deliveryTerm->id,
+                    'payment_term_id' => $paymentTerm->id
                 ]
             ));
+
+            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder, false);
         } else {
             $purchaseOrder = PurchaseOrder::create(
                 array_merge(
@@ -52,22 +80,34 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     ]
                 )
             );
-        }
 
-        $this->storeItems(collect($items ?? []), $purchaseOrder);
+            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder);
+        }
 
         return $purchaseOrder;
     }
 
-    private function storeItems(Collection $items, PurchaseOrder $purchaseOrder): void
+    private function storeUpdateItems(Collection $items, PurchaseOrder $purchaseOrder, bool $queue = true): void
     {
-        $itemChunks = $items->chunk(50);
+        if ($queue) {
+            PurchaseOrderItem::where('purchase_order_id', $purchaseOrder->id)
+                ->delete();
 
-        PurchaseOrderItem::where('purchase_order_id', $purchaseOrder->id)
-            ->delete();
+            $itemChunks = $items->chunk(50);
 
-        foreach ($itemChunks as $itemChunk) {
-            StorePoItems::dispatch($itemChunk, $purchaseOrder);
+            foreach ($itemChunks as $itemChunk) {
+                StorePoItems::dispatch($itemChunk, $purchaseOrder);
+            }
+        } else {
+            foreach ($items as $item) {
+                $poItem = PurchaseOrderItem::where('purchase_order_id', $purchaseOrder->id)
+                    ->where('pr_item_id', $item->pr_item_id)
+                    ->first();
+
+                $poItem->update([
+                    'description' => $item->description
+                ]);
+            }
         }
     }
 
@@ -77,6 +117,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $year = date('Y');
         $sequence = PurchaseOrder::whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
+            ->where('document_type', $documentType)
             ->count() + 1;
 
         return strtoupper($documentType) . "-{$year}-{$sequence}-{$month}";

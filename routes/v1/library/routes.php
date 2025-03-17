@@ -10,6 +10,16 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
             ->name('index');
     });
 
+    Route::name('delivery-terms.')->prefix('/delivery-terms')->group(function () {
+        Route::get('/', [LibraryControllers\DeliveryTermController::class, 'index'])
+            ->name('index');
+    });
+
+    Route::name('payment-terms.')->prefix('/payment-terms')->group(function () {
+        Route::get('/', [LibraryControllers\PaymentTermController::class, 'index'])
+            ->name('index');
+    });
+
     Route::name('bids-awards-committees.')->prefix('/bids-awards-committees')->group(function () {
         Route::get('/', [LibraryControllers\BidsAwardsCommitteeController::class, 'index'])
             ->middleware('ability:super:*,head:*,lib-bid-committee:*,lib-bid-committee:view')

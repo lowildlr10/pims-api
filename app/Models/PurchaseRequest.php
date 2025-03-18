@@ -32,14 +32,16 @@ class PurchaseRequest extends Model
         'sig_approved_by_id',
         'rfq_batch',
         'status',
+        'status_timestamps',
         'total_estimated_cost',
-        'submitted_at',
-        'approved_cash_available_at',
-        'approved_at',
-        'disapproved_at',
-        'approved_rfq_at',
-        'awarded_at',
-        'cancelled_at'
+        // 'submitted_at',
+        // 'approved_cash_available_at',
+        // 'approved_at',
+        // 'disapproved_at',
+        // 'approved_rfq_at',
+        // 'awarded_at',
+        // 'cancelled_at',
+        // 'completed_at'
     ];
 
     protected $appends = [

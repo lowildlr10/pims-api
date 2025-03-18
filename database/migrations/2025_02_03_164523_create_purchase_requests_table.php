@@ -42,14 +42,16 @@ return new class extends Migration
                 ->on('signatories');
             $table->tinyInteger('rfq_batch')->default(1);
             $table->string('status');
+            $table->json('status_timestamps');
             $table->decimal('total_estimated_cost', 20, 2)->default(0.00);
-            $table->timestamp('submitted_at')->nullable();
-            $table->timestamp('approved_cash_available_at')->nullable();
-            $table->timestamp('approved_at')->nullable();
-            $table->timestamp('disapproved_at')->nullable();
-            $table->timestamp('approved_rfq_at')->nullable();
-            $table->timestamp('awarded_at')->nullable();
-            $table->timestamp('cancelled_at')->nullable();
+            // $table->timestamp('submitted_at')->nullable();
+            // $table->timestamp('approved_cash_available_at')->nullable();
+            // $table->timestamp('approved_at')->nullable();
+            // $table->timestamp('disapproved_at')->nullable();
+            // $table->timestamp('approved_rfq_at')->nullable();
+            // $table->timestamp('awarded_at')->nullable();
+            // $table->timestamp('cancelled_at')->nullable();
+            // $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });
     }

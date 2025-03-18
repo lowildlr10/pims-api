@@ -42,7 +42,8 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                     $data,
                     [
                         'abstract_no' => $this->generateNewAoqNumber(),
-                        'status' => AbstractQuotationStatus::DRAFT
+                        'status' => AbstractQuotationStatus::DRAFT,
+                        'status_timestamps' => json_encode((Object) [])
                     ]
                 )
             );

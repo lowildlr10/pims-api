@@ -20,8 +20,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{purchaseOrder}/approve', [MainControllers\PurchaseOrderController::class, 'approve'])
             ->middleware('ability:super:*,supply:*,po:*,po:approve')
             ->name('approve');
+        Route::put('/{purchaseOrder}/issue', [MainControllers\PurchaseOrderController::class, 'issue'])
+            ->middleware('ability:super:*,supply:*,po:*,po:issue')
+            ->name('issue');
         Route::put('/{purchaseOrder}/receive', [MainControllers\PurchaseOrderController::class, 'receive'])
             ->middleware('ability:super:*,supply:*,po:*,po:receive')
             ->name('receive');
+        Route::put('/{purchaseOrder}/delivered', [MainControllers\PurchaseOrderController::class, 'delivered'])
+            ->middleware('ability:super:*,supply:*,po:*,po:delivered')
+            ->name('delivered');
     });
 });

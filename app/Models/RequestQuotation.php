@@ -28,10 +28,11 @@ class RequestQuotation extends Model
         'vat_registered',
         'batch',
         'status',
+        'status_timestamps',
         'grand_total_cost',
-        'canvassing_at',
-        'completed_at',
-        'cancelled_at'
+        // 'canvassing_at',
+        // 'completed_at',
+        // 'cancelled_at'
     ];
 
     /**

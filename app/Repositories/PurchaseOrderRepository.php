@@ -76,7 +76,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                         'po_no' => $this->generateNewPoNumber(
                             $data['document_type']
                         ),
-                        'status' => PurchaseOrderStatus::DRAFT
+                        'status' => PurchaseOrderStatus::DRAFT,
+                        'status_timestamps' => json_encode((Object) [])
                     ]
                 )
             );

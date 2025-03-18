@@ -8,7 +8,8 @@ enum PurchaseOrderStatus: string
     case PENDING = 'pending';
     case APPROVED = 'approved';
     case ISSUED = 'issued';
-    case RECEIVED = 'received';
+    case FOR_DELIVERY = 'for_delivery';
+    case DELIVERED = 'delivered';
     case FOR_INSPECTION = 'for_inspection';
     case FOR_OBLIGATION = 'for_obligation';
     case FOR_DISBURSEMENT = 'for_disbursement';

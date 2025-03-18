@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1;
 use App\Enums\AbstractQuotationStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\AbstractQuotation;
 use App\Models\AbstractQuotationDetail;
@@ -200,7 +201,8 @@ class PurchaseRequestController extends Controller
                 $validated,
                 [
                     'pr_no' => $this->generateNewPrNumber(),
-                    'status' => PurchaseRequestStatus::DRAFT
+                    'status' => PurchaseRequestStatus::DRAFT,
+                    'status_timestamps' => json_encode((Object)[])
                 ]
             ));
 
@@ -374,10 +376,12 @@ class PurchaseRequestController extends Controller
             }
 
             $status = $currentStatus;
+            $statusTimestamps = (Object) json_decode($purchaseRequest->status_timestamps);
 
             if ($currentStatus === PurchaseRequestStatus::DRAFT
                 || $currentStatus === PurchaseRequestStatus::DISAPPROVED) {
                 $status = PurchaseRequestStatus::DRAFT;
+                $statusTimestamps = (Object)[];
 
                 $items = json_decode($validated['items']);
                 $totalEstimatedCost = 0;
@@ -413,9 +417,7 @@ class PurchaseRequestController extends Controller
                 $validated,
                 [
                     'status' => $status,
-                    'submitted_at' => NULL,
-                    'approved_cash_available_at' => NULL,
-                    'disapproved_at' => NULL
+                    'status_timestamps' => json_encode($statusTimestamps)
                 ]
             ));
 
@@ -486,9 +488,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'submitted_at' => Carbon::now(),
-                'approved_cash_available_at' => NULL,
-                'status' => PurchaseRequestStatus::PENDING
+                'status' => PurchaseRequestStatus::PENDING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'pending_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -557,8 +560,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'approved_cash_available_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::APPROVED_CASH_AVAILABLE
+                'status' => PurchaseRequestStatus::APPROVED_CASH_AVAILABLE,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_cash_available_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -623,8 +628,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'approved_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::APPROVED
+                'status' => PurchaseRequestStatus::APPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -689,8 +696,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'disapproved_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::DISAPPROVED
+                'status' => PurchaseRequestStatus::DISAPPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'disapproved_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -756,8 +765,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'cancelled_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::CANCELLED
+                'status' => PurchaseRequestStatus::CANCELLED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'cancelled_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -863,7 +874,10 @@ class PurchaseRequestController extends Controller
             $purchaseRequest->update([
                 'rfq_batch' => $purchaseRequest->rfq_batch + 1,
                 'approved_rfq_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::FOR_ABSTRACT
+                'status' => PurchaseRequestStatus::FOR_ABSTRACT,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_rfq_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $prReturnData = $purchaseRequest;
@@ -1033,7 +1047,9 @@ class PurchaseRequestController extends Controller
 
                 $aoq->update([
                     'status' => AbstractQuotationStatus::AWARDED,
-                    'awarded_at' => Carbon::now()
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'awarded_at', $aoq->status_timestamps
+                    )
                 ]);
 
                 $this->logRepository->create([
@@ -1055,8 +1071,12 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'awarded_at' => Carbon::now(),
-                'status' => $prStatus
+                'status' => $prStatus,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    $prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED
+                        ? 'partially_awarded_at' : 'awarded_at',
+                    $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([

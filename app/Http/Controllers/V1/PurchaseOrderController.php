@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\FundingSource;
 use App\Models\PurchaseOrder;
@@ -10,6 +12,7 @@ use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Repositories\LogRepository;
 use App\Repositories\PurchaseOrderRepository;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -246,9 +249,8 @@ class PurchaseOrderController extends Controller
         ]);
 
         try {
-            $message = $purchaseOrder->document_type === 'po'
-                ? 'Purchase order updated successfully.'
-                : 'Job order updated successfully.';
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order updated successfully.';
 
             $this->purchaseOrderRepository->storeUpdate($validated, $purchaseOrder);
 
@@ -268,9 +270,8 @@ class PurchaseOrderController extends Controller
                 ]
             ]);
         } catch (\Throwable $th) {
-            $message = $purchaseOrder->document_type === 'po'
-                ? 'Purchase order update failed.'
-                : 'Job order update failed.';
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order update failed.';
 
             $this->logRepository->create([
                 'message' => $message,
@@ -291,7 +292,66 @@ class PurchaseOrderController extends Controller
      */
     public function pending(PurchaseOrder $purchaseOrder)
     {
+        try {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order successfully marked as pending for approval.';
 
+            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
+
+            if ($currentStatus !== PurchaseOrderStatus::DRAFT) {
+                $message =
+                    'Failed to set the '. ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .' Order to
+                    pending for approval. It may already be set to pending or processing status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $purchaseOrder->update([
+                'status' => PurchaseOrderStatus::PENDING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'pending_at', $purchaseOrder->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ]);
+
+            $purchaseOrder->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseOrder,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order failed to marked as pending for approval.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
     }
 
     /**
@@ -299,7 +359,66 @@ class PurchaseOrderController extends Controller
      */
     public function approve(PurchaseOrder $purchaseOrder)
     {
+        try {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order successfully marked as "Approved".';
 
+            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
+
+            if ($currentStatus !== PurchaseOrderStatus::PENDING) {
+                $message =
+                    'Failed to set the '. ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .' Order to
+                    pending for approval. It may already be set to approved or processing or still in draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $purchaseOrder->update([
+                'status' => PurchaseOrderStatus::APPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_at', $purchaseOrder->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ]);
+
+            $purchaseOrder->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseOrder,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order failed to marked as "Approved".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
     }
 
     /**
@@ -307,7 +426,66 @@ class PurchaseOrderController extends Controller
      */
     public function issue(PurchaseOrder $purchaseOrder)
     {
+        try {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order successfully issued to supplier.';
 
+            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
+
+            if ($currentStatus !== PurchaseOrderStatus::APPROVED) {
+                $message =
+                    'Failed to set the '. ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .' Order to
+                    issued. It may already be issued or still in draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $purchaseOrder->update([
+                'status' => PurchaseOrderStatus::ISSUED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'issued_at', $purchaseOrder->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ]);
+
+            $purchaseOrder->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseOrder,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order failed to marked as "Issued".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
     }
 
     /**
@@ -315,6 +493,135 @@ class PurchaseOrderController extends Controller
      */
     public function receive(PurchaseOrder $purchaseOrder)
     {
+        try {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order successfully received and marked as "For Delivery".';
 
+            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
+
+            if ($currentStatus !== PurchaseOrderStatus::ISSUED) {
+                $message =
+                    'Failed to receive and set the '. ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                    ' Order to marked as "For Delivery". It may already be for delivery or processing or still in
+                    draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $purchaseOrder->update([
+                'status' => PurchaseOrderStatus::FOR_DELIVERY,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'for_delivery_at', $purchaseOrder->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ]);
+
+            $purchaseOrder->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseOrder,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order failed to received and marked as "For Delivery".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function delivered(PurchaseOrder $purchaseOrder)
+    {
+        try {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order successfully set to "Delivered".';
+
+            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
+
+            if ($currentStatus !== PurchaseOrderStatus::FOR_DELIVERY) {
+                $message =
+                    'Failed to set the '. ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .' Order to
+                    received. It may already be delivered or processing or still in draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            // TODO: Save to IAR module
+
+            $purchaseOrder->update([
+                'status' => PurchaseOrderStatus::DELIVERED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'delivered_at', $purchaseOrder->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ]);
+
+            $purchaseOrder->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseOrder,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                ' order failed to marked as "Delivered".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => $purchaseOrder
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
     }
 }

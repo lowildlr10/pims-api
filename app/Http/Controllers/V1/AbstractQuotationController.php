@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Enums\AbstractQuotationStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\AbstractQuotation;
 use App\Models\FundingSource;
@@ -384,8 +385,10 @@ class AbstractQuotationController extends Controller
             }
 
             $abstractQuotation->update([
-                'pending_at' => Carbon::now(),
-                'status' => AbstractQuotationStatus::PENDING
+                'status' => AbstractQuotationStatus::PENDING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'pending_at', $abstractQuotation->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -447,8 +450,10 @@ class AbstractQuotationController extends Controller
             }
 
             $abstractQuotation->update([
-                'approved_at' => Carbon::now(),
-                'status' => AbstractQuotationStatus::APPROVED
+                'status' => AbstractQuotationStatus::APPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_at', $abstractQuotation->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([

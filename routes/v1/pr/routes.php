@@ -34,5 +34,8 @@ Route::middleware('auth:sanctum')->group(function() {
         Route::put('/{purchaseRequest}/approve-request-quotations', [MainControllers\PurchaseRequestController::class, 'approveRequestQuotations'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:approve-rfq')
             ->name('approve_request_quotations');
+        Route::put('/{purchaseRequest}/award-abstract-quotations', [MainControllers\PurchaseRequestController::class, 'awardAbstractQuotations'])
+            ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:award-aoq')
+            ->name('approve_request_quotations');
     });
 });

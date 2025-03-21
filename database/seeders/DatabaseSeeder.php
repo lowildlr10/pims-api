@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             UserSeeder::class,
             LocationSeeder::class,
+            BidsAwardsCommitteeSeeder::class,
             FundingSourceSeeder::class,
             ItemClassificationSeeder::class,
             MfoPapSeeder::class,
@@ -27,7 +28,7 @@ class DatabaseSeeder extends Seeder
             SupplierSeeder::class,
             UacsCodeClassificationSeeder::class,
             UacsCodeSeeder::class,
-            UnitIssueSeeder::class
+            UnitIssueSeeder::class,
         ]);
     }
 }

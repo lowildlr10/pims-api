@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
@@ -41,7 +42,7 @@ class RequestQuotationController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
             ->with([
                 'funding_source:id,title',
                 'requestor:id,firstname,lastname',
@@ -207,7 +208,7 @@ class RequestQuotationController extends Controller
                 ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
                     ->where('purchase_request_id', $validated['purchase_request_id'])
                     ->where('batch', $purchaseRequest->rfq_batch)
-                    ->whereNull('cancelled_at')
+                    ->where('status', '!=', RequestQuotationStatus::CANCELLED)
                     ->count()
                 : 0;
 
@@ -233,7 +234,8 @@ class RequestQuotationController extends Controller
                 [
                     // 'rfq_no' => $this->generateNewRfqNumber(),
                     'batch' => $purchaseRequest->rfq_batch,
-                    'status' => RequestQuotationStatus::DRAFT
+                    'status' => RequestQuotationStatus::DRAFT,
+                    'status_timestamps' => json_encode((Object) [])
                 ]
             ));
 
@@ -357,7 +359,7 @@ class RequestQuotationController extends Controller
                 ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
                     ->where('purchase_request_id', $requestQuotation->purchase_request_id)
                     ->where('batch', $purchaseRequest->rfq_batch)
-                    ->whereNull('cancelled_at')
+                    ->where('status', '!=', RequestQuotationStatus::CANCELLED)
                     ->count()
                 : 0;
 
@@ -484,8 +486,10 @@ class RequestQuotationController extends Controller
             $message = 'Request for quotation successfully marked as "Canvassing".';
 
             $requestQuotation->update([
-                'canvassing_at' => Carbon::now(),
-                'status' => RequestQuotationStatus::CANVASSING
+                'status' => RequestQuotationStatus::CANVASSING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'canvassing_at', $requestQuotation->status_timestamps
+                )
             ]);
 
             $purchaseRequest = PurchaseRequest::find($requestQuotation->purchase_request_id);
@@ -505,7 +509,10 @@ class RequestQuotationController extends Controller
                 }
 
                 $purchaseRequest->update([
-                    'status' => $newStatus
+                    'status' => $newStatus,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'canvassing_at', $purchaseRequest->status_timestamps
+                    )
                 ]);
 
                 $this->logRepository->create([
@@ -572,8 +579,10 @@ class RequestQuotationController extends Controller
             }
 
             $requestQuotation->update([
-                'completed_at' => Carbon::now(),
-                'status' => RequestQuotationStatus::COMPLETED
+                'status' => RequestQuotationStatus::COMPLETED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'completed_at', $requestQuotation->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -615,8 +624,10 @@ class RequestQuotationController extends Controller
             $message = 'Request for quotation successfully marked as "Cancelled".';
 
             $requestQuotation->update([
-                'cancelled_at' => Carbon::now(),
-                'status' => RequestQuotationStatus::CANCELLED
+                'status' => RequestQuotationStatus::CANCELLED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'cancelled_at', $requestQuotation->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([

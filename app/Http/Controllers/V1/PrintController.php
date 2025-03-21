@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\PaperSize;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\PurchaseOrderRepository;
 use App\Repositories\PurchaseRequestRepository;
 use App\Repositories\RequestQuotationRepository;
 use Illuminate\Http\JsonResponse;
@@ -20,17 +21,20 @@ class PrintController extends Controller
     private PurchaseRequestRepository $purchaseRequestRepository;
     private RequestQuotationRepository $requestQuotationRepository;
     private AbstractQuotationRepository $abstractQuotationRepository;
+    private PurchaseOrderRepository $purchaseOrderRepository;
 
     public function __construct(
         LogRepository $logRepository,
         PurchaseRequestRepository $purchaseRequestRepository,
         RequestQuotationRepository $requestQuotationRepository,
-        AbstractQuotationRepository $abstractQuotationRepository
+        AbstractQuotationRepository $abstractQuotationRepository,
+        PurchaseOrderRepository $purchaseOrderRepository
     ) {
         $this->logRepository = $logRepository;
         $this->purchaseRequestRepository = $purchaseRequestRepository;
         $this->requestQuotationRepository = $requestQuotationRepository;
         $this->abstractQuotationRepository = $abstractQuotationRepository;
+        $this->purchaseOrderRepository = $purchaseOrderRepository;
     }
 
     /**
@@ -151,10 +155,30 @@ class PrintController extends Controller
                 ]);
 
             case DocumentPrintType::PO:
+                $data = $this->purchaseOrderRepository->print($pageConfig, $documentId);
+
+                if (!$data['success']) {
+                    $this->logError($documentId, $documentEnum, $data);
+
+                    return response()->json([
+                        'data' => [
+                            'blob' => $data['blob'],
+                            'filename' => $data['filename']
+                        ]
+                    ]);
+                }
+
+                $this->logRepository->create([
+                    'message' => "Succefully generated the {$data['filename']} document.",
+                    'log_id' => $documentId,
+                    'log_module' => 'po',
+                    'data' => $data
+                ]);
+
                 return response()->json([
                     'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf'
+                        'blob' => $data['blob'],
+                        'filename' => $data['filename']
                     ]
                 ]);
 

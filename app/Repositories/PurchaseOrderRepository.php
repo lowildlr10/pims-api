@@ -13,7 +13,7 @@ use App\Models\Log;
 use App\Models\PaymentTerm;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
-use App\Models\PurchaseRequest;
+use App\Models\PurchaseRequestItem;
 use Exception;
 use Illuminate\Support\Collection;
 use TCPDF;
@@ -124,39 +124,43 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         return strtoupper($documentType) . "-{$year}-{$sequence}-{$month}";
     }
 
-    public function print(array $pageConfig, string $prId): array
+    public function print(array $pageConfig, string $poId): array
     {
         try {
             $company = Company::first();
-            $pr = PurchaseRequest::with([
-                'funding_source:id,title',
-                'section:id,section_name',
-
-                'items' => function ($query) {
-                    $query->orderBy('item_sequence');
+            $po = PurchaseOrder::with([
+                'supplier:id,supplier_name,address,tin_no',
+                'mode_procurement:id,mode_name',
+                'place_delivery:id,location_name',
+                'delivery_term:id,term_name',
+                'payment_term:id,term_name',
+                'items' => function($query) {
+                    $query->orderBy(
+                        PurchaseRequestItem::select('item_sequence')
+                            ->whereColumn(
+                                'purchase_order_items.pr_item_id', 'purchase_request_items.id'
+                            ),
+                        'asc'
+                    );
                 },
-                'items.unit_issue:id,unit_name',
-
-                'requestor:id,firstname,lastname,position_id,allow_signature,signature',
-                'requestor.position:id,position_name',
-
-                'signatory_cash_available:id,user_id',
-                'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
-                'signatory_cash_available.detail' => function ($query) {
-                    $query->where('document', 'pr')
-                        ->where('signatory_type', 'cash_availability');
-                },
-
+                'items.pr_item:id,unit_issue_id,item_sequence,quantity,description,stock_no',
+                'items.pr_item.unit_issue:id,unit_name',
                 'signatory_approval:id,user_id',
                 'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
                 'signatory_approval.detail' => function ($query) {
-                    $query->where('document', 'pr')
-                        ->where('signatory_type', 'approved_by');
-                }
-            ])->find($prId);
+                    $query->where('document', 'po')
+                        ->where('signatory_type', '	authorized_official');
+                },
+                'purchase_request:id,purpose'
+            ])->find($poId);
 
-            $filename = "PR-{$pr->pr_no}.pdf";
-            $blob = $this->generatePurchaseRequestDoc($filename, $pageConfig, $pr, $company);
+            if ($po->document_type === 'po') {
+                $filename = "PO-{$po->po_no}.pdf";
+                $blob = $this->generatePurchaseOrderDoc($filename, $pageConfig, $po, $company);
+            } else {
+                $filename = "JO-{$po->po_no}.pdf";
+                $blob = $this->generateJobOrderDoc($filename, $pageConfig, $po, $company);
+            }
 
             return [
                 'success' => true,
@@ -173,8 +177,443 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         }
     }
 
-    private function generatePurchaseRequestDoc(
-        string $filename, array $pageConfig, PurchaseRequest $data, Company $company
+    private function generatePurchaseOrderDoc(
+        string $filename, array $pageConfig, PurchaseOrder $data, Company $company
+    ): string
+    {
+        $purchaseRequest = $data->purchase_request;
+        $supplier = $data->supplier;
+        $modeProcurement = $data->mode_procurement;
+        $placeDelivery = $data->place_delivery;
+        $deliveryTerm = $data->delivery_term;
+        $paymentTerm = $data->payment_term;
+        $signatoryApproval = $data->signatory_approval?->user;
+        $items = $data->items;
+
+        $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
+
+        $pdf->SetCreator(PDF_CREATOR);
+        $pdf->SetAuthor(env('APP_NAME'));
+        $pdf->SetTitle($filename);
+        $pdf->SetSubject('Purchase Order');
+        $pdf->SetMargins(
+            $pdf->getPageWidth() * 0.04,
+            $pdf->getPageHeight() * 0.05,
+            $pdf->getPageWidth() * 0.04
+        );
+        $pdf->setPrintHeader(false);
+        $pdf->setPrintFooter(false);
+        // $pdf->SetAutoPageBreak(TRUE, 0.4);
+
+        $pdf->AddPage();
+
+        $pageWidth = $pdf->getPageWidth() * 0.86;
+
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
+
+        try {
+            if ($company->company_logo) {
+                $imagePath = FileHelper::getPublicPath(
+                    $company->company_logo
+                );
+                $pdf->Image(
+                    $imagePath,
+                    $x + ($x * 0.15),
+                    $y + ($y * 0.09),
+                    w: $pageConfig['orientation'] === 'P'
+                        ? $x - ($x * 0.04)
+                        : $y + ($y * 0.4),
+                    type: 'PNG',
+                    resize: true,
+                    dpi: 500,
+                );
+            }
+        } catch (\Throwable $th) {}
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell(0, 0, "Province of {$company->province}", 0, 1, 'C');
+        $pdf->SetFont($this->fontArialBold, 'BU', 10);
+        $pdf->Cell(0, 0, 'MUNICIPAL GOVERNMENT OF ' . strtoupper($company->municipality), 0, 1, 'C');
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->Cell(0, 0, "{$company->municipality}, {$company->province}", 0, 1, 'C');
+        $pdf->setCellHeightRatio(1.25);
+
+        $pdf->Ln();
+
+        // $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002]);
+
+        $pdf->SetFont($this->fontArial, '', 1);
+        $pdf->Cell(0, 0, '', 1, 1, 'C');
+
+        $pdf->SetFont($this->fontArialBold, 'B', 24);
+        $pdf->Cell($pageWidth * 0.58, 0, 'PURCHASE ORDER', 'LR', 0, 'C');
+
+        $x = $pdf->GetX();
+
+        $pdf->SetFont($this->fontArial, '', 2);
+        $pdf->Cell($pageWidth * 0.096, 0, '', 'T', 0);
+        $pdf->SetFont($this->fontArial, '', 0);
+        $pdf->Cell(0, 0, '', 'T', 1);
+        $pdf->setX($x);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.096, 0, 'Number:', 0, 0, 'R', valign: 'B');
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->setTextColor(197, 90, 17);
+        $pdf->Cell(0, 0, $data->po_no, 'BR', 1);
+        $pdf->setTextColor();
+        $pdf->setX($x);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.096, 0, 'Date:', 0, 0, 'R');
+        $pdf->Cell(0, 0, date_format(date_create($data->po_date), 'F j, Y'), 'BR', 1);
+        $pdf->setX($x);
+        $pdf->SetFont($this->fontArial, '', 1.5);
+        $pdf->Cell(0, 0, '', 'RB', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $h1 = $pdf->getStringHeight($pageWidth * 0.12, 'Supplier');
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $h2 = $pdf->getStringHeight($pageWidth * 0.88, $supplier->supplier_name);
+        $cellHeights = [$h1, $h2];
+        $maxHeight = max($cellHeights);
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->MultiCell(
+            $pageWidth * 0.095, $maxHeight, 'Supplier', 'LT', 'L',
+            maxh: $maxHeight, valign: 'B', ln: 0
+        );
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->MultiCell(
+            $pageWidth * 0.485, $maxHeight,
+            $supplier->supplier_name,
+            'TRB', 'L', ln: 0
+        );
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->MultiCell(
+            0, $maxHeight, 'Mode of Procurement:', 'RB', 'C',
+            maxh: $maxHeight, valign: 'B'
+        );
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $h1 = $pdf->getStringHeight($pageWidth * 0.12, 'Address');
+        $pdf->SetFont($this->fontArial, '', 9);
+        $h2 = $pdf->getStringHeight($pageWidth * 0.88, $supplier->address);
+        $cellHeights = [$h1, $h2];
+        $maxHeight = max($cellHeights);
+        $totalMaxHeight = $maxHeight;
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->MultiCell(
+            $pageWidth * 0.095, $maxHeight, 'Address', 'L', 'L',
+            maxh: $maxHeight, valign: 'B', ln: 0
+        );
+        $pdf->SetFont($this->fontArial, '', 9);
+        $pdf->MultiCell(
+            $pageWidth * 0.485, $maxHeight,
+            $supplier->address, 'RB', 'L',
+            maxh: $maxHeight, valign: 'B', ln: 0
+        );
+
+        $x = $pdf->GetX();
+        $y = $pdf->GetY();
+
+        $pdf->Ln();
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $h1 = $pdf->getStringHeight($pageWidth * 0.12, 'T I N');
+        $h2 = $pdf->getStringHeight($pageWidth * 0.88, $supplier->tin_no);
+        $cellHeights = [$h1, $h2];
+        $maxHeight = max($cellHeights);
+        $totalMaxHeight += $maxHeight;
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->MultiCell(
+            $pageWidth * 0.095, $maxHeight, 'T I N', 'L', 'L',
+            maxh: $maxHeight, valign: 'B', ln: 0
+        );
+        $pdf->MultiCell(
+            $pageWidth * 0.485, $maxHeight,
+            $supplier->tin_no, 'RB', 'L',
+            maxh: $maxHeight, valign: 'B'
+        );
+
+        $pdf->SetFont($this->fontArial, '', 2);
+        $h1 = $pdf->getStringHeight($pageWidth * 0.58, '');
+        $h2 = $pdf->getStringHeight($pageWidth * 0.42, '');
+        $cellHeights = [$h1, $h2];
+        $maxHeight = max($cellHeights);
+        $totalMaxHeight += $maxHeight;
+
+        $pdf->Cell($pageWidth * 0.58, $maxHeight, '', 'LRB');
+        // $pdf->Cell(0, $maxHeight, '', 'R');
+
+        $pdf->SetXY($x, $y);
+
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->MultiCell(
+            0, $totalMaxHeight,
+            strtoupper($modeProcurement->mode_name),
+            'RB', 'C',
+            maxh: $totalMaxHeight, valign: 'M'
+        );
+
+        $pdf->SetFont($this->fontArial, '', 1);
+        $pdf->Cell(0, 0, '', 'LRB', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, 'I', 10);
+        $pdf->Cell($pageWidth * 0.183, 0, 'Gentlement:', 'L', 0, 'C');
+        $pdf->Cell(0, 0, '', 'R', 1);
+
+        $pdf->SetFont($this->fontArial, 'I', 5);
+        $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $pdf->SetFont($this->fontArial, 'I', 10);
+        $pdf->Cell(
+            0, 0,
+            'Please furnish this office the following articles subject '.
+            'to the terms and conditions contained herein:',
+            'LR', 1, 'C'
+        );
+
+        $pdf->SetFont($this->fontArial, 'I', 8);
+        $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.183, 0, 'Place of Delivery:', 'LT', 0, 'L');
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.397, 0, $placeDelivery->location_name, 'TB', 0, 'L');
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.185, 0, 'Delivery Term:', 'T', 0, 'L');
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell(0, 0, $deliveryTerm->term_name, 'TRB', 1, 'L');
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.183, 0, 'Date of Delivery:', 'L', 0, 'L');
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell(
+            $pageWidth * 0.397, 0,
+            date_format(date_create($data->delivery_date), 'F j, Y'),
+            'B', 0, 'L'
+        );
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.185, 0, 'Payment Term:', 0, 0, 'L');
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell(0, 0, $paymentTerm->term_name, 'RB', 1, 'L');
+
+        $pdf->SetFont($this->fontArial, 'I', 5);
+        $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $htmlTable = '
+            <table border="1" cellpadding="2"><thead><tr>
+                <th
+                    width="8.89%"
+                    align="center"
+                >Stock No.</th>
+                <th
+                    width="9.43%"
+                    align="center"
+                >Unit</th>
+                <th
+                    width="45.53%"
+                    align="center"
+                >Description</th>
+                <th
+                    width="9.88%"
+                    align="center"
+                >Qty</th>
+                <th
+                    width="11.15%"
+                    align="center"
+                >Unit Cost</th>
+                <th
+                    width="15.12%"
+                    align="center"
+                >Amount</th>
+            </tr></thead></table>
+        ';
+
+        $pdf->SetFont($this->fontArialBold, 'B', 9);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '<table border="1" cellpadding="2"><tbody>';
+
+        foreach ($items ?? [] as $item) {
+            $prItem = $item->pr_item;
+            $description = trim(str_replace("\r", '<br />', $item->description));
+            $description = str_replace("\n", '<br />', $description);
+
+            $htmlTable .= '
+                <tr>
+                    <td
+                        width="8.89%"
+                        align="center"
+                    >'. $prItem->stock_no .'</td>
+                    <td
+                        width="9.43%"
+                        align="center"
+                    >'. $prItem->unit_issue->unit_name .'</td>
+                    <td
+                        width="45.53%"
+                        align="left"
+                    >'. $description .'</td>
+                    <td
+                        width="9.88%"
+                        align="center"
+                    >'. $prItem->quantity .'</td>
+                    <td
+                        width="11.15%"
+                        align="right"
+                    >'. number_format($item->unit_cost, 2) .'</td>
+                    <td
+                        width="15.12%"
+                        align="right"
+                    >'. number_format($item->total_cost, 2) .'</td>
+                </tr>
+            ';
+        }
+
+        if (count($items) < 10) {
+            for ($counter = 0; $counter <= (10 - count($items)) ; $counter++) {
+                $htmlTable .= '
+                    <tr>
+                        <td
+                            width="8.89%"
+                            align="center"
+                        ></td>
+                        <td
+                            width="9.43%"
+                            align="center"
+                        ></td>
+                        <td
+                            width="45.53%"
+                            align="left"
+                        ></td>
+                        <td
+                            width="9.88%"
+                            align="center"
+                        ></td>
+                        <td
+                            width="11.15%"
+                            align="right"
+                        ></td>
+                        <td
+                            width="15.12%"
+                            align="right"
+                        ></td>
+                    </tr>
+                ';
+            }
+        }
+
+        $htmlTable .= '</tbody></table>';
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $purpose = trim(str_replace("\r", '<br />', $purchaseRequest->purpose));
+        $purpose = str_replace("\n", '<br />', $purpose);
+
+        $htmlTable = '
+            <table border="1" cellpadding="2"><tbody><tr>
+                <td
+                    width="8.89%"
+                    align="center"
+                ></td>
+                <td
+                    width="75.99%"
+                    align="center"
+                >'. $purpose .'</td>
+                <td
+                    width="15.12%"
+                    align="center"
+                ></td>
+            </tr></tbody></table>
+        ';
+
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table border="1" cellpadding="2"><tbody><tr>
+                <td
+                    width="18.32%"
+                    align="center"
+                >Total (Amount in words)</td>
+                <td
+                    width="66.56%"
+                    align="center"
+                    style="font-weight: bold; font-size: 12px;"
+                >'. strtoupper($data->total_amount_words) .'</td>
+                <td
+                    width="15.12%"
+                    align="right"
+                    style="font-weight: bold; font-size: 14px;"
+                >'. number_format($data->total_amount, 2) .'</td>
+            </tr></tbody></table>
+        ';
+
+        $pdf->SetFont('helvetica', '', 9);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $pdf->SetFont($this->fontArial, 'I', 10);
+        $pdf->Cell(
+            0, 0,
+            'In case of failure to make the full delivery within the ' .
+            'time specified above , a penalty of one tenth(1/10) of one',
+            'LR', 1, 'C'
+        );
+        $pdf->Cell(
+            0, 0,
+            ' percent for every day of delay shall be imposed.',
+            'LR', 1, 'L'
+        );
+
+        $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $pdf->SetFont($this->fontArialBold, 'B', 11);
+        $pdf->Cell($pageWidth * 0.276, 0, 'Conforme:', 'L', 0, 'C');
+        $pdf->Cell($pageWidth * 0.276, 0, '', 0, 0, 'C');
+        $pdf->Cell(0, 0, 'Very truly yours,', 'R', 1, 'L');
+
+        $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
+        $pdf->Cell($pageWidth * 0.464, 0, '', 'B', 0, 'C');
+        $pdf->Cell(0, 0, strtoupper($signatoryApproval->fullname), 'R', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 11);
+        $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
+        $pdf->Cell($pageWidth * 0.464, 0, '(Signature Over Printed Name)', 0, 0, 'C');
+        $pdf->Cell(0, 0, 'Municipal Mayor', 'R', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 11);
+        $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
+        $pdf->Cell($pageWidth * 0.464, 0, '', 'B', 0, 'C');
+        $pdf->Cell(0, 0, '(Authorized Official)', 'R', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 11);
+        $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
+        $pdf->Cell($pageWidth * 0.464, 0, '(Date)', 0, 0, 'C');
+        $pdf->Cell(0, 0, '', 'R', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 5);
+        $pdf->Cell(0, 0, '', 'LRB', 'B');
+
+        $pdfBlob = $pdf->Output($filename, 'S');
+        $pdfBase64 = base64_encode($pdfBlob);
+
+        return $pdfBase64;
+    }
+
+
+    private function generateJobOrderDoc(
+        string $filename, array $pageConfig, PurchaseOrder $data, Company $company
     ): string
     {
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);

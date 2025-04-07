@@ -32,10 +32,11 @@ return new class extends Migration
             $table->boolean('vat_registered')->nullable();
             $table->tinyInteger('batch')->default(1);
             $table->string('status');
+            $table->json('status_timestamps');
             $table->decimal('grand_total_cost', 20, 2)->default(0.00);
-            $table->timestamp('canvassing_at')->nullable();
-            $table->timestamp('completed_at')->nullable();
-            $table->timestamp('cancelled_at')->nullable();
+            // $table->timestamp('canvassing_at')->nullable();
+            // $table->timestamp('completed_at')->nullable();
+            // $table->timestamp('cancelled_at')->nullable();
             $table->timestamps();
         });
     }

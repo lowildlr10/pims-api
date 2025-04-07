@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Enums\AbstractQuotationStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
+use App\Models\AbstractQuotation;
+use App\Models\AbstractQuotationDetail;
 use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
@@ -12,6 +16,7 @@ use App\Models\RequestQuotation;
 use App\Models\User;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\PurchaseOrderRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -21,14 +26,17 @@ class PurchaseRequestController extends Controller
 {
     private LogRepository $logRepository;
     private AbstractQuotationRepository $abstractQuotationRepository;
+    private PurchaseOrderRepository $purchaseOrderRepository;
 
     public function __construct(
         LogRepository $logRepository,
-        AbstractQuotationRepository $abstractQuotationRepository
+        AbstractQuotationRepository $abstractQuotationRepository,
+        PurchaseOrderRepository $purchaseOrderRepository
     )
     {
         $this->logRepository = $logRepository;
         $this->abstractQuotationRepository = $abstractQuotationRepository;
+        $this->purchaseOrderRepository = $purchaseOrderRepository;
     }
 
     /**
@@ -46,7 +54,7 @@ class PurchaseRequestController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
             ->with([
                 'funding_source:id,title',
                 'requestor:id,firstname,lastname'
@@ -193,7 +201,8 @@ class PurchaseRequestController extends Controller
                 $validated,
                 [
                     'pr_no' => $this->generateNewPrNumber(),
-                    'status' => PurchaseRequestStatus::DRAFT
+                    'status' => PurchaseRequestStatus::DRAFT,
+                    'status_timestamps' => json_encode((Object)[])
                 ]
             ));
 
@@ -367,10 +376,12 @@ class PurchaseRequestController extends Controller
             }
 
             $status = $currentStatus;
+            $statusTimestamps = (Object) json_decode($purchaseRequest->status_timestamps);
 
             if ($currentStatus === PurchaseRequestStatus::DRAFT
                 || $currentStatus === PurchaseRequestStatus::DISAPPROVED) {
                 $status = PurchaseRequestStatus::DRAFT;
+                $statusTimestamps = (Object)[];
 
                 $items = json_decode($validated['items']);
                 $totalEstimatedCost = 0;
@@ -406,9 +417,7 @@ class PurchaseRequestController extends Controller
                 $validated,
                 [
                     'status' => $status,
-                    'submitted_at' => NULL,
-                    'approved_cash_available_at' => NULL,
-                    'disapproved_at' => NULL
+                    'status_timestamps' => json_encode($statusTimestamps)
                 ]
             ));
 
@@ -479,9 +488,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'submitted_at' => Carbon::now(),
-                'approved_cash_available_at' => NULL,
-                'status' => PurchaseRequestStatus::PENDING
+                'status' => PurchaseRequestStatus::PENDING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'pending_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -550,8 +560,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'approved_cash_available_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::APPROVED_CASH_AVAILABLE
+                'status' => PurchaseRequestStatus::APPROVED_CASH_AVAILABLE,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_cash_available_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -616,8 +628,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'approved_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::APPROVED
+                'status' => PurchaseRequestStatus::APPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -682,8 +696,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'disapproved_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::DISAPPROVED
+                'status' => PurchaseRequestStatus::DISAPPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'disapproved_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -749,8 +765,10 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
-                'cancelled_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::CANCELLED
+                'status' => PurchaseRequestStatus::CANCELLED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'cancelled_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $this->logRepository->create([
@@ -856,7 +874,10 @@ class PurchaseRequestController extends Controller
             $purchaseRequest->update([
                 'rfq_batch' => $purchaseRequest->rfq_batch + 1,
                 'approved_rfq_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::FOR_ABSTRACT
+                'status' => PurchaseRequestStatus::FOR_ABSTRACT,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_rfq_at', $purchaseRequest->status_timestamps
+                )
             ]);
 
             $prReturnData = $purchaseRequest;
@@ -914,6 +935,165 @@ class PurchaseRequestController extends Controller
             ]);
         } catch (\Throwable $th) {
             $message = 'Failed to mark the purchase request as "For Abstract".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function awardAbstractQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
+    {
+        $user = auth()->user();
+
+        try {
+            $message = 'Purchase request successfully marked as ';
+            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
+
+            if ($currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {}
+            else {
+                $message = 'Failed to award the approved Abstract of Quotation(s) because it is already set to this status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $purchaseRequest
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $prStatus = PurchaseRequestStatus::AWARDED;
+            $aoqApproved = AbstractQuotation::with('items')
+                ->where('purchase_request_id', $purchaseRequest->id)
+                ->where('status', AbstractQuotationStatus::APPROVED);
+            $aoqApprovedCount = $aoqApproved->count();
+            $aoqApproved = $aoqApproved->get();
+
+            if ($aoqApprovedCount === 0) {
+                $message = 'Nothing to award. The Abstract of Quotation(s) may still be pending or have already been awarded.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr'
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            foreach ($aoqApproved ?? [] as $aoq) {
+                $poData = [];
+                $poItems = [];
+
+                foreach ($aoq->items ?? [] as $item) {
+                    if (empty($item->awardee_id)) continue;
+
+                    $prItem = PurchaseRequestItem::find($item->pr_item_id);
+                    $prItem->update([
+                        'awarded_to_id' => $item->awardee_id
+                    ]);
+
+                    $aorItemDetail = AbstractQuotationDetail::where('abstract_quotation_id', $aoq->id)
+                        ->where('aoq_item_id', $item->id)
+                        ->where('supplier_id', $item->awardee_id)
+                        ->first();
+
+                    $poItems[$item->awardee_id][$item->document_type][] = (Object)[
+                        'pr_item_id' => $prItem->id,
+                        'brand_model' => $aorItemDetail->brand_model,
+                        'description' => $aorItemDetail->brand_model
+                            ? "{$prItem->description}\n{$aorItemDetail->brand_model}"
+                            : $prItem->description,
+                        'unit_cost' => $aorItemDetail->unit_cost,
+                        'total_cost' => $aorItemDetail->total_cost
+                    ];
+
+                    $poData[$item->awardee_id][$item->document_type] = [
+                        'purchase_request_id' => $purchaseRequest->id,
+                        'mode_procurement_id' => $aoq->mode_procurement_id,
+                        'supplier_id' => $item->awardee_id,
+                        'document_type' => $item?->document_type ?? 'po',
+                        'items' => json_encode($poItems[$item->awardee_id][$item->document_type])
+                    ];
+                }
+
+                foreach ($poData ?? [] as $poDocs) {
+                    foreach ($poDocs as $po) {
+                        $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($po);
+                        $this->logRepository->create([
+                            'message' => 'Purchase Order created successfully.',
+                            'log_id' => $purchaseOrder->id,
+                            'log_module' => 'po',
+                            'data' => $purchaseOrder
+                        ]);
+                    }
+                }
+
+                $aoq->update([
+                    'status' => AbstractQuotationStatus::AWARDED,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'awarded_at', $aoq->status_timestamps
+                    )
+                ]);
+
+                $this->logRepository->create([
+                    'message' => 'Abstract of quotation awarded successfully.',
+                    'log_id' => $aoq->id,
+                    'log_module' => 'aoq',
+                    'data' => $aoq
+                ]);
+            }
+
+            $countItems = PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
+                ->count();
+            $countAwardedItems = PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
+                ->whereNotNull('awarded_to_id')
+                ->count();
+
+            if ($countAwardedItems !== $countItems) {
+                $prStatus = PurchaseRequestStatus::PARTIALLY_AWARDED;
+            }
+
+            $purchaseRequest->update([
+                'status' => $prStatus,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    $prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED
+                        ? 'partially_awarded_at' : 'awarded_at',
+                    $purchaseRequest->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message . ($prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED ? '"Partially Awarded".' : '"Awarded".'),
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $purchaseRequest,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Failed to award the approved Abstract of Quotation(s).';
 
             $this->logRepository->create([
                 'message' => $message,

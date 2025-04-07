@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Enums\AbstractQuotationStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\AbstractQuotation;
 use App\Models\FundingSource;
@@ -11,6 +13,7 @@ use App\Models\PurchaseRequestItem;
 use App\Models\User;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -44,7 +47,7 @@ class AbstractQuotationController extends Controller
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'purpose', 'status', 'requested_by_id')
+            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
             ->with([
                 'funding_source:id,title',
                 'requestor:id,firstname,lastname',
@@ -351,6 +354,136 @@ class AbstractQuotationController extends Controller
 
             return response()->json([
                 'message' => "$message Please try again."
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function pending(AbstractQuotation $abstractQuotation): JsonResponse
+    {
+        try {
+            $message = 'Abstract of bids and quotation successfully marked as "Pending".';
+
+            $currentStatus = AbstractQuotationStatus::from($abstractQuotation->status);
+
+            if ($currentStatus !== AbstractQuotationStatus::DRAFT) {
+                $message =
+                    'Failed to set the abstract of bids and quotation to pending.
+                    It is already pending or approved or awarded.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $abstractQuotation->id,
+                    'log_module' => 'aoq',
+                    'data' => $abstractQuotation
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $abstractQuotation->update([
+                'status' => AbstractQuotationStatus::PENDING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'pending_at', $abstractQuotation->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation
+            ]);
+
+            $abstractQuotation->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $abstractQuotation,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Abstract of bids and quotation failed to marked as "Pending".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function approve(AbstractQuotation $abstractQuotation): JsonResponse
+    {
+        try {
+            $message = 'Abstract of bids and quotation successfully marked as "Approved".';
+
+            $currentStatus = AbstractQuotationStatus::from($abstractQuotation->status);
+
+            if ($currentStatus !== AbstractQuotationStatus::PENDING) {
+                $message =
+                    'Failed to set the abstract of bids and quotation to approved.
+                    It may already be awarded or still in draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $abstractQuotation->id,
+                    'log_module' => 'aoq',
+                    'data' => $abstractQuotation
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $abstractQuotation->update([
+                'status' => AbstractQuotationStatus::APPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'approved_at', $abstractQuotation->status_timestamps
+                )
+            ]);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation
+            ]);
+
+            $abstractQuotation->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $abstractQuotation,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Abstract of bids and quotation failed to marked as "Approved".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
             ], 422);
         }
     }

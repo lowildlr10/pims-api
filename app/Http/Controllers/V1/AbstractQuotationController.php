@@ -85,7 +85,7 @@ class AbstractQuotationController extends Controller
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
@@ -109,7 +109,7 @@ class AbstractQuotationController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('aoqs', function ($query) use ($search) {
-                        $query->where('id', $search)
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                             ->orWhere('solicitation_no', 'ILIKE', "%{$search}%")
                             ->orWhere('solicitation_date', 'ILIKE', "%{$search}%")
                             ->orWhere('abstract_no', 'ILIKE', "%{$search}%")

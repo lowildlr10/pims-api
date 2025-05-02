@@ -2,12 +2,16 @@
 
 namespace App\Repositories;
 
+use App\Enums\InspectionAcceptanceReportStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Helpers\FileHelper;
+use App\Interfaces\InspectionAcceptanceReportInterface;
 use App\Interfaces\PurchaseOrderRepositoryInterface;
 use App\Jobs\StorePoItems;
 use App\Models\Company;
 use App\Models\DeliveryTerm;
+use App\Models\InspectionAcceptanceReport;
+use App\Models\InspectionAcceptanceReportItem;
 use App\Models\Location;
 use App\Models\Log;
 use App\Models\PaymentTerm;
@@ -19,7 +23,7 @@ use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
-class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
+class InspectionAcceptanceReportRepository implements InspectionAcceptanceReportInterface
 {
     public function __construct() {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
@@ -31,97 +35,54 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function storeUpdate(array $data, ?PurchaseOrder $purchaseOrder = NULL): PurchaseOrder
+    public function storeUpdate(array $data, ?InspectionAcceptanceReport $inspectionAcceptanceReport = NULL): InspectionAcceptanceReport
     {
         $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
 
-        if (!empty($purchaseOrder)) {
-            $placeDelivery = Location::where('location_name', $data['place_delivery'])->first();
-            $deliveryTerm = DeliveryTerm::where('term_name', $data['delivery_term'])->first();
-            $paymentTerm = PaymentTerm::where('term_name', $data['payment_term'])->first();
-
-            if (!$placeDelivery) {
-                $placeDelivery = Location::create([
-                    'location_name' => $data['place_delivery']
-                ]);
-            }
-
-            if (!$deliveryTerm) {
-                $deliveryTerm = DeliveryTerm::create([
-                    'term_name' => $data['delivery_term']
-                ]);
-            }
-
-            if (!$paymentTerm) {
-                $paymentTerm = PaymentTerm::create([
-                    'term_name' => $data['payment_term']
-                ]);
-            }
-
-            $purchaseOrder->update(array_merge(
-                $data,
-                [
-                    'place_delivery_id' => $placeDelivery->id,
-                    'delivery_term_id' => $deliveryTerm->id,
-                    'payment_term_id' => $paymentTerm->id
-                ]
-            ));
-
-            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder, false);
+        if (!empty($inspectionAcceptanceReport)) {
+            $inspectionAcceptanceReport->update($data);
         } else {
-            $purchaseOrder = PurchaseOrder::create(
+            $inspectionAcceptanceReport = InspectionAcceptanceReport::create(
                 array_merge(
                     $data,
                     [
-                        'po_no' => $this->generateNewPoNumber(
-                            $data['document_type']
-                        ),
-                        'status' => PurchaseOrderStatus::DRAFT,
+                        'iar_no' => $this->generateNewIarNumber(),
+                        'status' => InspectionAcceptanceReportStatus::DRAFT,
                         'status_timestamps' => json_encode((Object) [])
                     ]
                 )
             );
 
-            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder);
+            $this->storeUpdateItems(collect($items ?? []), $inspectionAcceptanceReport);
         }
 
-        return $purchaseOrder;
+        return $inspectionAcceptanceReport;
     }
 
-    private function storeUpdateItems(Collection $items, PurchaseOrder $purchaseOrder, bool $queue = true): void
+    private function storeUpdateItems(Collection $items, InspectionAcceptanceReport $inspectionAcceptanceReport): void
     {
-        if ($queue) {
-            PurchaseOrderItem::where('purchase_order_id', $purchaseOrder->id)
+        foreach ($items as $item) {
+            InspectionAcceptanceReportItem::where('inspection_acceptance_report_id', $inspectionAcceptanceReport->id)
+                ->where('po_item_id', $item->po_item_id)
                 ->delete();
 
-            $itemChunks = $items->chunk(50);
-
-            foreach ($itemChunks as $itemChunk) {
-                StorePoItems::dispatch($itemChunk, $purchaseOrder);
-            }
-        } else {
-            foreach ($items as $item) {
-                $poItem = PurchaseOrderItem::where('purchase_order_id', $purchaseOrder->id)
-                    ->where('pr_item_id', $item->pr_item_id)
-                    ->first();
-
-                $poItem->update([
-                    'description' => $item->description
-                ]);
-            }
+            InspectionAcceptanceReportItem::create([
+                'inspection_acceptance_report_id' => $inspectionAcceptanceReport->id,
+                'pr_item_id' => $item->pr_item_id,
+                'po_item_id' => $item->po_item_id
+            ]);
         }
     }
 
-    private function generateNewPoNumber(string $documentType = 'po'): string
+    private function generateNewIarNumber(): string
     {
         $month = date('m');
         $year = date('Y');
-        $sequence = PurchaseOrder::whereMonth('created_at', $month)
+        $sequence = InspectionAcceptanceReport::whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
-            ->where('document_type', $documentType)
             ->count() + 1;
 
-        return strtoupper($documentType) . "-{$year}-{$sequence}-{$month}";
+        return "{$year}-{$sequence}-{$month}";
     }
 
     public function print(array $pageConfig, string $poId): array
@@ -383,11 +344,11 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.183, 0, 'Place of Delivery:', 'LT', 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.397, 0, !empty($placeDelivery) ? $placeDelivery->location_name : '', 'TB', 0, 'L');
+        $pdf->Cell($pageWidth * 0.397, 0, $placeDelivery->location_name, 'TB', 0, 'L');
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.185, 0, 'Delivery Term:', 'T', 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell(0, 0, !empty($deliveryTerm) ? $deliveryTerm->term_name : '', 'TRB', 1, 'L');
+        $pdf->Cell(0, 0, $deliveryTerm->term_name, 'TRB', 1, 'L');
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.183, 0, 'Date of Delivery:', 'L', 0, 'L');
@@ -400,7 +361,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.185, 0, 'Payment Term:', 0, 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell(0, 0, !empty($paymentTerm) ? $paymentTerm->term_name : '', 'RB', 1, 'L');
+        $pdf->Cell(0, 0, $paymentTerm->term_name, 'RB', 1, 'L');
 
         $pdf->SetFont($this->fontArial, 'I', 5);
         $pdf->Cell(0, 0, '', 'LR', 1);
@@ -585,7 +546,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArialBold, 'B', 12);
         $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
         $pdf->Cell($pageWidth * 0.464, 0, '', 'B', 0, 'C');
-        $pdf->Cell(0, 0, strtoupper(!empty($signatoryApproval) ? $signatoryApproval->fullname : ''), 'R', 1, 'C');
+        $pdf->Cell(0, 0, strtoupper($signatoryApproval->fullname), 'R', 1, 'C');
 
         $pdf->SetFont($this->fontArial, '', 11);
         $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');

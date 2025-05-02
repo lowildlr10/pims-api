@@ -36,7 +36,7 @@ class FundingSourceController extends Controller
 
         if (!empty($search)) {
             $fundingSources = $fundingSources->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('title', 'ILIKE', "%{$search}%")
                     ->orWhere('total_cost', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('location', 'location_name', 'ILIKE', "%{$search}%");

@@ -35,7 +35,7 @@ class UacsCodeClassificationController extends Controller
 
         if (!empty($search)) {
             $uacsCodeClassifications = $uacsCodeClassifications->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('classification_name', 'ILIKE', "%{$search}%");
             });
         }

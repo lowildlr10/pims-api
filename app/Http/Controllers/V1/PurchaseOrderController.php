@@ -10,6 +10,7 @@ use App\Models\FundingSource;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
+use App\Repositories\InspectionAcceptanceReportRepository;
 use App\Repositories\LogRepository;
 use App\Repositories\PurchaseOrderRepository;
 use Carbon\Carbon;
@@ -21,14 +22,17 @@ class PurchaseOrderController extends Controller
 {
     private LogRepository $logRepository;
     private PurchaseOrderRepository $purchaseOrderRepository;
+    private InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository;
 
     public function __construct(
         LogRepository $logRepository,
-        PurchaseOrderRepository $purchaseOrderRepository
+        PurchaseOrderRepository $purchaseOrderRepository,
+        InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository
     )
     {
         $this->logRepository = $logRepository;
         $this->purchaseOrderRepository = $purchaseOrderRepository;
+        $this->inspectionAcceptanceReportRepository = $inspectionAcceptanceReportRepository;
     }
 
     /**
@@ -82,7 +86,7 @@ class PurchaseOrderController extends Controller
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
@@ -106,7 +110,7 @@ class PurchaseOrderController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('pos', function ($query) use ($search) {
-                        $query->where('id', $search)
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                             ->orWhere('po_no', 'ILIKE', "%{$search}%")
                             ->orWhere('document_type', 'ILIKE', "%{$search}%")
                             ->orWhere('status', 'ILIKE', "%{$search}%");
@@ -583,7 +587,28 @@ class PurchaseOrderController extends Controller
                 ], 422);
             }
 
-            // TODO: Save to IAR module
+            $purchaseOrder->load('items');
+
+            // Save to IAR module
+            $inspectionAcceptanceReport = $this->inspectionAcceptanceReportRepository->storeUpdate([
+                'purchase_request_id' => $purchaseOrder->purchase_request_id,
+                'purchase_order_id' => $purchaseOrder->id,
+                'supplier_id' => $purchaseOrder->supplier_id,
+                'items' => json_encode(
+                    $purchaseOrder->items->map(function ($item) {
+                        return [
+                            'pr_item_id' => $item->pr_item_id,
+                            'po_item_id' => $item->id,
+                        ];
+                    })->toArray()
+                )
+            ]);
+            $this->logRepository->create([
+                'message' => 'Inspection Acceptance Report created successfully.',
+                'log_id' => $inspectionAcceptanceReport->id,
+                'log_module' => 'iar',
+                'data' => $inspectionAcceptanceReport
+            ]);
 
             $purchaseOrder->update([
                 'status' => PurchaseOrderStatus::DELIVERED,
@@ -598,8 +623,6 @@ class PurchaseOrderController extends Controller
                 'log_module' => 'po',
                 'data' => $purchaseOrder
             ]);
-
-            $purchaseOrder->load('items');
 
             return response()->json([
                 'data' => [

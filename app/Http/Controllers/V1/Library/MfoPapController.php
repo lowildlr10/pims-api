@@ -35,7 +35,7 @@ class MfoPapController extends Controller
 
         if (!empty($search)) {
             $mfoPaps = $mfoPaps->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
             });

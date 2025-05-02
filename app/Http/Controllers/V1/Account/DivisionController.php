@@ -42,10 +42,10 @@ class DivisionController extends Controller
 
         if (!empty($search)) {
             $divisions = $divisions->where(function($query) use ($search) {
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('division_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('sections', function($query) use ($search) {
-                        $query->where('id', $search)
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                             ->orWhere('section_name', 'ILIKE', "%{$search}%");
                     });
             });

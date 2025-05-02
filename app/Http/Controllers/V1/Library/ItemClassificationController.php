@@ -35,7 +35,7 @@ class ItemClassificationController extends Controller
 
         if (!empty($search)) {
             $itemClassifications = $itemClassifications->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('classification_name', 'ILIKE', "%{$search}%");
             });
         }

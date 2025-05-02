@@ -35,7 +35,7 @@ class UacsCodeController extends Controller
 
         if (!empty($search)) {
             $uacsCodes = $uacsCodes->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('account_title', 'ILIKE', "%{$search}%")
                     ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%")

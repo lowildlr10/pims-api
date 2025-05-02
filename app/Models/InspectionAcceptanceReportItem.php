@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class PurchaseOrderItem extends Model
+class InspectionAcceptanceReportItem extends Model
 {
     use HasUuids;
 
@@ -18,22 +18,20 @@ class PurchaseOrderItem extends Model
      */
     public $timestamps = false;
 
-    /**
+     /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
-        'purchase_order_id',
+        'inspection_acceptance_report_id',
         'pr_item_id',
-        'description',
-        'brand_model',
-        'unit_cost',
-        'total_cost'
+        'po_item_id',
+        'accepted'
     ];
 
     /**
-     * The purchase order item that has one purchase request item.
+     * The inspection acceptance report item that has one purchase request item.
      */
     public function pr_item(): HasOne
     {
@@ -41,10 +39,18 @@ class PurchaseOrderItem extends Model
     }
 
     /**
-     * The purchase order item that belongs to purchase order.
+     * The inspection acceptance report item that has one purchase order item.
      */
-    public function purchase_order(): BelongsTo
+    public function po_item(): HasOne
     {
-        return $this->belongsTo(PurchaseOrder::class);
+        return $this->hasOne(PurchaseOrderItem::class, 'id', 'po_item_id');
+    }
+
+    /**
+     * The inspection acceptance report item that belongs to inspection acceptance report.
+     */
+    public function inspection_acceptance_report(): BelongsTo
+    {
+        return $this->belongsTo(InspectionAcceptanceReport::class);
     }
 }

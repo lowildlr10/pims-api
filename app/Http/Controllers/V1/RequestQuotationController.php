@@ -85,7 +85,7 @@ class RequestQuotationController extends Controller
 
         if (!empty($search)) {
             $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
@@ -109,7 +109,7 @@ class RequestQuotationController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('rfqs', function ($query) use ($search) {
-                        $query->where('id', $search)
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                             ->orWhere('rfq_no', 'ILIKE', "%{$search}%")
                             ->orWhere('rfq_date', 'ILIKE', "%{$search}%")
                             ->orWhere('status', 'ILIKE', "%{$search}%");
@@ -186,6 +186,7 @@ class RequestQuotationController extends Controller
         $validated = $request->validate([
             'rfq_no' => 'required',
             'purchase_request_id' => 'required',
+            'copies' => 'required|numeric|min:1|max:10',
             'signed_type' => 'required|string',
             'rfq_date' => 'required',
             'supplier_id' => 'nullable',
@@ -196,76 +197,79 @@ class RequestQuotationController extends Controller
             'vat_registered' =>  'nullable|in:true,false',
         ]);
 
+        $copies = $validated['copies'] ?? 1;
         $validated['vat_registered'] = !empty($validated['vat_registered'])
             ? filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN)
             : NULL;
 
         try {
-            $message = 'Request for quotation created successfully.';
-            $purchaseRequest = PurchaseRequest::find($validated['purchase_request_id']);
+            for ($copy = 1; $copy <= $copies; $copy++) {
+                $message = 'Request for quotation created successfully.';
+                $purchaseRequest = PurchaseRequest::find($validated['purchase_request_id']);
 
-            $existingSupplierCount = !empty($validated['supplier_id'])
-                ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
-                    ->where('purchase_request_id', $validated['purchase_request_id'])
-                    ->where('batch', $purchaseRequest->rfq_batch)
-                    ->where('status', '!=', RequestQuotationStatus::CANCELLED)
-                    ->count()
-                : 0;
+                $existingSupplierCount = !empty($validated['supplier_id'])
+                    ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
+                        ->where('purchase_request_id', $validated['purchase_request_id'])
+                        ->where('batch', $purchaseRequest->rfq_batch)
+                        ->where('status', '!=', RequestQuotationStatus::CANCELLED)
+                        ->count()
+                    : 0;
 
-            if ($existingSupplierCount > 0) {
-                $message = 'Request quotation creation failed due to an existing RFQ with the supplier.';
+                if ($existingSupplierCount > 0) {
+                    $message = 'Request quotation creation failed due to an existing RFQ with the supplier.';
+
+                    $this->logRepository->create([
+                        'message' => $message,
+                        'log_module' => 'rfq',
+                        'data' => $validated
+                    ], isError: true);
+
+                    return response()->json([
+                        'message' => $message
+                    ], 422);
+                }
+
+                $items = json_decode($validated['items']);
+                $canvassers = json_decode($validated['canvassers']);
+
+                $requestQuotation = RequestQuotation::create(array_merge(
+                    $validated,
+                    [
+                        // 'rfq_no' => $this->generateNewRfqNumber(),
+                        'batch' => $purchaseRequest->rfq_batch,
+                        'status' => RequestQuotationStatus::DRAFT,
+                        'status_timestamps' => json_encode((Object) [])
+                    ]
+                ));
+
+                foreach ($items ?? [] as $key => $item) {
+                    RequestQuotationItem::create([
+                        'request_quotation_id' => $requestQuotation->id,
+                        'pr_item_id' => $item->pr_item_id,
+                        'supplier_id' => $validated['supplier_id'],
+                        'included' => $item->included
+                    ]);
+                }
+
+                foreach ($canvassers ?? [] as $key => $userId) {
+                    RequestQuotationCanvasser::create([
+                        'request_quotation_id' => $requestQuotation->id,
+                        'user_id' => $userId
+                    ]);
+                }
+
+                $requestQuotation->items = json_decode($validated['items']) ?? [];
+                $requestQuotation->canvassers = User::select('id', 'firstname', 'middlename', 'lastname')
+                    ->whereIn('id', json_decode($validated['canvassers']) ?? [])
+                    ->get();
 
                 $this->logRepository->create([
                     'message' => $message,
+                    'log_id' => $requestQuotation->id,
                     'log_module' => 'rfq',
-                    'data' => $validated
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message
-                ], 422);
-            }
-
-            $items = json_decode($validated['items']);
-            $canvassers = json_decode($validated['canvassers']);
-
-            $requestQuotation = RequestQuotation::create(array_merge(
-                $validated,
-                [
-                    // 'rfq_no' => $this->generateNewRfqNumber(),
-                    'batch' => $purchaseRequest->rfq_batch,
-                    'status' => RequestQuotationStatus::DRAFT,
-                    'status_timestamps' => json_encode((Object) [])
-                ]
-            ));
-
-            foreach ($items ?? [] as $key => $item) {
-                RequestQuotationItem::create([
-                    'request_quotation_id' => $requestQuotation->id,
-                    'pr_item_id' => $item->pr_item_id,
-                    'supplier_id' => $validated['supplier_id'],
-                    'included' => $item->included
+                    'data' => $requestQuotation
                 ]);
             }
-
-            foreach ($canvassers ?? [] as $key => $userId) {
-                RequestQuotationCanvasser::create([
-                    'request_quotation_id' => $requestQuotation->id,
-                    'user_id' => $userId
-                ]);
-            }
-
-            $requestQuotation->items = json_decode($validated['items']) ?? [];
-            $requestQuotation->canvassers = User::select('id', 'firstname', 'middlename', 'lastname')
-                ->whereIn('id', json_decode($validated['canvassers']) ?? [])
-                ->get();
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $requestQuotation->id,
-                'log_module' => 'rfq',
-                'data' => $requestQuotation
-            ]);
 
             return response()->json([
                 'data' => [

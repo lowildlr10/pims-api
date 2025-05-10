@@ -29,8 +29,7 @@ class InspectionAcceptanceReport extends Model
         'inspected',
         'sig_inspection_id',
         'received_date',
-        'acceptance_complete',
-        'acceptance_partial',
+        'acceptance_completed',
         'sig_acceptance_id',
         'status',
         'status_timestamps'

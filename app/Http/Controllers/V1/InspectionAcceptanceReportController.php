@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Enums\InspectionAcceptanceReportStatus;
+use App\Enums\PurchaseOrderStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\InspectionAcceptanceReport;
 use App\Models\PurchaseOrder;
@@ -9,12 +12,20 @@ use App\Models\PurchaseRequestItem;
 use App\Models\Signatory;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class InspectionAcceptanceReportController extends Controller
 {
+    private LogRepository $logRepository;
+
+    public function __construct(LogRepository $logRepository)
+    {
+        $this->logRepository = $logRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -178,17 +189,148 @@ class InspectionAcceptanceReportController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport)
+    public function update(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
     {
-        //
+        $user = auth()->user();
+
+        $validated = $request->validate([
+            'iar_date' => 'required',
+            'invoice_no' => 'required',
+            'invoice_date' => 'required',
+            'inspected_date' => 'nullable',
+            'inspected' => 'nullable|in:true,false',
+            'sig_inspection_id' => 'nullable|exists:signatories,id',
+            'sig_acceptance_id' => 'nullable|exists:signatories,id',
+            'received_date' => 'nullable',
+            'acceptance_completed' => 'nullable|in:true,false',
+        ]);
+
+        $validated['inspected'] = !empty($validated['inspected'])
+            ? filter_var($validated['inspected'], FILTER_VALIDATE_BOOLEAN)
+            : NULL;
+        $validated['acceptance_completed'] = !empty($validated['acceptance_completed'])
+            ? filter_var($validated['acceptance_completed'], FILTER_VALIDATE_BOOLEAN)
+            : NULL;
+
+        try {
+            $message = 'Inspection and acceptance report updated successfully.';
+
+            $inspectionAcceptanceReport->update($validated);
+
+            $inspectionAcceptanceReport->load('items');
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $inspectionAcceptanceReport->id,
+                'log_module' => 'iar',
+                'data' => $inspectionAcceptanceReport
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $inspectionAcceptanceReport,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Inspection and acceptance repor update failed.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $inspectionAcceptanceReport->id,
+                'log_module' => 'iar',
+                'data' => $validated
+            ], isError: true);
+
+            return response()->json([
+                'message' => "$message Please try again."
+            ], 422);
+        }
     }
 
     /**
      * Update the status of the specified resource in storage.
      */
-    public function forInspection(InspectionAcceptanceReport $inspectionAcceptanceReport)
+    public function pending(InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
     {
+        try {
+            $message = 'Inspection & acceptance report successfully marked as pending for inspection.';
 
+            $currentStatus = InspectionAcceptanceReportStatus::from($inspectionAcceptanceReport->status);
+
+            if ($currentStatus !== InspectionAcceptanceReportStatus::DRAFT) {
+                $message =
+                    'Failed to set the inspection & accpetance report to pending for inspection.
+                    It may already be set to pending or processing status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $inspectionAcceptanceReport->id,
+                    'log_module' => 'iar',
+                    'data' => $inspectionAcceptanceReport
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $purchaseOrder = PurchaseOrder::find($inspectionAcceptanceReport->purchase_order_id);
+
+            if ($purchaseOrder) {
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::INSPECTION,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'inspection_at', $purchaseOrder->status_timestamps
+                    )
+                ]);
+
+                $this->logRepository->create([
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                        ' order successfully marked as to inspection.',
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder
+                ]);
+            }
+
+            $inspectionAcceptanceReport->update([
+                'status' => InspectionAcceptanceReportStatus::PENDING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'pending_at', $inspectionAcceptanceReport->status_timestamps
+                )
+            ]);
+
+            $inspectionAcceptanceReport->load('items');
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $inspectionAcceptanceReport->id,
+                'log_module' => 'iar',
+                'data' => $inspectionAcceptanceReport
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $inspectionAcceptanceReport,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Inspection & acceptance report failed to marked as pending for inspection.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $inspectionAcceptanceReport->id,
+                'log_module' => 'iar',
+                'data' => $inspectionAcceptanceReport
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
     }
 
     /**
@@ -196,14 +338,86 @@ class InspectionAcceptanceReportController extends Controller
      */
     public function inspect(InspectionAcceptanceReport $inspectionAcceptanceReport)
     {
+        try {
+            $message = 'Inspection & acceptance report successfully marked as inspected.';
 
+            $currentStatus = InspectionAcceptanceReportStatus::from($inspectionAcceptanceReport->status);
+
+            if ($currentStatus !== InspectionAcceptanceReportStatus::PENDING) {
+                $message =
+                    'Failed to set the inspection & accpetance report to inspected.
+                    It may still be on draft or already on processing status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $inspectionAcceptanceReport->id,
+                    'log_module' => 'iar',
+                    'data' => $inspectionAcceptanceReport
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            if (empty($inspectionAcceptanceReport->sig_inspection_id)) {
+                $message = 'Failed to set the inspection & acceptance report to inspected. ' .
+                    'Please select a signatory for inspection.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $inspectionAcceptanceReport->id,
+                    'log_module' => 'iar',
+                    'data' => $inspectionAcceptanceReport
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            $inspectionAcceptanceReport->update([
+                'status' => InspectionAcceptanceReportStatus::INSPECTED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'inspected_at', $inspectionAcceptanceReport->status_timestamps
+                )
+            ]);
+
+            $inspectionAcceptanceReport->load('items');
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $inspectionAcceptanceReport->id,
+                'log_module' => 'iar',
+                'data' => $inspectionAcceptanceReport
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $inspectionAcceptanceReport,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Inspection & acceptance report failed to marked as inspected.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $inspectionAcceptanceReport->id,
+                'log_module' => 'iar',
+                'data' => $inspectionAcceptanceReport
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
     }
 
     /**
      * Update the status of the specified resource in storage.
      */
-    public function accept(InspectionAcceptanceReport $inspectionAcceptanceReport)
-    {
+    // public function accept(InspectionAcceptanceReport $inspectionAcceptanceReport)
+    // {
 
-    }
+    // }
 }

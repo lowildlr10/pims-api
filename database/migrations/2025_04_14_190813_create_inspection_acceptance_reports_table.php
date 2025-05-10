@@ -36,8 +36,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('signatories');
             $table->string('received_date')->nullable();
-            $table->boolean('acceptance_complete')->default(false);
-            $table->boolean('acceptance_partial')->default(false);
+            $table->boolean('acceptance_completed')->nullable();
             $table->uuid('sig_acceptance_id')->nullable();
             $table->foreign('sig_acceptance_id')
                 ->references('id')

@@ -37,10 +37,10 @@ return new class extends Migration
                 ->on('signatories');
             $table->string('received_date')->nullable();
             $table->boolean('acceptance_completed')->nullable();
-            $table->uuid('sig_acceptance_id')->nullable();
-            $table->foreign('sig_acceptance_id')
+            $table->uuid('acceptance_id')->nullable();
+            $table->foreign('acceptance_id')
                 ->references('id')
-                ->on('signatories');
+                ->on('users');
             $table->string('status');
             $table->json('status_timestamps');
             $table->timestamps();

@@ -13,14 +13,15 @@ return new class extends Migration
     {
         Schema::create('supplies', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_order_id')->nullable();
+            $table->uuid('purchase_order_id');
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
-            $table->uuid('po_item_id')->nullable();
+            $table->uuid('po_item_id');
             $table->foreign('po_item_id')
                 ->references('id')
                 ->on('purchase_order_items');
+            $table->smallInteger('item_sequence');
             $table->string('sku')->nullable()->unique();
             $table->string('upc')->nullable();
             $table->string('name')->nullable();
@@ -29,7 +30,13 @@ return new class extends Migration
             $table->foreign('item_classification_id')
                 ->references('id')
                 ->on('item_classifications');
+            $table->uuid('unit_issue_id');
+            $table->foreign('unit_issue_id')
+                ->references('id')
+                ->on('unit_issues');
+            $table->integer('quantity');
             $table->decimal('unit_cost', 20, 2)->default(0.00);
+            $table->decimal('total_cost', 20, 2)->default(0.00);
             $table->enum('required_document', ['ics', 'are', 'ris']);
             $table->timestamps();
         });

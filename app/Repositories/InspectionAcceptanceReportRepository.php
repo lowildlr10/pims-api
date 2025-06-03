@@ -7,6 +7,7 @@ use App\Helpers\FileHelper;
 use App\Interfaces\InspectionAcceptanceReportInterface;
 use App\Models\Company;
 use App\Models\InspectionAcceptanceReport;
+use App\Models\InspectionAcceptanceReportItem;
 use App\Models\Location;
 use App\Models\Log;
 use App\Models\PurchaseRequestItem;
@@ -104,12 +105,9 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                         ->where('signatory_type', 'inspection');
                 },
 
-                'signatory_acceptance:id,user_id',
-                'signatory_acceptance.user:id,firstname,middlename,lastname,allow_signature,signature',
-                'signatory_acceptance.detail' => function ($query) {
-                    $query->where('document', 'iar')
-                        ->where('signatory_type', 'acceptance');
-                },
+                'acceptance:id,firstname,middlename,lastname,allow_signature,signature,position_id,designation_id',
+                'acceptance.position:id,position_name',
+                'acceptance.designation:id,designation_name',
 
                 'purchase_request:id,section_id',
                 'purchase_request.section:id,section_name',
@@ -144,7 +142,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $section = $purchaseRequest->section;
         $items = $data->items;
         $signatoryInspection = $data->signatory_inspection;
-        $signatoryAcceptance = $data->signatory_acceptance;
+        $acceptance = $data->acceptance;
 
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
@@ -349,7 +347,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $pdf->Cell($pageWidth * 0.04, 0, '', 0, 0, 'C');
         $pdf->Cell($pageWidth * 0.53, 0, '', 0, 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'BU', 11);
-        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($signatoryAcceptance?->user?->fullname), '', 0, 'C');
+        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($acceptance?->fullname), '', 0, 'C');
         $pdf->Cell(0, 0, '', 'R', 1, 'L');
 
         $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
@@ -359,7 +357,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $pdf->Cell($pageWidth * 0.44, 0, '   Partial', 0, 0, 'L');
         $pdf->Cell($pageWidth * 0.09, 0, '', '', 0, 'L');
         $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($signatoryAcceptance?->detail?->position), '', 0, 'C');
+        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($acceptance?->position->position_name), '', 0, 'C');
         $pdf->Cell(0, 0, '', 'R', 1, 'L');
 
         $pdf->SetFont($this->fontArial, '', 30);

@@ -17,12 +17,16 @@ class Supply extends Model
     protected $fillable = [
         'purchase_order_id',
         'po_item_id',
+        'item_sequence',
         'sku',
         'upc',
         'name',
         'description',
         'item_classification_id',
+        'unit_issue_id',
+        'quantity',
         'unit_cost',
+        'total_cost',
         'required_document'
     ];
 }

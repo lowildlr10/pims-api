@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('inventory_issuances', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_order_id')->nullable();
+            $table->uuid('purchase_order_id');
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');

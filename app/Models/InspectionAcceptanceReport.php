@@ -30,7 +30,7 @@ class InspectionAcceptanceReport extends Model
         'sig_inspection_id',
         'received_date',
         'acceptance_completed',
-        'sig_acceptance_id',
+        'acceptance_id',
         'status',
         'status_timestamps'
         // pending_at
@@ -65,9 +65,9 @@ class InspectionAcceptanceReport extends Model
     /**
      * The inspection acceptance report that has one acceptance signatory.
      */
-    public function signatory_acceptance(): HasOne
+    public function acceptance(): HasOne
     {
-        return $this->hasOne(Signatory::class, 'id', 'sig_acceptance_id');
+        return $this->hasOne(User::class, 'id', 'acceptance_id');
     }
 
     /**

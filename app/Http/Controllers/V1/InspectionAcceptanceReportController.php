@@ -73,7 +73,7 @@ class InspectionAcceptanceReportController extends Controller
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
-                    ->orWhereRelation('signatory_acceptance.user', function ($query) use ($search) {
+                    ->orWhereRelation('acceptance', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
@@ -169,11 +169,9 @@ class InspectionAcceptanceReportController extends Controller
                 $query->where('document', 'iar')
                     ->where('signatory_type', '	inspection');
             },
-            'signatory_acceptance.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_acceptance.detail' => function ($query) {
-                $query->where('document', 'iar')
-                    ->where('signatory_type', '	acceptance');
-            },
+            'acceptance:id,firstname,middlename,lastname,allow_signature,signature,position_id,designation_id',
+            'acceptance.position:id,position_name',
+            'acceptance.designation:id,designation_name',
             'purchase_request:id,section_id',
             'purchase_request.section:id,section_name',
             'purchase_order:id,po_no,po_date'
@@ -200,7 +198,7 @@ class InspectionAcceptanceReportController extends Controller
             'inspected_date' => 'nullable',
             'inspected' => 'nullable|in:true,false',
             'sig_inspection_id' => 'nullable|exists:signatories,id',
-            'sig_acceptance_id' => 'nullable|exists:signatories,id',
+            'acceptance_id' => 'nullable|exists:users,id',
             'received_date' => 'nullable',
             'acceptance_completed' => 'nullable|in:true,false',
         ]);

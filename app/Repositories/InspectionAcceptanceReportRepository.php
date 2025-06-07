@@ -30,8 +30,6 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
 
     public function storeUpdate(array $data, ?InspectionAcceptanceReport $inspectionAcceptanceReport = NULL): InspectionAcceptanceReport
     {
-        $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
-
         if (!empty($inspectionAcceptanceReport)) {
             $inspectionAcceptanceReport->update($data);
         } else {
@@ -46,7 +44,10 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                 )
             );
 
-            $this->storeUpdateItems(collect($items ?? []), $inspectionAcceptanceReport);
+            $this->storeUpdateItems(
+                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                $inspectionAcceptanceReport
+            );
         }
 
         return $inspectionAcceptanceReport;
@@ -56,13 +57,13 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
     {
         foreach ($items as $item) {
             InspectionAcceptanceReportItem::where('inspection_acceptance_report_id', $inspectionAcceptanceReport->id)
-                ->where('po_item_id', $item->po_item_id)
+                ->where('po_item_id', $item['po_item_id'])
                 ->delete();
 
             InspectionAcceptanceReportItem::create([
                 'inspection_acceptance_report_id' => $inspectionAcceptanceReport->id,
-                'pr_item_id' => $item->pr_item_id,
-                'po_item_id' => $item->po_item_id
+                'pr_item_id' => $item['pr_item_id'],
+                'po_item_id' => $item['po_item_id']
             ]);
         }
     }

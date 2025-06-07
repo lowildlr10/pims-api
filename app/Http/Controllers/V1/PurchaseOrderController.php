@@ -249,7 +249,7 @@ class PurchaseOrderController extends Controller
             'payment_term' => 'required',
             'total_amount_words' => 'string|required',
             'sig_approval_id' => 'required',
-            'items' => 'required|string'
+            'items' => 'required|array|min:1'
         ]);
 
         try {
@@ -594,14 +594,12 @@ class PurchaseOrderController extends Controller
                 'purchase_request_id' => $purchaseOrder->purchase_request_id,
                 'purchase_order_id' => $purchaseOrder->id,
                 'supplier_id' => $purchaseOrder->supplier_id,
-                'items' => json_encode(
-                    $purchaseOrder->items->map(function ($item) {
-                        return [
-                            'pr_item_id' => $item->pr_item_id,
-                            'po_item_id' => $item->id,
-                        ];
-                    })->toArray()
-                )
+                'items' => $purchaseOrder->items->map(function ($item) {
+                    return [
+                        'pr_item_id' => $item->pr_item_id,
+                        'po_item_id' => $item->id,
+                    ];
+                })
             ]);
             $this->logRepository->create([
                 'message' => 'Inspection Acceptance Report created successfully.',

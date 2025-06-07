@@ -33,8 +33,6 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
 
     public function storeUpdate(array $data, ?PurchaseOrder $purchaseOrder = NULL): PurchaseOrder
     {
-        $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
-
         if (!empty($purchaseOrder)) {
             $placeDelivery = Location::where('location_name', $data['place_delivery'])->first();
             $deliveryTerm = DeliveryTerm::where('term_name', $data['delivery_term'])->first();
@@ -67,7 +65,11 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 ]
             ));
 
-            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder, false);
+            $this->storeUpdateItems(
+                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                $purchaseOrder,
+                false
+            );
         } else {
             $purchaseOrder = PurchaseOrder::create(
                 array_merge(
@@ -82,7 +84,10 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 )
             );
 
-            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder);
+            $this->storeUpdateItems(
+                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                $purchaseOrder
+            );
         }
 
         return $purchaseOrder;
@@ -102,11 +107,11 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         } else {
             foreach ($items as $item) {
                 $poItem = PurchaseOrderItem::where('purchase_order_id', $purchaseOrder->id)
-                    ->where('pr_item_id', $item->pr_item_id)
+                    ->where('pr_item_id', $item['pr_item_id'])
                     ->first();
 
                 $poItem->update([
-                    'description' => $item->description
+                    'description' => $item['description']
                 ]);
             }
         }

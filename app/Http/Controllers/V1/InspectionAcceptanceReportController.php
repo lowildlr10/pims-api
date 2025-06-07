@@ -334,8 +334,22 @@ class InspectionAcceptanceReportController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function inspect(InspectionAcceptanceReport $inspectionAcceptanceReport)
+    public function inspect(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport)
     {
+        dd($request->all());
+
+        // $validated = $request->validate([
+        //     'iar_date' => 'required',
+        //     'invoice_no' => 'required',
+        //     'invoice_date' => 'required',
+        //     'inspected_date' => 'nullable',
+        //     'inspected' => 'nullable|in:true,false',
+        //     'sig_inspection_id' => 'nullable|exists:signatories,id',
+        //     'acceptance_id' => 'nullable|exists:users,id',
+        //     'received_date' => 'nullable',
+        //     'acceptance_completed' => 'nullable|in:true,false',
+        // ]);
+
         try {
             $message = 'Inspection & acceptance report successfully marked as inspected.';
 
@@ -364,7 +378,10 @@ class InspectionAcceptanceReportController extends Controller
                     'message' => $message,
                     'log_id' => $inspectionAcceptanceReport->id,
                     'log_module' => 'iar',
-                    'data' => $inspectionAcceptanceReport
+                    'data' => [
+                        'iar' => $inspectionAcceptanceReport,
+                        'supplies' => $request->all()
+                    ]
                 ], isError: true);
 
                 return response()->json([

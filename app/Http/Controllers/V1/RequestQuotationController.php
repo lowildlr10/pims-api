@@ -192,8 +192,8 @@ class RequestQuotationController extends Controller
             'supplier_id' => 'nullable',
             'opening_dt' => 'nullable',
             'sig_approval_id' => 'required',
-            'canvassers' => 'nullable|string',
-            'items' => 'required|string',
+            'canvassers' => 'nullable|array',
+            'items' => 'required|array|min:1',
             'vat_registered' =>  'nullable|in:true,false',
         ]);
 
@@ -229,9 +229,6 @@ class RequestQuotationController extends Controller
                     ], 422);
                 }
 
-                $items = json_decode($validated['items']);
-                $canvassers = json_decode($validated['canvassers']);
-
                 $requestQuotation = RequestQuotation::create(array_merge(
                     $validated,
                     [
@@ -242,25 +239,25 @@ class RequestQuotationController extends Controller
                     ]
                 ));
 
-                foreach ($items ?? [] as $key => $item) {
+                foreach ($validated['items'] ?? [] as $key => $item) {
                     RequestQuotationItem::create([
                         'request_quotation_id' => $requestQuotation->id,
-                        'pr_item_id' => $item->pr_item_id,
+                        'pr_item_id' => $item['pr_item_id'],
                         'supplier_id' => $validated['supplier_id'],
-                        'included' => $item->included
+                        'included' => $item['included']
                     ]);
                 }
 
-                foreach ($canvassers ?? [] as $key => $userId) {
+                foreach ($validated['canvassers'] ?? [] as $key => $userId) {
                     RequestQuotationCanvasser::create([
                         'request_quotation_id' => $requestQuotation->id,
                         'user_id' => $userId
                     ]);
                 }
 
-                $requestQuotation->items = json_decode($validated['items']) ?? [];
+                $requestQuotation->items = $validated['items'] ?? [];
                 $requestQuotation->canvassers = User::select('id', 'firstname', 'middlename', 'lastname')
-                    ->whereIn('id', json_decode($validated['canvassers']) ?? [])
+                    ->whereIn('id', $validated['canvassers'] ?? [])
                     ->get();
 
                 $this->logRepository->create([
@@ -345,8 +342,8 @@ class RequestQuotationController extends Controller
             'supplier_id' => 'nullable',
             'opening_dt' => 'nullable',
             'sig_approval_id' => 'required',
-            'canvassers' => 'nullable|string',
-            'items' => 'required|string',
+            'canvassers' => 'nullable|array',
+            'items' => 'required|array|min:1',
             'vat_registered' =>  'nullable|in:true,false',
         ]);
 
@@ -399,8 +396,6 @@ class RequestQuotationController extends Controller
                 ], 422);
             }
 
-            $items = json_decode($validated['items']);
-            $canvassers = json_decode($validated['canvassers']);
             $grandTotalCost = 0;
 
             RequestQuotationItem::where('request_quotation_id', $requestQuotation->id)
@@ -408,28 +403,28 @@ class RequestQuotationController extends Controller
             RequestQuotationCanvasser::where('request_quotation_id', $requestQuotation->id)
                 ->delete();
 
-            foreach ($items ?? [] as $key => $item) {
-                $quantity = intval($item->quantity);
+            foreach ($validated['items'] ?? [] as $key => $item) {
+                $quantity = intval($item['quantity']);
                 $unitCost =
-                    isset($item->unit_cost) && !empty($item->unit_cost)
-                        ? floatval($item->unit_cost)
+                    isset($item['unit_cost']) && !empty($item['unit_cost'])
+                        ? floatval($item['unit_cost'])
                         : NULL;
                 $cost = round($quantity * ($unitCost ?? 0), 2);
 
                 RequestQuotationItem::create([
                     'request_quotation_id' => $requestQuotation->id,
-                    'pr_item_id' => $item->pr_item_id,
+                    'pr_item_id' => $item['pr_item_id'],
                     'supplier_id' => $validated['supplier_id'],
-                    'brand_model' => $item->brand_model,
+                    'brand_model' => $item['brand_model'],
                     'unit_cost' => $unitCost,
                     'total_cost' => $cost,
-                    'included' => $item->included
+                    'included' => $item['included']
                 ]);
 
                 $grandTotalCost += $cost;
             }
 
-            foreach ($canvassers ?? [] as $key => $userId) {
+            foreach ($validated['canvassers'] ?? [] as $key => $userId) {
                 RequestQuotationCanvasser::create([
                     'request_quotation_id' => $requestQuotation->id,
                     'user_id' => $userId
@@ -446,9 +441,9 @@ class RequestQuotationController extends Controller
                 ]
             ));
 
-            $requestQuotation->items = json_decode($validated['items']) ?? [];
+            $requestQuotation->items = $validated['items'] ?? [];
             $requestQuotation->canvassers = User::select('id', 'firstname', 'middlename', 'lastname')
-                ->whereIn('id', json_decode($validated['canvassers']) ?? [])
+                ->whereIn('id', $validated['canvassers'] ?? [])
                 ->get();
 
             $this->logRepository->create([

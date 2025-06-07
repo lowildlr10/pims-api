@@ -168,7 +168,7 @@ class PurchaseRequestController extends Controller
             'requested_by_id' => 'required|string',
             'sig_cash_availability_id' => 'nullable|string',
             'sig_approved_by_id' => 'nullable|string',
-            'items' => 'required|string'
+            'items' => 'required|array|min:1'
         ]);
 
         try {
@@ -195,8 +195,6 @@ class PurchaseRequestController extends Controller
                 }
             }
 
-            $items = json_decode($validated['items']);
-
             $purchaseRequest = PurchaseRequest::create(array_merge(
                 $validated,
                 [
@@ -208,18 +206,18 @@ class PurchaseRequestController extends Controller
 
             $totalEstimatedCost = 0;
 
-            foreach ($items ?? [] as $key => $item) {
-                $quantity = intval($item->quantity);
-                $unitCost = floatval($item->estimated_unit_cost);
+            foreach ($validated['items'] ?? [] as $key => $item) {
+                $quantity = intval($item['quantity']);
+                $unitCost = floatval($item['estimated_unit_cost']);
                 $cost = round($quantity * $unitCost, 2);
 
                 PurchaseRequestItem::create([
                     'purchase_request_id' => $purchaseRequest->id,
                     'item_sequence' => $key,
                     'quantity' => $quantity,
-                    'unit_issue_id' => $item->unit_issue_id,
-                    'description' => $item->description,
-                    'stock_no' => (int) $item->stock_no ?? $key + 1,
+                    'unit_issue_id' => $item['unit_issue_id'],
+                    'description' => $item['description'],
+                    'stock_no' => (int) $item['stock_no'] ?? $key + 1,
                     'estimated_unit_cost' => $unitCost,
                     'estimated_cost' => $cost
                 ]);
@@ -231,7 +229,7 @@ class PurchaseRequestController extends Controller
                 'total_estimated_cost' => $totalEstimatedCost
             ]);
 
-            $purchaseRequest->items = json_decode($validated['items']) ?? [];
+            $purchaseRequest->items = $validated['items'] ?? [];
 
             $this->logRepository->create([
                 'message' => $message,
@@ -322,7 +320,7 @@ class PurchaseRequestController extends Controller
             'requested_by_id' => 'required|string',
             'sig_cash_availability_id' => 'nullable|string',
             'sig_approved_by_id' => 'nullable|string',
-            'items' => 'required|string'
+            'items' => 'required|array|min:1'
         ]);
 
         try {
@@ -383,24 +381,23 @@ class PurchaseRequestController extends Controller
                 $status = PurchaseRequestStatus::DRAFT;
                 $statusTimestamps = (Object)[];
 
-                $items = json_decode($validated['items']);
                 $totalEstimatedCost = 0;
 
                 PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
                     ->delete();
 
-                foreach ($items ?? [] as $key => $item) {
-                    $quantity = intval($item->quantity);
-                    $unitCost = floatval($item->estimated_unit_cost);
+                foreach ($validated['items'] ?? [] as $key => $item) {
+                    $quantity = intval($item['quantity']);
+                    $unitCost = floatval($item['estimated_unit_cost']);
                     $cost = round($quantity * $unitCost, 2);
 
                     PurchaseRequestItem::create([
                         'purchase_request_id' => $purchaseRequest->id,
                         'item_sequence' => $key,
                         'quantity' => $quantity,
-                        'unit_issue_id' => $item->unit_issue_id,
-                        'description' => $item->description,
-                        'stock_no' => (int) $item->stock_no ?? $key + 1,
+                        'unit_issue_id' => $item['unit_issue_id'],
+                        'description' => $item['description'],
+                        'stock_no' => (int) $item['stock_no'] ?? $key + 1,
                         'estimated_unit_cost' => $unitCost,
                         'estimated_cost' => $cost
                     ]);
@@ -421,7 +418,7 @@ class PurchaseRequestController extends Controller
                 ]
             ));
 
-            $purchaseRequest->items = json_decode($validated['items']) ?? [];
+            $purchaseRequest->items = $validated['items'] ?? [];
 
             $this->logRepository->create([
                 'message' => $message,
@@ -804,6 +801,88 @@ class PurchaseRequestController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
+    public function issueAllDraftRfq(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
+    {
+        $user = auth()->user();
+
+        try {
+            $message = 'RFQs for this purchase request successfully marked as "Canvassing".';
+            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
+
+            $rfqDraft = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
+                ->whereIn('status', [
+                    RequestQuotationStatus::DRAFT
+                ]);
+            $rfqDraftCount = $rfqDraft->count();
+            $rfqDraft = $rfqDraft->get();
+
+            if ($rfqDraftCount === 0) {
+                $message = 'Nothing to issue because all RFQs have already been provided to the canvassers.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $rfqDraft
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message
+                ], 422);
+            }
+
+            foreach ($rfqDraft as $key => $rfq) {
+                $rfq->update([
+                    'status' => RequestQuotationStatus::CANVASSING,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'canvassing_at', $rfq->status_timestamps
+                    )
+                ]);
+
+                 $this->logRepository->create([
+                    'message' => 'Request for quotation successfully marked as "Canvassing".',
+                    'log_id' => $rfq->id,
+                    'log_module' => 'rfq',
+                    'data' => $rfq
+                ]);
+            }
+
+            if ($currentStatus === PurchaseRequestStatus::APPROVED
+                || $currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
+                $purchaseRequest->update([
+                    'status' => PurchaseRequestStatus::FOR_CANVASSING,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'canvassing_at', $purchaseRequest->status_timestamps
+                    )
+                ]);
+            }
+
+            return response()->json([
+                'data' => [
+                    'data' => $rfqDraft,
+                    'message' => $message
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Failed to mark the purchase request as "For Abstract".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again."
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
     public function approveRequestQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
         $user = auth()->user();
@@ -889,26 +968,24 @@ class PurchaseRequestController extends Controller
                     ? $rfqCompleted[0]->rfq_no : '',
                 'solicitation_date' => Carbon::now()->toDateString(),
                 'items' => $purchaseRequest->items->map(function(PurchaseRequestItem $item) use($rfqCompleted) {
-                    return (Object)[
+                    return [
                         'pr_item_id' => $item->id,
                         'included' => empty($item->awarded_to) ? true : false,
-                        'details' => json_encode(
-                            $rfqCompleted->map(function(RequestQuotation $rfq) use($item) {
-                                $rfq->load([
-                                    'items' => function($query) use($item) {
-                                        $query->where('pr_item_id', $item->id);
-                                    }
-                                ]);
-                                $rfqItem = $rfq->items[0];
+                        'details' => $rfqCompleted->map(function(RequestQuotation $rfq) use($item) {
+                            $rfq->load([
+                                'items' => function($query) use($item) {
+                                    $query->where('pr_item_id', $item->id);
+                                }
+                            ]);
+                            $rfqItem = $rfq->items[0];
 
-                                return (Object)[
-                                    'quantity' => $item->quantity,
-                                    'supplier_id' => $rfqItem->supplier_id,
-                                    'brand_model' => $rfqItem->brand_model,
-                                    'unit_cost' => $rfqItem->unit_cost
-                                ];
-                            })
-                        )
+                            return [
+                                'quantity' => $item->quantity,
+                                'supplier_id' => $rfqItem->supplier_id,
+                                'brand_model' => $rfqItem->brand_model,
+                                'unit_cost' => $rfqItem->unit_cost
+                            ];
+                        })
                     ];
                 })
             ]);
@@ -1014,7 +1091,7 @@ class PurchaseRequestController extends Controller
                         ->where('supplier_id', $item->awardee_id)
                         ->first();
 
-                    $poItems[$item->awardee_id][$item->document_type][] = (Object)[
+                    $poItems[$item->awardee_id][$item->document_type][] = [
                         'pr_item_id' => $prItem->id,
                         'brand_model' => $aorItemDetail->brand_model,
                         'description' => $aorItemDetail->brand_model
@@ -1029,13 +1106,13 @@ class PurchaseRequestController extends Controller
                         'mode_procurement_id' => $aoq->mode_procurement_id,
                         'supplier_id' => $item->awardee_id,
                         'document_type' => $item?->document_type ?? 'po',
-                        'items' => json_encode($poItems[$item->awardee_id][$item->document_type])
+                        'items' => $poItems[$item->awardee_id][$item->document_type]
                     ];
                 }
 
                 foreach ($poData ?? [] as $poDocs) {
-                    foreach ($poDocs as $po) {
-                        $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($po);
+                    foreach ($poDocs as $data) {
+                        $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($data);
                         $this->logRepository->create([
                             'message' => 'Purchase Order created successfully.',
                             'log_id' => $purchaseOrder->id,

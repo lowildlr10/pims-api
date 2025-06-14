@@ -194,7 +194,7 @@ class RequestQuotationController extends Controller
             'sig_approval_id' => 'required',
             'canvassers' => 'nullable|array',
             'items' => 'required|array|min:1',
-            'vat_registered' =>  'nullable|in:true,false',
+            'vat_registered' =>  'nullable|boolean',
         ]);
 
         $copies = $validated['copies'] ?? 1;
@@ -344,7 +344,7 @@ class RequestQuotationController extends Controller
             'sig_approval_id' => 'required',
             'canvassers' => 'nullable|array',
             'items' => 'required|array|min:1',
-            'vat_registered' =>  'nullable|in:true,false',
+            'vat_registered' =>  'nullable|boolean',
         ]);
 
         $validated['vat_registered'] = !empty($validated['vat_registered'])

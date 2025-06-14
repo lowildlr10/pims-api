@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
-            $table->uuid('po_item_id');
+            $table->uuid('po_item_id')->nullable();
             $table->foreign('po_item_id')
                 ->references('id')
                 ->on('purchase_order_items');

@@ -27,6 +27,8 @@ return new class extends Migration
             $table->integer('quantity');
             $table->date('estimated_useful_life')->nullable();
             $table->date('acquired_date')->nullable();
+            $table->string('status');
+            $table->json('status_timestamps');
         });
     }
 

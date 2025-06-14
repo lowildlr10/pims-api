@@ -74,7 +74,7 @@ class ProcurementModeController extends Controller
     {
         $validated = $request->validate([
             'mode_name' => 'required|unique:procurement_modes,mode_name',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -128,7 +128,7 @@ class ProcurementModeController extends Controller
     {
         $validated = $request->validate([
             'mode_name' => 'required|unique:procurement_modes,mode_name,' . $procurementMode->id,
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

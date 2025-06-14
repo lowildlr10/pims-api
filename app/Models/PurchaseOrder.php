@@ -98,4 +98,12 @@ class PurchaseOrder extends Model
     {
         return $this->belongsTo(PurchaseRequest::class);
     }
+
+    /**
+     * The purchase order that has many inventory supplies.
+     */
+    public function supplies(): HasMany
+    {
+        return $this->hasMany(Supply::class);
+    }
 }

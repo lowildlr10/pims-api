@@ -84,7 +84,7 @@ class SectionController extends Controller
             'division_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -150,7 +150,7 @@ class SectionController extends Controller
             'division_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

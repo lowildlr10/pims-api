@@ -76,7 +76,7 @@ class ResponsibilityCenterController extends Controller
         $validated = $request->validate([
             'code' => 'required|unique:responsibility_centers,code',
             'description' => 'nullable|string',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -131,7 +131,7 @@ class ResponsibilityCenterController extends Controller
         $validated = $request->validate([
             'code' => 'required|unique:responsibility_centers,code,' . $responsibilityCenter->id,
             'description' => 'nullable|string',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

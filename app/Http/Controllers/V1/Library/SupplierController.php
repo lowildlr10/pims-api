@@ -86,7 +86,7 @@ class SupplierController extends Controller
             'telephone' => 'nullable',
             'vat_no' => 'nullable',
             'contact_person' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -146,7 +146,7 @@ class SupplierController extends Controller
             'telephone' => 'nullable',
             'vat_no' => 'nullable',
             'contact_person' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

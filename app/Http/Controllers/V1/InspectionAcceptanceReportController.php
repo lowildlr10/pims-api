@@ -13,6 +13,7 @@ use App\Models\Signatory;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Repositories\LogRepository;
+use App\Repositories\SupplyRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -21,9 +22,10 @@ class InspectionAcceptanceReportController extends Controller
 {
     private LogRepository $logRepository;
 
-    public function __construct(LogRepository $logRepository)
+    public function __construct(LogRepository $logRepository, SupplyRepository $supplyRepository)
     {
         $this->logRepository = $logRepository;
+        $this->supplyRepository = $supplyRepository;
     }
 
     /**
@@ -162,7 +164,7 @@ class InspectionAcceptanceReportController extends Controller
             },
             'items.pr_item:id,unit_issue_id,item_sequence,quantity,stock_no',
             'items.pr_item.unit_issue:id,unit_name',
-            'items.po_item:id,description,brand_model,unit_cost,total_cost',
+            'items.po_item:id,purchase_order_id,description,brand_model,unit_cost,total_cost',
             'signatory_inspection:id,user_id',
             'signatory_inspection.user:id,firstname,middlename,lastname,allow_signature,signature',
             'signatory_inspection.detail' => function ($query) {
@@ -196,11 +198,11 @@ class InspectionAcceptanceReportController extends Controller
             'invoice_no' => 'required',
             'invoice_date' => 'required',
             'inspected_date' => 'nullable',
-            'inspected' => 'nullable|in:true,false',
+            'inspected' => 'nullable|boolean',
             'sig_inspection_id' => 'nullable|exists:signatories,id',
             'acceptance_id' => 'nullable|exists:users,id',
             'received_date' => 'nullable',
-            'acceptance_completed' => 'nullable|in:true,false',
+            'acceptance_completed' => 'nullable|boolean',
         ]);
 
         $validated['inspected'] = !empty($validated['inspected'])
@@ -336,19 +338,9 @@ class InspectionAcceptanceReportController extends Controller
      */
     public function inspect(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport)
     {
-        dd($request->all());
-
-        // $validated = $request->validate([
-        //     'iar_date' => 'required',
-        //     'invoice_no' => 'required',
-        //     'invoice_date' => 'required',
-        //     'inspected_date' => 'nullable',
-        //     'inspected' => 'nullable|in:true,false',
-        //     'sig_inspection_id' => 'nullable|exists:signatories,id',
-        //     'acceptance_id' => 'nullable|exists:users,id',
-        //     'received_date' => 'nullable',
-        //     'acceptance_completed' => 'nullable|in:true,false',
-        // ]);
+        $validated = $request->validate([
+            'items' => 'required|array|min:1',
+        ]);
 
         try {
             $message = 'Inspection & acceptance report successfully marked as inspected.';
@@ -387,6 +379,20 @@ class InspectionAcceptanceReportController extends Controller
                 return response()->json([
                     'message' => $message
                 ], 422);
+            }
+
+            foreach ($validated['items'] ?? [] as $key => $item) {
+                $supply = $this->supplyRepository->storeUpdate(array_merge(
+                    $item,
+                    ['item_sequence' => $key]
+                ));
+
+                $this->logRepository->create([
+                    'message' => 'Supply created successfully.',
+                    'log_id' => $supply->id,
+                    'log_module' => 'inv-supply',
+                    'data' => $supply
+                ]);
             }
 
             $inspectionAcceptanceReport->update([

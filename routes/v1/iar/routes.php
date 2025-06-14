@@ -8,7 +8,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [MainControllers\InspectionAcceptanceReportController::class, 'index'])
             ->middleware('ability:super:*,head:*,supply:*,iar:*,iar:view')
             ->name('index');
-        Route::get('/{inspectionAcceptanceReport}', [MainControllers\InspectionAcceptanceReportController::class, 'show'])
+        Route::get('/{inspectionAcceptanceReport}', [MainControlalers\InspectionAcceptanceReportController::class, 'show'])
             ->middleware('ability:super:*,supply:*,iar:*,iar:view')
             ->name('show');
         Route::put('/{inspectionAcceptanceReport}', [MainControllers\InspectionAcceptanceReportController::class, 'update'])

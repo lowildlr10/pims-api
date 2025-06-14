@@ -29,6 +29,8 @@ class InventoryIssuanceItem extends Model
         'serial_no',
         'quantity',
         'estimated_useful_life',
-        'acquired_date'
+        'acquired_date',
+        'status',
+        'status_timestamps'
     ];
 }

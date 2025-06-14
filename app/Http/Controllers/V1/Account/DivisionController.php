@@ -89,7 +89,7 @@ class DivisionController extends Controller
         $validated = $request->validate([
             'division_name' => 'required|unique:divisions,division_name',
             'division_head_id' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -146,7 +146,7 @@ class DivisionController extends Controller
         $validated = $request->validate([
             'division_name' => 'required|unique:divisions,division_name,' . $division->id,
             'division_head_id' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

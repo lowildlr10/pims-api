@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\V1;
 
-use App\Models\Supply;
+use App\Models\InventoryIssuance;
 use Illuminate\Http\Request;
 
-class SupplyController extends Controller
+class InventoryIssuanceController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -26,7 +26,7 @@ class SupplyController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Supply $supply)
+    public function show(InventoryIssuance $inventoryIssuance)
     {
         //
     }
@@ -34,7 +34,7 @@ class SupplyController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Supply $supply)
+    public function update(Request $request, InventoryIssuance $inventoryIssuance)
     {
         //
     }
@@ -42,7 +42,7 @@ class SupplyController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Supply $supply)
+    public function destroy(InventoryIssuance $inventoryIssuance)
     {
         //
     }

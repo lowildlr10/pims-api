@@ -74,7 +74,7 @@ class UacsCodeClassificationController extends Controller
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:uacs_code_classifications,classification_name',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -128,7 +128,7 @@ class UacsCodeClassificationController extends Controller
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:uacs_code_classifications,classification_name,' . $uacsCodeClassification->id,
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

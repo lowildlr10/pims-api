@@ -5,27 +5,27 @@ namespace App\Repositories;
 use App\Enums\InspectionAcceptanceReportStatus;
 use App\Helpers\FileHelper;
 use App\Interfaces\InspectionAcceptanceReportInterface;
-use App\Interfaces\SupplyInterface;
+use App\Interfaces\InventorySupplyInterface;
 use App\Models\Company;
 use App\Models\InspectionAcceptanceReport;
 use App\Models\InspectionAcceptanceReportItem;
 use App\Models\Location;
 use App\Models\Log;
 use App\Models\PurchaseRequestItem;
-use App\Models\Supply;
+use App\Models\InventorySupply;
 use Exception;
 use Illuminate\Support\Collection;
 
-class SupplyRepository implements SupplyInterface
+class InventorySupplyRepository implements InventorySupplyInterface
 {
-    public function storeUpdate(array $data, ?Supply $supply = NULL): Supply
+    public function storeUpdate(array $data, ?InventorySupply $inventorySupply = NULL): InventorySupply
     {
-        if (!empty($supply)) {
-            $supply->update($data);
+        if (!empty($inventorySupply)) {
+            $inventorySupply->update($data);
         } else {
-            $supply = supply::create($data);
+            $inventorySupply = InventorySupply::create($data);
         }
 
-        return $supply;
+        return $inventorySupply;
     }
 }

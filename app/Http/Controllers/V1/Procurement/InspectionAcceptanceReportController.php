@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\V1;
+namespace App\Http\Controllers\V1\Procurement;
 
 use App\Enums\InspectionAcceptanceReportStatus;
 use App\Enums\PurchaseOrderStatus;
@@ -13,7 +13,7 @@ use App\Models\Signatory;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Repositories\LogRepository;
-use App\Repositories\SupplyRepository;
+use App\Repositories\InventorySupplyRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -22,10 +22,10 @@ class InspectionAcceptanceReportController extends Controller
 {
     private LogRepository $logRepository;
 
-    public function __construct(LogRepository $logRepository, SupplyRepository $supplyRepository)
+    public function __construct(LogRepository $logRepository, InventorySupplyRepository $inventorySupplyRepository)
     {
         $this->logRepository = $logRepository;
-        $this->supplyRepository = $supplyRepository;
+        $this->inventorySupplyRepository = $inventorySupplyRepository;
     }
 
     /**
@@ -176,7 +176,7 @@ class InspectionAcceptanceReportController extends Controller
             'acceptance.designation:id,designation_name',
             'purchase_request:id,section_id',
             'purchase_request.section:id,section_name',
-            'purchase_order:id,po_no,po_date'
+            'purchase_order:id,po_no,po_date,document_type'
         ]);
 
         return response()->json([
@@ -338,9 +338,17 @@ class InspectionAcceptanceReportController extends Controller
      */
     public function inspect(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport)
     {
-        $validated = $request->validate([
-            'items' => 'required|array|min:1',
-        ]);
+        $inspectionAcceptanceReport->load('purchase_order');
+
+        if ($inspectionAcceptanceReport->purchase_order->document_type === 'po') {
+            $validated = $request->validate([
+                'items' => 'required|array|min:1',
+            ]);
+        } else {
+            $validated = [
+                'items' => []
+            ];
+        }
 
         try {
             $message = 'Inspection & acceptance report successfully marked as inspected.';
@@ -382,7 +390,7 @@ class InspectionAcceptanceReportController extends Controller
             }
 
             foreach ($validated['items'] ?? [] as $key => $item) {
-                $supply = $this->supplyRepository->storeUpdate(array_merge(
+                $supply = $this->inventorySupplyRepository->storeUpdate(array_merge(
                     $item,
                     ['item_sequence' => $key]
                 ));

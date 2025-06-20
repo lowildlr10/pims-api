@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\V1;
+namespace App\Http\Controllers\V1\Procurement;
 
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;

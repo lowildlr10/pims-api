@@ -5,9 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Supply extends Model
+class InventorySupply extends Model
 {
     use HasUuids;
 
@@ -16,7 +17,7 @@ class Supply extends Model
      *
      * @var array
      */
-    protected $appends = ['available'];
+    protected $appends = ['available', 'status'];
 
     /**
      * Determine if the total available quantity of a supply.
@@ -24,8 +25,23 @@ class Supply extends Model
     protected function available(): Attribute
     {
         return new Attribute(
-            get: fn () => $this->quantity,
+            get: fn () => $this->availableQuantity()
         );
+    }
+
+    /**
+     * Determine if the status of a supply.
+     */
+    protected function status(): Attribute
+    {
+        return new Attribute(
+            get: fn () => $this->availableQuantity() > 0 ? 'in-stock' : 'out-of-stock'
+        );
+    }
+
+    protected function availableQuantity(): int
+    {
+        return $this->quantity - ($this->issued_items->sum('quantity') ?? 0);
     }
 
     /**
@@ -63,5 +79,13 @@ class Supply extends Model
     public function item_classification(): HasOne
     {
         return $this->hasOne(ItemClassification::class, 'id', 'item_classification_id');
+    }
+
+    /**
+     * The supply that has many issued items.
+     */
+    public function issued_items(): HasMany
+    {
+        return $this->hasMany(InventoryIssuanceItem::class);
     }
 }

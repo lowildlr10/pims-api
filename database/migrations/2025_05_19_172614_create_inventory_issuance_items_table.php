@@ -17,10 +17,10 @@ return new class extends Migration
             $table->foreign('inventory_issuance_id')
                 ->references('id')
                 ->on('inventory_issuances');
-            $table->uuid('supply_id');
-            $table->foreign('supply_id')
+            $table->uuid('inventory_supply_id');
+            $table->foreign('inventory_supply_id')
                 ->references('id')
-                ->on('supplies');
+                ->on('inventory_supplies');
             $table->text('description');
             $table->string('property_no')->nullable();
             $table->string('serial_no')->nullable();

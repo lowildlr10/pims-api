@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\V1;
+namespace App\Http\Controllers\V1\Procurement;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class ObligationRequestStatusController extends Controller
+class DisbursementVoucherController extends Controller
 {
     /**
      * Display a listing of the resource.

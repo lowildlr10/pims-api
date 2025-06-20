@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\V1;
+namespace App\Http\Controllers\V1\Inventory;
 
-use App\Http\Controllers\Controller;
+use App\Models\InventoryIssuance;
 use Illuminate\Http\Request;
 
-class DisbursementVoucherController extends Controller
+class InventoryIssuanceController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -26,7 +26,7 @@ class DisbursementVoucherController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(InventoryIssuance $inventoryIssuance)
     {
         //
     }
@@ -34,7 +34,7 @@ class DisbursementVoucherController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, InventoryIssuance $inventoryIssuance)
     {
         //
     }
@@ -42,7 +42,7 @@ class DisbursementVoucherController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(InventoryIssuance $inventoryIssuance)
     {
         //
     }

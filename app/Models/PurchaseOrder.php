@@ -104,6 +104,6 @@ class PurchaseOrder extends Model
      */
     public function supplies(): HasMany
     {
-        return $this->hasMany(Supply::class);
+        return $this->hasMany(InventorySupply::class);
     }
 }

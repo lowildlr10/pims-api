@@ -75,7 +75,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             ->whereYear('created_at', $year)
             ->count() + 1;
 
-        return "AOQ-{$year}-{$sequence}-{$month}";
+        return "{$year}-{$sequence}-{$month}";
     }
 
     public function print(array $pageConfig, string $aoqId): array

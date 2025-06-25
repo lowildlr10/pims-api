@@ -17,6 +17,7 @@ use App\Models\User;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
 use App\Repositories\PurchaseOrderRepository;
+use App\Repositories\PurchaseRequestRepository;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,16 +26,19 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class PurchaseRequestController extends Controller
 {
     private LogRepository $logRepository;
+    private PurchaseRequestRepository $purchaseRequestRepository;
     private AbstractQuotationRepository $abstractQuotationRepository;
     private PurchaseOrderRepository $purchaseOrderRepository;
 
     public function __construct(
         LogRepository $logRepository,
+        PurchaseRequestRepository $purchaseRequestRepository,
         AbstractQuotationRepository $abstractQuotationRepository,
         PurchaseOrderRepository $purchaseOrderRepository
     )
     {
         $this->logRepository = $logRepository;
+        $this->purchaseRequestRepository = $purchaseRequestRepository;
         $this->abstractQuotationRepository = $abstractQuotationRepository;
         $this->purchaseOrderRepository = $purchaseOrderRepository;
     }
@@ -198,7 +202,7 @@ class PurchaseRequestController extends Controller
             $purchaseRequest = PurchaseRequest::create(array_merge(
                 $validated,
                 [
-                    'pr_no' => $this->generateNewPrNumber(),
+                    'pr_no' => $this->purchaseRequestRepository->generateNewPrNumber(),
                     'status' => PurchaseRequestStatus::DRAFT,
                     'status_timestamps' => json_encode((Object)[])
                 ]
@@ -1184,16 +1188,5 @@ class PurchaseRequestController extends Controller
                 'message' => "{$message} Please try again."
             ], 422);
         }
-    }
-
-    private function generateNewPrNumber(): string
-    {
-        $month = date('m');
-        $year = date('Y');
-        $sequence = PurchaseRequest::whereMonth('created_at', $month)
-            ->whereYear('created_at', $year)
-            ->count() + 1;
-
-        return "{$year}-{$sequence}-{$month}";
     }
 }

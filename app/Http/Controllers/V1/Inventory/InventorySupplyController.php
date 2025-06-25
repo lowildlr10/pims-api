@@ -31,10 +31,46 @@ class InventorySupplyController extends Controller
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $grouped = filter_var($request->get('grouped', true), FILTER_VALIDATE_BOOLEAN);
+        $docuementType = $request->get('document_type');
+        $searchByPo = filter_var($request->get('search_by_po', false), FILTER_VALIDATE_BOOLEAN);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'pr_no');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+
+        if (!$grouped) {
+            $inventorySupplies = InventorySupply::with([
+                'unit_issue:id,unit_name',
+                'item_classification:id,classification_name',
+            ])
+            ->when($search, function ($query) use ($search, $searchByPo) {
+                if ($searchByPo) {
+                    $query->where(function ($query) use ($search) {
+                        $query->whereRaw("CAST(purchase_order_id AS TEXT) = ?", [$search]);
+                    });
+                } else {
+                    $query->where(function ($query) use ($search) {
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                            ->orWhereRaw("CAST(purchase_order_id AS TEXT) = ?", [$search])
+                            ->orWhere('name', 'like', "%{$search}%")
+                            ->orWhere('description', 'like', "%{$search}%");
+                    });
+                }
+            })
+            ->when($docuementType, function ($query) use ($docuementType) {
+                $query->where('required_document', $docuementType);
+            })
+            ->orderBy('item_sequence');
+
+            $inventorySupplies = $showAll
+                ? $inventorySupplies->get()
+                : $inventorySupplies = $inventorySupplies->limit($perPage)->get();
+
+            return response()->json([
+                'data' => $inventorySupplies
+            ]);
+        }
 
         $purchaseOrders = PurchaseOrder::query()
             ->select('id', 'purchase_request_id', 'supplier_id', 'po_no', 'status_timestamps')
@@ -70,21 +106,18 @@ class InventorySupplyController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    // public function store(Request $request)
-    // {
-    //     //
-    // }
-
-    /**
      * Display the specified resource.
      */
-    public function show(InventorySupply $inventorySupply)
+    public function show(InventorySupply $inventorySupply): JsonResponse
     {
         $inventorySupply->load([
             'unit_issue:id,unit_name',
+
             'item_classification:id,classification_name',
+
+            'issued_items:id,inventory_supply_id,inventory_issuance_id,quantity,inventory_item_no,property_no,acquired_date,estimated_useful_life',
+            'issued_items.issuance',
+            'issued_items.issuance.recipient:id,firstname,middlename,lastname',
         ]);
 
         return response()->json([
@@ -97,7 +130,7 @@ class InventorySupplyController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, InventorySupply $inventorySupply)
+    public function update(Request $request, InventorySupply $inventorySupply): JsonResponse
     {
         $user = auth()->user();
 
@@ -144,12 +177,4 @@ class InventorySupplyController extends Controller
             ], 422);
         }
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    // public function destroy(Supply $supply)
-    // {
-    //     //
-    // }
 }

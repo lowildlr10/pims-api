@@ -44,10 +44,37 @@ class PurchaseOrderController extends Controller
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $grouped = filter_var($request->get('grouped', true), FILTER_VALIDATE_BOOLEAN);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'pr_no');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+
+        if (!$grouped) {
+            $purchaseOrders = PurchaseOrder::query()
+                ->select('id', 'po_no')
+                ->whereNotIn('status', [
+                    PurchaseOrderStatus::PENDING,
+                    PurchaseOrderStatus::APPROVED,
+                    PurchaseOrderStatus::ISSUED,
+                    PurchaseOrderStatus::FOR_DELIVERY,
+                    PurchaseOrderStatus::DELIVERED
+                ]);
+
+            if (!empty($search)) {
+                $purchaseOrders = $purchaseOrders->where(function($query) use ($search){
+                    $query->where('po_no', 'ILIKE', "%{$search}%");
+                });
+            }
+
+            $purchaseOrders = $showAll
+                ? $purchaseOrders->get()
+                : $purchaseOrders = $purchaseOrders->limit($perPage)->get();
+
+            return response()->json([
+                'data' => $purchaseOrders
+            ]);
+        }
 
         $purchaseRequests = PurchaseRequest::query()
             ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
@@ -188,14 +215,6 @@ class PurchaseOrderController extends Controller
         }
     }
 
-    // /**
-    //  * Store a newly created resource in storage.
-    //  */
-    // public function store(Request $request)
-    // {
-    //     //
-    // }
-
     /**
      * Display the specified resource.
      */
@@ -224,7 +243,9 @@ class PurchaseOrderController extends Controller
                 $query->where('document', 'po')
                     ->where('signatory_type', '	authorized_official');
             },
-            'purchase_request:id,purpose'
+            'purchase_request:id,section_id,requested_by_id,purpose',
+            'purchase_request.section:id,section_name',
+            'purchase_request.requestor:id,firstname,middlename,lastname'
         ]);
 
         return response()->json([

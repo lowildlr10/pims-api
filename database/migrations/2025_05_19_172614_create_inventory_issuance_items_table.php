@@ -21,14 +21,15 @@ return new class extends Migration
             $table->foreign('inventory_supply_id')
                 ->references('id')
                 ->on('inventory_supplies');
+            $table->integer('stock_no');
             $table->text('description');
+            $table->string('inventory_item_no')->nullable();
             $table->string('property_no')->nullable();
-            $table->string('serial_no')->nullable();
             $table->integer('quantity');
-            $table->date('estimated_useful_life')->nullable();
+            $table->string('estimated_useful_life')->nullable();
             $table->date('acquired_date')->nullable();
-            $table->string('status');
-            $table->json('status_timestamps');
+            $table->decimal('unit_cost', 20, 2)->default(0.00);
+            $table->decimal('total_cost', 20, 2)->default(0.00);
         });
     }
 

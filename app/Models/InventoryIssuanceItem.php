@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InventoryIssuanceItem extends Model
 {
@@ -23,14 +24,31 @@ class InventoryIssuanceItem extends Model
      */
     protected $fillable = [
         'inventory_issuance_id',
-        'supply_id',
+        'inventory_supply_id',
+        'stock_no',
         'description',
+        'inventory_item_no',
         'property_no',
-        'serial_no',
         'quantity',
         'estimated_useful_life',
         'acquired_date',
-        'status',
-        'status_timestamps'
+        'unit_cost',
+        'total_cost'
     ];
+
+    /**
+     * The inventory issuance item that belongs to inventory issuance.
+     */
+    public function issuance(): BelongsTo
+    {
+        return $this->belongsTo(InventoryIssuance::class, 'inventory_issuance_id', 'id');
+    }
+
+    /**
+     * The inventory issuance item that belongs to inventory supply.
+     */
+    public function supply(): BelongsTo
+    {
+        return $this->belongsTo(InventorySupply::class, 'inventory_supply_id', 'id');
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InventoryIssuanceStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +18,27 @@ class InventorySupply extends Model
      *
      * @var array
      */
-    protected $appends = ['available', 'status'];
+    protected $appends = ['available', 'reserved', 'issued', 'status'];
+
+    /**
+     * Determine if the total issued quantity of a supply.
+     */
+    protected function issued(): Attribute
+    {
+        return new Attribute(
+            get: fn () => $this->issuedQuantity()
+        );
+    }
+
+    /**
+     * Determine if the total reserved quantity of a supply.
+     */
+    protected function reserved(): Attribute
+    {
+        return new Attribute(
+            get: fn () => $this->reservedQuantity()
+        );
+    }
 
     /**
      * Determine if the total available quantity of a supply.
@@ -39,9 +60,39 @@ class InventorySupply extends Model
         );
     }
 
+    protected function issuedQuantity(): int
+    {
+        return $this->issuedItemsQuantity(status: InventoryIssuanceStatus::ISSUED);
+    }
+
+    protected function reservedQuantity(): int
+    {
+        return $this->issuedItemsQuantity(exclude: [InventoryIssuanceStatus::CANCELLED])
+            - $this->issuedItemsQuantity(status: InventoryIssuanceStatus::ISSUED);
+    }
+
     protected function availableQuantity(): int
     {
-        return $this->quantity - ($this->issued_items->sum('quantity') ?? 0);
+        return $this->quantity
+            - $this->issuedItemsQuantity(exclude: [InventoryIssuanceStatus::CANCELLED]);
+    }
+
+    protected function issuedItemsQuantity(?InventoryIssuanceStatus $status = null, array $exclude = []): int
+    {
+        return $this->issued_items()
+            ->when(
+                $status,
+                fn ($query) => $query->whereHas(
+                    'issuance', fn ($q) => $q->where('status', $status)
+                )
+            )
+            ->when(
+                $exclude,
+                fn ($query) => $query->whereHas(
+                    'issuance', fn ($q) => $q->whereNotIn('status', $exclude)
+                )
+            )
+            ->sum('quantity');
     }
 
     /**
@@ -85,6 +136,14 @@ class InventorySupply extends Model
      * The supply that has many issued items.
      */
     public function issued_items(): HasMany
+    {
+        return $this->hasMany(InventoryIssuanceItem::class);
+    }
+
+    /**
+     * The supply that has many issued items.
+     */
+    public function issued_item(): HasMany
     {
         return $this->hasMany(InventoryIssuanceItem::class);
     }

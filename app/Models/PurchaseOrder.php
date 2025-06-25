@@ -106,4 +106,12 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(InventorySupply::class);
     }
+
+    /**
+     * The purchase order that has many inventory issuances.
+     */
+    public function issuances(): HasMany
+    {
+        return $this->hasMany(InventoryIssuance::class);
+    }
 }

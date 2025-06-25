@@ -13,14 +13,19 @@ return new class extends Migration
     {
         Schema::create('inventory_issuances', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->enum('document_type', ['ris', 'ics', 'are']);
             $table->uuid('purchase_order_id');
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
+            $table->uuid('responsibility_center_id')->nullable();
+            $table->foreign('responsibility_center_id')
+                ->references('id')
+                ->on('responsibility_centers');
             $table->string('inventory_no');
             $table->date('inventory_date');
-            $table->string('sai_no');
-            $table->date('sai_date');
+            $table->string('sai_no')->nullable();
+            $table->date('sai_date')->nullable();
             $table->uuid('requested_by_id')->nullable();
             $table->foreign('requested_by_id')
                 ->references('id')

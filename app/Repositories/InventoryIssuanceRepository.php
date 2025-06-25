@@ -3,14 +3,15 @@
 namespace App\Repositories;
 
 use App\Helpers\FileHelper;
-use App\Interfaces\PurchaseRequestRepositoryInterface;
+use App\Interfaces\InventoryIssuanceRepositoryInterface;
 use App\Models\Company;
+use App\Models\InventoryIssuance;
 use App\Models\Log;
 use App\Models\PurchaseRequest;
 use TCPDF;
 use TCPDF_FONTS;
 
-class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
+class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterface
 {
     public function __construct() {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
@@ -22,12 +23,13 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function generateNewPrNumber(): string
+    public function generateNewInventoryNumber(string $documentType): string
     {
         $month = date('m');
         $year = date('Y');
-        $sequence = PurchaseRequest::whereMonth('created_at', $month)
+        $sequence = InventoryIssuance::whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
+            ->where('document_type', $documentType)
             ->count() + 1;
 
         return "{$year}-{$sequence}-{$month}";

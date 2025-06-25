@@ -126,7 +126,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
             ->where('document_type', $documentType)
             ->count() + 1;
 
-        return strtoupper($documentType) . "-{$year}-{$sequence}-{$month}";
+        return "{$year}-{$sequence}-{$month}";
     }
 
     public function print(array $pageConfig, string $poId): array

@@ -28,10 +28,10 @@ Route::middleware('auth:sanctum')->group(function() {
             Route::post('/', [InventoryControllers\InventoryIssuanceController::class, 'store'])
                 ->middleware('ability:super:*,supply:*,inv-issuance:*,inv-issuance:create')
                 ->name('store');
-            Route::get('/{issuance}', [InventoryControllers\InventoryIssuanceController::class, 'show'])
+            Route::get('/{inventoryIssuance}', [InventoryControllers\InventoryIssuanceController::class, 'show'])
                 ->middleware('ability:super:*,supply:*,inv-issuance:*,inv-issuance:view')
                 ->name('show');
-            Route::put('/{issuance}', [InventoryControllers\InventoryIssuanceController::class, 'update'])
+            Route::put('/{inventoryIssuance}', [InventoryControllers\InventoryIssuanceController::class, 'update'])
                 ->middleware('ability:super:*,supply:*,inv-issuance:*,inv-issuance:update')
                 ->name('update');
         });

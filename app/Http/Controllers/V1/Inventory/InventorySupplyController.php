@@ -30,7 +30,7 @@ class InventorySupplyController extends Controller
         $user = auth()->user();
 
         $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
+        $perPage = $request->get('per_page', 10);
         $grouped = filter_var($request->get('grouped', true), FILTER_VALIDATE_BOOLEAN);
         $docuementType = $request->get('document_type');
         $searchByPo = filter_var($request->get('search_by_po', false), FILTER_VALIDATE_BOOLEAN);

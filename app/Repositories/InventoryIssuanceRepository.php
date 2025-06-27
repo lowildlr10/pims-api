@@ -2,12 +2,15 @@
 
 namespace App\Repositories;
 
+use App\Enums\InventoryIssuanceStatus;
 use App\Helpers\FileHelper;
 use App\Interfaces\InventoryIssuanceRepositoryInterface;
 use App\Models\Company;
 use App\Models\InventoryIssuance;
+use App\Models\InventoryIssuanceItem;
 use App\Models\Log;
 use App\Models\PurchaseRequest;
+use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
@@ -23,13 +26,73 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
+    public function storeUpdate(array $data, ?InventoryIssuance $inventoryIssuance): InventoryIssuance
+    {
+        if (!empty($inventoryIssuance)) {
+            $inventoryIssuance->update($data);
+        } else {
+            $inventoryIssuance = InventoryIssuance::create(
+                array_merge(
+                    $data,
+                    [
+                        'inventory_no' => $this->generateNewInventoryNumber(
+                            $data['document_type']
+                        ),
+                        'status' => InventoryIssuanceStatus::DRAFT,
+                        'status_timestamps' => json_encode((Object)[])
+                    ]
+                )
+            );
+        }
+
+        $this->storeUpdateItems(
+            collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+            $inventoryIssuance
+        );
+
+        return $inventoryIssuance;
+    }
+
+    private function storeUpdateItems(Collection $items, InventoryIssuance $inventoryIssuance): void
+    {
+        InventoryIssuanceItem::where('inventory_issuance_id', $inventoryIssuance->id)->delete();
+
+        foreach ($items ?? [] as $key => $item) {
+            $quantity = intval($item['quantity']);
+            $unitCost = floatval($item['unit_cost']);
+            $totalCost = round($quantity * $unitCost, 2);
+
+            InventoryIssuanceItem::create([
+                'inventory_issuance_id' => $inventoryIssuance->id,
+                'inventory_supply_id'   => $item['inventory_supply_id'],
+                'stock_no'              => isset($item['stock_no']) ? (int) $item['stock_no'] : $key + 1,
+                'description'           => $item['description'],
+                'inventory_item_no'     => isset($item['inventory_item_no'])
+                                            ? ($item['inventory_item_no'] ?? NULL)
+                                            : NULL,
+                'property_no'           => isset($item['property_no'])
+                                            ? ($item['property_no'] ?? NULL)
+                                            : NULL,
+                'quantity'              => $quantity ?? 0,
+                'estimated_useful_life' => isset($item['estimated_useful_life'])
+                                            ? ($item['estimated_useful_life'] ?? NULL)
+                                            : NULL,
+                'acquired_date'         => isset($item['acquired_date'])
+                                            ? ($item['acquired_date'] ?? NULL)
+                                            : NULL,
+                'unit_cost'             => $unitCost,
+                'total_cost'            => $totalCost
+            ]);
+        }
+    }
+
     public function generateNewInventoryNumber(string $documentType): string
     {
         $month = date('m');
         $year = date('Y');
         $sequence = InventoryIssuance::whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
-            ->where('document_type', $documentType)
+            // ->where('document_type', $documentType)
             ->count() + 1;
 
         return "{$year}-{$sequence}-{$month}";

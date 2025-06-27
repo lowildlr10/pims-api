@@ -45,6 +45,7 @@ class PurchaseOrderController extends Controller
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $grouped = filter_var($request->get('grouped', true), FILTER_VALIDATE_BOOLEAN);
+        $hasSuppliesOnly = filter_var($request->get('has_supplies_only', false), FILTER_VALIDATE_BOOLEAN);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'pr_no');
         $sortDirection = $request->get('sort_direction', 'desc');
@@ -65,6 +66,10 @@ class PurchaseOrderController extends Controller
                 $purchaseOrders = $purchaseOrders->where(function($query) use ($search){
                     $query->where('po_no', 'ILIKE', "%{$search}%");
                 });
+            }
+
+            if ($hasSuppliesOnly) {
+                $purchaseOrders = $purchaseOrders->has('supplies');
             }
 
             $purchaseOrders = $showAll

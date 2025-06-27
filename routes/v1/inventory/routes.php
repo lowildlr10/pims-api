@@ -34,6 +34,15 @@ Route::middleware('auth:sanctum')->group(function() {
             Route::put('/{inventoryIssuance}', [InventoryControllers\InventoryIssuanceController::class, 'update'])
                 ->middleware('ability:super:*,supply:*,inv-issuance:*,inv-issuance:update')
                 ->name('update');
+            Route::put('/{inventoryIssuance}/pending', [InventoryControllers\InventoryIssuanceController::class, 'pending'])
+                ->middleware('ability:super:*,supply:*,inv-issuance:*,inv-issuance:pending')
+                ->name('pending');
+            Route::put('/{inventoryIssuance}/issue', [InventoryControllers\InventoryIssuanceController::class, 'issue'])
+                ->middleware('ability:super:*,supply:*,inv-issuance:*,inv-issuance:issue')
+                ->name('issue');
+            Route::put('/{inventoryIssuance}/cancel', [InventoryControllers\InventoryIssuanceController::class, 'cancel'])
+                ->middleware('ability:super:*,supply:*,inv-issuance:*,inv-issuance:cancel')
+                ->name('cancel');
         });
     });
 });

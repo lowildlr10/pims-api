@@ -9,6 +9,7 @@ use App\Models\InventoryIssuance;
 use App\Models\InventoryIssuanceItem;
 use App\Models\PurchaseOrder;
 use App\Models\InventorySupply;
+use App\Models\Supplier;
 use App\Repositories\InventoryIssuanceRepository;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
@@ -57,6 +58,53 @@ class InventoryIssuanceController extends Controller
                 'issuances.recipient:id,firstname,middlename,lastname',
             ])
             ->has('issuances');
+
+        if (!empty($search)) {
+            $purchaseOrders = $purchaseOrders->where(function($query) use ($search){
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                    ->orWhere('po_date', 'ILIKE', "%{$search}%")
+                    ->orWhere('status', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('issuances', function ($query) use ($search) {
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                            ->orWhere('document_type', 'ILIKE', "%{$search}%")
+                            ->orWhere('inventory_no', 'ILIKE', "%{$search}%")
+                            ->orWhere('inventory_date', 'ILIKE', "%{$search}%")
+                            ->orWhere('status', 'ILIKE', "%{$search}%")
+                            ->orWhereRelation('recipient', function ($query) use ($search) {
+                                $query->where('firstname', 'ILIKE', "%{$search}%")
+                                    ->orWhere('middlename', 'ILIKE', "%{$search}%")
+                                    ->orWhere('lastname', 'ILIKE', "%{$search}%");
+                            });
+                    });
+            });
+        }
+
+        if (in_array($sortDirection, ['asc', 'desc'])) {
+            switch ($columnSort) {
+                case 'po_no':
+                    $purchaseOrders = $purchaseOrders->orderByRaw("CAST(REPLACE(po_no, '-', '') AS INTEGER) {$sortDirection}");
+                    break;
+
+                case 'funding_source_title':
+                    break;
+
+                case 'supplier_name':
+                    $purchaseOrders = $purchaseOrders->orderBy(
+                        Supplier::select('supplier_name')->whereColumn('suppliers.id', 'purchase_orders.supplier_id'),
+                        $sortDirection
+                    );
+                    break;
+
+                case 'delivery_date_formatted':
+                    $purchaseOrders = $purchaseOrders->orderBy('delivery_date', $sortDirection);
+                    break;
+
+                default:
+                    $purchaseOrders = $purchaseOrders->orderBy($columnSort, $sortDirection);
+                    break;
+            }
+        }
 
         if ($paginated) {
             return $purchaseOrders->paginate($perPage);

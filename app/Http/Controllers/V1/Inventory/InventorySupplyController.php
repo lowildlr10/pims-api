@@ -4,8 +4,10 @@ namespace App\Http\Controllers\V1\Inventory;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Http\Controllers\Controller;
+use App\Models\FundingSource;
 use App\Models\PurchaseOrder;
 use App\Models\InventorySupply;
+use App\Models\Supplier;
 use App\Repositories\LogRepository;
 use App\Repositories\InventorySupplyRepository;
 use Illuminate\Http\JsonResponse;
@@ -91,6 +93,48 @@ class InventorySupplyController extends Controller
                 'supplies.item_classification:id,classification_name',
             ])
             ->has('supplies');
+
+        if (!empty($search)) {
+            $purchaseOrders = $purchaseOrders->where(function($query) use ($search){
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                    ->orWhere('po_date', 'ILIKE', "%{$search}%")
+                    ->orWhere('status', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('supplies', function ($query) use ($search) {
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                            ->orWhere('sku', 'ILIKE', "%{$search}%")
+                            ->orWhere('upc', 'ILIKE', "%{$search}%")
+                            ->orWhere('name', 'ILIKE', "%{$search}%")
+                            ->orWhere('description', 'ILIKE', "%{$search}%");
+                    });
+            });
+        }
+
+        if (in_array($sortDirection, ['asc', 'desc'])) {
+            switch ($columnSort) {
+                case 'po_no':
+                    $purchaseOrders = $purchaseOrders->orderByRaw("CAST(REPLACE(po_no, '-', '') AS INTEGER) {$sortDirection}");
+                    break;
+
+                case 'funding_source_title':
+                    break;
+
+                case 'supplier_name':
+                    $purchaseOrders = $purchaseOrders->orderBy(
+                        Supplier::select('supplier_name')->whereColumn('suppliers.id', 'purchase_orders.supplier_id'),
+                        $sortDirection
+                    );
+                    break;
+
+                case 'delivery_date_formatted':
+                    $purchaseOrders = $purchaseOrders->orderBy('delivery_date', $sortDirection);
+                    break;
+
+                default:
+                    $purchaseOrders = $purchaseOrders->orderBy($columnSort, $sortDirection);
+                    break;
+            }
+        }
 
         if ($paginated) {
             return $purchaseOrders->paginate($perPage);

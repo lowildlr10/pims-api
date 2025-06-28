@@ -41,19 +41,19 @@ class StorePoItems implements ShouldQueue
 
         foreach ($this->items as $item) {
             PurchaseOrderItem::where('purchase_order_id', $this->purchaseOrder->id)
-                ->where('pr_item_id', $item->pr_item_id)
+                ->where('pr_item_id', $item['pr_item_id'])
                 ->delete();
 
             PurchaseOrderItem::create([
                 'purchase_order_id' => $this->purchaseOrder->id,
-                'pr_item_id' => $item->pr_item_id,
-                'brand_model' => $item->brand_model,
-                'description' => $item->description,
-                'unit_cost' => $item->unit_cost,
-                'total_cost' => $item->total_cost
+                'pr_item_id' => $item['pr_item_id'],
+                'brand_model' => $item['brand_model'],
+                'description' => $item['description'],
+                'unit_cost' => $item['unit_cost'],
+                'total_cost' => $item['total_cost']
             ]);
 
-            $totalAmount += $item->total_cost;
+            $totalAmount += $item['total_cost'];
         }
 
         $this->purchaseOrder->update([

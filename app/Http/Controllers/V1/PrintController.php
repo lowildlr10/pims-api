@@ -6,6 +6,7 @@ use App\Enums\DocumentPrintType;
 use App\Http\Controllers\Controller;
 use App\Models\PaperSize;
 use App\Repositories\AbstractQuotationRepository;
+use App\Repositories\InspectionAcceptanceReportRepository;
 use App\Repositories\LogRepository;
 use App\Repositories\PurchaseOrderRepository;
 use App\Repositories\PurchaseRequestRepository;
@@ -22,19 +23,22 @@ class PrintController extends Controller
     private RequestQuotationRepository $requestQuotationRepository;
     private AbstractQuotationRepository $abstractQuotationRepository;
     private PurchaseOrderRepository $purchaseOrderRepository;
+    private InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository;
 
     public function __construct(
         LogRepository $logRepository,
         PurchaseRequestRepository $purchaseRequestRepository,
         RequestQuotationRepository $requestQuotationRepository,
         AbstractQuotationRepository $abstractQuotationRepository,
-        PurchaseOrderRepository $purchaseOrderRepository
+        PurchaseOrderRepository $purchaseOrderRepository,
+        InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository
     ) {
         $this->logRepository = $logRepository;
         $this->purchaseRequestRepository = $purchaseRequestRepository;
         $this->requestQuotationRepository = $requestQuotationRepository;
         $this->abstractQuotationRepository = $abstractQuotationRepository;
         $this->purchaseOrderRepository = $purchaseOrderRepository;
+        $this->inspectionAcceptanceReportRepository = $inspectionAcceptanceReportRepository;
     }
 
     /**
@@ -45,8 +49,12 @@ class PrintController extends Controller
         $paperId = $request->get('paper_id', '');
         $pageOrientation = $request->get('page_orientation', 'P');
         $showSignatures = filter_var($request->get('show_signatures', true), FILTER_VALIDATE_BOOLEAN);
+        $logModule = $document;
 
         $paperData = $this->getPaperData($paperId);
+        $data = [
+            'success' => false,
+        ];
 
         if (empty($paperData)) {
             return response()->json([
@@ -72,123 +80,28 @@ class PrintController extends Controller
         switch ($documentEnum) {
             case DocumentPrintType::PR:
                 $data = $this->purchaseRequestRepository->print($pageConfig, $documentId);
-
-                if (!$data['success']) {
-                    $this->logError($documentId, $documentEnum, $data);
-
-                    return response()->json([
-                        'data' => [
-                            'blob' => $data['blob'],
-                            'filename' => $data['filename']
-                        ]
-                    ]);
-                }
-
-                $this->logRepository->create([
-                    'message' => "Succefully generated the {$data['filename']} document.",
-                    'log_id' => $documentId,
-                    'log_module' => 'pr',
-                    'data' => $data
-                ]);
-
-                return response()->json([
-                    'data' => [
-                        'blob' => $data['blob'],
-                        'filename' => $data['filename']
-                    ]
-                ]);
+                $logModule = 'pr';
+                break;
 
             case DocumentPrintType::RFQ:
                 $data = $this->requestQuotationRepository->print($pageConfig, $documentId);
-
-                if (!$data['success']) {
-                    $this->logError($documentId, $documentEnum, $data);
-
-                    return response()->json([
-                        'data' => [
-                            'blob' => $data['blob'],
-                            'filename' => $data['filename']
-                        ]
-                    ]);
-                }
-
-                $this->logRepository->create([
-                    'message' => "Succefully generated the {$data['filename']} document.",
-                    'log_id' => $documentId,
-                    'log_module' => 'rfq',
-                    'data' => $data
-                ]);
-
-                return response()->json([
-                    'data' => [
-                        'blob' => $data['blob'],
-                        'filename' => $data['filename']
-                    ]
-                ]);
+                $logModule = 'rfq';
+                break;
 
             case DocumentPrintType::AOQ:
                 $data = $this->abstractQuotationRepository->print($pageConfig, $documentId);
-
-                if (!$data['success']) {
-                    $this->logError($documentId, $documentEnum, $data);
-
-                    return response()->json([
-                        'data' => [
-                            'blob' => $data['blob'],
-                            'filename' => $data['filename']
-                        ]
-                    ]);
-                }
-
-                $this->logRepository->create([
-                    'message' => "Succefully generated the {$data['filename']} document.",
-                    'log_id' => $documentId,
-                    'log_module' => 'aoq',
-                    'data' => $data
-                ]);
-
-                return response()->json([
-                    'data' => [
-                        'blob' => $data['blob'],
-                        'filename' => $data['filename']
-                    ]
-                ]);
+                $logModule = 'aoq';
+                break;
 
             case DocumentPrintType::PO:
                 $data = $this->purchaseOrderRepository->print($pageConfig, $documentId);
-
-                if (!$data['success']) {
-                    $this->logError($documentId, $documentEnum, $data);
-
-                    return response()->json([
-                        'data' => [
-                            'blob' => $data['blob'],
-                            'filename' => $data['filename']
-                        ]
-                    ]);
-                }
-
-                $this->logRepository->create([
-                    'message' => "Succefully generated the {$data['filename']} document.",
-                    'log_id' => $documentId,
-                    'log_module' => 'po',
-                    'data' => $data
-                ]);
-
-                return response()->json([
-                    'data' => [
-                        'blob' => $data['blob'],
-                        'filename' => $data['filename']
-                    ]
-                ]);
+                $logModule = 'po';
+                break;
 
             case DocumentPrintType::IAR:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
-                ]);
+                $data = $this->inspectionAcceptanceReportRepository->print($pageConfig, $documentId);
+                $logModule = 'iar';
+                break;
 
             case DocumentPrintType::ORS:
                 return response()->json([
@@ -251,6 +164,31 @@ class PrintController extends Controller
                     'message' => 'Unknown error occurred. Please try again.'
                 ], 422);
         }
+
+        if (!$data['success']) {
+            $this->logError($documentId, $documentEnum, $data);
+
+            return response()->json([
+                'data' => [
+                    'blob' => $data['blob'],
+                    'filename' => $data['filename']
+                ]
+            ]);
+        }
+
+        $this->logRepository->create([
+            'message' => "Succefully generated the {$data['filename']} document.",
+            'log_id' => $documentId,
+            'log_module' => $logModule,
+            'data' => $data
+        ]);
+
+        return response()->json([
+            'data' => [
+                'blob' => $data['blob'],
+                'filename' => $data['filename']
+            ]
+        ]);
     }
 
     private function getPaperData(string $paperId): array | NULL

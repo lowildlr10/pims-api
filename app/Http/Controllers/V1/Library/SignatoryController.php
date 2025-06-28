@@ -68,7 +68,7 @@ class SignatoryController extends Controller
 
         if (!empty($search)) {
             $signatories = $signatories->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'middlename', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%")
@@ -117,7 +117,7 @@ class SignatoryController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|unique:signatories,user_id',
             'details' => 'required|string',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -197,7 +197,7 @@ class SignatoryController extends Controller
     {
         $validated = $request->validate([
             'details' => 'required|string',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

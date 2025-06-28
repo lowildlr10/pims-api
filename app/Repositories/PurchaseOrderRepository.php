@@ -33,8 +33,6 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
 
     public function storeUpdate(array $data, ?PurchaseOrder $purchaseOrder = NULL): PurchaseOrder
     {
-        $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
-
         if (!empty($purchaseOrder)) {
             $placeDelivery = Location::where('location_name', $data['place_delivery'])->first();
             $deliveryTerm = DeliveryTerm::where('term_name', $data['delivery_term'])->first();
@@ -67,7 +65,11 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 ]
             ));
 
-            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder, false);
+            $this->storeUpdateItems(
+                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                $purchaseOrder,
+                false
+            );
         } else {
             $purchaseOrder = PurchaseOrder::create(
                 array_merge(
@@ -82,7 +84,10 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 )
             );
 
-            $this->storeUpdateItems(collect($items ?? []), $purchaseOrder);
+            $this->storeUpdateItems(
+                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                $purchaseOrder
+            );
         }
 
         return $purchaseOrder;
@@ -102,11 +107,11 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         } else {
             foreach ($items as $item) {
                 $poItem = PurchaseOrderItem::where('purchase_order_id', $purchaseOrder->id)
-                    ->where('pr_item_id', $item->pr_item_id)
+                    ->where('pr_item_id', $item['pr_item_id'])
                     ->first();
 
                 $poItem->update([
-                    'description' => $item->description
+                    'description' => $item['description']
                 ]);
             }
         }
@@ -121,7 +126,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
             ->where('document_type', $documentType)
             ->count() + 1;
 
-        return strtoupper($documentType) . "-{$year}-{$sequence}-{$month}";
+        return "{$year}-{$sequence}-{$month}";
     }
 
     public function print(array $pageConfig, string $poId): array
@@ -383,11 +388,11 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.183, 0, 'Place of Delivery:', 'LT', 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.397, 0, $placeDelivery->location_name, 'TB', 0, 'L');
+        $pdf->Cell($pageWidth * 0.397, 0, !empty($placeDelivery) ? $placeDelivery->location_name : '', 'TB', 0, 'L');
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.185, 0, 'Delivery Term:', 'T', 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell(0, 0, $deliveryTerm->term_name, 'TRB', 1, 'L');
+        $pdf->Cell(0, 0, !empty($deliveryTerm) ? $deliveryTerm->term_name : '', 'TRB', 1, 'L');
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.183, 0, 'Date of Delivery:', 'L', 0, 'L');
@@ -400,7 +405,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.185, 0, 'Payment Term:', 0, 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell(0, 0, $paymentTerm->term_name, 'RB', 1, 'L');
+        $pdf->Cell(0, 0, !empty($paymentTerm) ? $paymentTerm->term_name : '', 'RB', 1, 'L');
 
         $pdf->SetFont($this->fontArial, 'I', 5);
         $pdf->Cell(0, 0, '', 'LR', 1);
@@ -585,7 +590,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArialBold, 'B', 12);
         $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
         $pdf->Cell($pageWidth * 0.464, 0, '', 'B', 0, 'C');
-        $pdf->Cell(0, 0, strtoupper($signatoryApproval->fullname), 'R', 1, 'C');
+        $pdf->Cell(0, 0, strtoupper(!empty($signatoryApproval) ? $signatoryApproval->fullname : ''), 'R', 1, 'C');
 
         $pdf->SetFont($this->fontArial, '', 11);
         $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');

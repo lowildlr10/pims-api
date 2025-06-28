@@ -33,17 +33,6 @@ class PurchaseOrder extends Model
         'document_type',
         'status',
         'status_timestamps'
-        // 'pending_at',
-        // 'approved_at',
-        // 'issued_at',
-        // 'received_at',
-        // 'for_delivery_at',
-        // 'delivered_at',
-        // 'for_inspection_at',
-        // 'for_obligation_at',
-        // 'for_disbursement_at',
-        // 'for_payment_at',
-        // 'completed_at'
     ];
 
     /**
@@ -108,5 +97,21 @@ class PurchaseOrder extends Model
     public function purchase_request(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
+    }
+
+    /**
+     * The purchase order that has many inventory supplies.
+     */
+    public function supplies(): HasMany
+    {
+        return $this->hasMany(InventorySupply::class);
+    }
+
+    /**
+     * The purchase order that has many inventory issuances.
+     */
+    public function issuances(): HasMany
+    {
+        return $this->hasMany(InventoryIssuance::class);
     }
 }

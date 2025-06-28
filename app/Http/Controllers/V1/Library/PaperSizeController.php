@@ -35,7 +35,7 @@ class PaperSizeController extends Controller
 
         if (!empty($search)) {
             $paperSizes = $paperSizes->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('paper_type', 'ILIKE', "%{$search}%")
                     ->orWhere('unit', 'ILIKE', "%{$search}%")
                     ->orWhere('width', 'ILIKE', "%{$search}%")

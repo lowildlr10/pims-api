@@ -35,7 +35,7 @@ class MfoPapController extends Controller
 
         if (!empty($search)) {
             $mfoPaps = $mfoPaps->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
             });
@@ -76,7 +76,7 @@ class MfoPapController extends Controller
         $validated = $request->validate([
             'code' => 'required|unique:mfo_paps,code',
             'description' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -131,7 +131,7 @@ class MfoPapController extends Controller
         $validated = $request->validate([
             'code' => 'required|unique:mfo_paps,code,' . $mfoPap->id,
             'description' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

@@ -22,6 +22,17 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
+    public function generateNewPrNumber(): string
+    {
+        $month = date('m');
+        $year = date('Y');
+        $sequence = PurchaseRequest::whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->count() + 1;
+
+        return "{$year}-{$sequence}-{$month}";
+    }
+
     public function print(array $pageConfig, string $prId): array
     {
         try {

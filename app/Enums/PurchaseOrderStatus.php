@@ -10,9 +10,9 @@ enum PurchaseOrderStatus: string
     case ISSUED = 'issued';
     case FOR_DELIVERY = 'for_delivery';
     case DELIVERED = 'delivered';
-    case FOR_INSPECTION = 'for_inspection';
-    case FOR_OBLIGATION = 'for_obligation';
-    case FOR_DISBURSEMENT = 'for_disbursement';
-    case FOR_PAYMENT = 'for_payment';
+    case INSPECTION = 'inspection';
+    case OBLIGATION = 'obligation';
+    case DISBURSEMENT = 'disbursement';
+    case PAYMENT = 'payment';
     case COMPLETED = 'completed';
 }

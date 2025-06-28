@@ -36,7 +36,7 @@ class FundingSourceController extends Controller
 
         if (!empty($search)) {
             $fundingSources = $fundingSources->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('title', 'ILIKE', "%{$search}%")
                     ->orWhere('total_cost', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('location', 'location_name', 'ILIKE', "%{$search}%");
@@ -85,7 +85,7 @@ class FundingSourceController extends Controller
             'title' => 'required|unique:funding_sources,title',
             'location' => 'required',
             'total_cost' => 'required|numeric',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -155,7 +155,7 @@ class FundingSourceController extends Controller
             'title' => 'required|unique:funding_sources,title,' . $fundingSource->id,
             'location' => 'required',
             'total_cost' => 'required|numeric',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

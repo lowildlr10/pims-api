@@ -5,7 +5,7 @@ return [
     'page_units'            => 'mm',
     'unicode'               => true,
     'encoding'              => 'UTF-8',
-    'font_directory'        => '',
+    'font_directory'        => public_path() . '/fonts/tcpdf/',
     'image_directory'       => '',
     'tcpdf_throw_exception' => false,
     'use_fpdi'              => false,

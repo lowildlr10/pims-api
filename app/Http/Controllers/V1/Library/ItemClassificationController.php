@@ -35,7 +35,7 @@ class ItemClassificationController extends Controller
 
         if (!empty($search)) {
             $itemClassifications = $itemClassifications->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('classification_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -74,7 +74,7 @@ class ItemClassificationController extends Controller
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:item_classifications,classification_name',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -128,7 +128,7 @@ class ItemClassificationController extends Controller
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:item_classifications,classification_name,' . $itemClassification->id,
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

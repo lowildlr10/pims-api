@@ -42,10 +42,10 @@ class DivisionController extends Controller
 
         if (!empty($search)) {
             $divisions = $divisions->where(function($query) use ($search) {
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('division_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('sections', function($query) use ($search) {
-                        $query->where('id', $search)
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                             ->orWhere('section_name', 'ILIKE', "%{$search}%");
                     });
             });
@@ -89,7 +89,7 @@ class DivisionController extends Controller
         $validated = $request->validate([
             'division_name' => 'required|unique:divisions,division_name',
             'division_head_id' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -146,7 +146,7 @@ class DivisionController extends Controller
         $validated = $request->validate([
             'division_name' => 'required|unique:divisions,division_name,' . $division->id,
             'division_head_id' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

@@ -35,7 +35,7 @@ class ProcurementModeController extends Controller
 
         if (!empty($search)) {
             $procurementModes = $procurementModes->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('mode_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -74,7 +74,7 @@ class ProcurementModeController extends Controller
     {
         $validated = $request->validate([
             'mode_name' => 'required|unique:procurement_modes,mode_name',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -128,7 +128,7 @@ class ProcurementModeController extends Controller
     {
         $validated = $request->validate([
             'mode_name' => 'required|unique:procurement_modes,mode_name,' . $procurementMode->id,
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

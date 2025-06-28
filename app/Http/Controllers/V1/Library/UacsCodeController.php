@@ -35,7 +35,7 @@ class UacsCodeController extends Controller
 
         if (!empty($search)) {
             $uacsCodes = $uacsCodes->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('account_title', 'ILIKE', "%{$search}%")
                     ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%")
@@ -83,7 +83,7 @@ class UacsCodeController extends Controller
             'account_title' => 'required|string',
             'code' => 'required|unique:uacs_codes,code',
             'description' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -142,7 +142,7 @@ class UacsCodeController extends Controller
             'account_title' => 'required|string',
             'code' => 'required|unique:uacs_codes,code,' . $uacsCode->id,
             'description' => 'nullable',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

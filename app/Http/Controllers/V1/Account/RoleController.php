@@ -35,7 +35,7 @@ class RoleController extends Controller
 
         if (!empty($search)) {
             $roles = $roles->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('role_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -75,7 +75,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'role_name' => 'required|unique:roles,role_name',
             'permissions' => 'required|string',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -135,7 +135,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'role_name' => 'required|unique:roles,role_name,' . $role->id,
             'permissions' => 'required|string',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

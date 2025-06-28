@@ -35,7 +35,7 @@ class BidsAwardsCommitteeController extends Controller
 
         if (!empty($search)) {
             $bidsAwardsCommittees = $bidsAwardsCommittees->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('committee_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -74,7 +74,7 @@ class BidsAwardsCommitteeController extends Controller
     {
         $validated = $request->validate([
             'committee_name' => 'required|unique:bids_awards_committees,committee_name',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -128,7 +128,7 @@ class BidsAwardsCommitteeController extends Controller
     {
         $validated = $request->validate([
             'committee_name' => 'required|unique:bids_awards_committees,committee_name,' . $bidsAwardsCommittee->id,
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

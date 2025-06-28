@@ -35,7 +35,7 @@ class UnitIssueController extends Controller
 
         if (!empty($search)) {
             $unitIssues = $unitIssues->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('unit_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -74,7 +74,7 @@ class UnitIssueController extends Controller
     {
         $validated = $request->validate([
             'unit_name' => 'required|unique:unit_issues,unit_name',
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -128,7 +128,7 @@ class UnitIssueController extends Controller
     {
         $validated = $request->validate([
             'unit_name' => 'required|unique:unit_issues,unit_name,' . $unitIssue->id,
-            'active' => 'required|in:true,false'
+            'active' => 'required|boolean'
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);

@@ -32,8 +32,6 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
 
     public function storeUpdate(array $data, ?AbstractQuotation $abstractQuotation = NULL): AbstractQuotation
     {
-        $items = gettype($data['items']) === 'string' ? json_decode($data['items']) : $data['items'];
-
         if (!empty($abstractQuotation)) {
             $abstractQuotation->update($data);
         } else {
@@ -49,7 +47,10 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             );
         }
 
-        $this->storeItems(collect($items ?? []), $abstractQuotation);
+        $this->storeItems(
+            collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+            $abstractQuotation
+        );
 
         return $abstractQuotation;
     }
@@ -74,7 +75,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             ->whereYear('created_at', $year)
             ->count() + 1;
 
-        return "AOQ-{$year}-{$sequence}-{$month}";
+        return "{$year}-{$sequence}-{$month}";
     }
 
     public function print(array $pageConfig, string $aoqId): array

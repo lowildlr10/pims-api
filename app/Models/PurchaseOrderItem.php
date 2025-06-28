@@ -41,7 +41,7 @@ class PurchaseOrderItem extends Model
     }
 
     /**
-     * The purchase order item that belongs to abstract of quoation.
+     * The purchase order item that belongs to purchase order.
      */
     public function purchase_order(): BelongsTo
     {

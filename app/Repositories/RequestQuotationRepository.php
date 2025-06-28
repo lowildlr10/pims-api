@@ -152,14 +152,16 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
             $pdf->setCellHeightRatio(2);
             $pdf->Cell($pageWidth * 0.215, 0, 'Name of Project: ', 0, 0, 'L');
             $pdf->SetFont($this->fontArial, 'U', 10);
-            $pdf->Cell(0, 0, $fundingSource->title, 0, 1, 'L');
+            $pdf->Cell(0, 0, !empty($fundingSource->title) ? $fundingSource->title : '', 0, 1, 'L');
             $pdf->SetFont($this->fontArial, '', 10);
 
             $pdf->SetFont($this->fontArial, '', 10);
             $pdf->setCellHeightRatio(2);
             $pdf->Cell($pageWidth * 0.215, 0, 'Location of the Project: ', 0, 0, 'L');
             $pdf->SetFont($this->fontArial, 'U', 10);
-            $pdf->Cell(0, 0, $fundingSource->location->location_name, 0, 1, 'L');
+            $pdf->Cell(
+                0, 0, !empty($fundingSource->location) ? $fundingSource->location->location_name : '', 0, 1, 'L'
+            );
         }
 
         $pdf->setCellHeightRatio(1.6);

@@ -40,29 +40,28 @@ class StoreAbstractItems implements ShouldQueue
     {
         foreach ($this->items as $item) {
             AbstractQuotationItem::where('abstract_quotation_id', $this->abstractQuotation->id)
-                ->where('pr_item_id', $item->pr_item_id)
+                ->where('pr_item_id', $item['pr_item_id'])
                 ->delete();
 
             $aoqItem = AbstractQuotationItem::create([
                 'abstract_quotation_id' => $this->abstractQuotation->id,
-                'pr_item_id' => $item->pr_item_id,
-                'awardee_id' => isset($item->awardee_id) && !empty($item->awardee_id) ? $item->awardee_id : NULL,
-                'document_type' => $item?->document_type ?? NULL,
-                'included' => $item->included
+                'pr_item_id' => $item['pr_item_id'],
+                'awardee_id' => isset($item['awardee_id']) && !empty($item['awardee_id']) ? $item['awardee_id'] : NULL,
+                'document_type' => isset($item['document_type']) && !empty($item['document_type'])
+                    ? $item['document_type'] : NULL,
+                'included' => $item['included']
             ]);
 
-            $details = gettype($item->details) === 'string' ? json_decode($item->details) : $item->details;
-
-            foreach ($details ?? [] as $detail) {
-                $quantity = intval($detail->quantity);
-                $unitCost = floatval($detail->unit_cost);
+            foreach ($item['details'] ?? [] as $detail) {
+                $quantity = intval($detail['quantity']);
+                $unitCost = floatval($detail['unit_cost']);
                 $totalCost = round($quantity * $unitCost, 2);
 
                 AbstractQuotationDetail::create([
                     'abstract_quotation_id' => $this->abstractQuotation->id,
                     'aoq_item_id' => $aoqItem->id,
-                    'supplier_id' => $detail->supplier_id,
-                    'brand_model' => $detail->brand_model,
+                    'supplier_id' => $detail['supplier_id'],
+                    'brand_model' => $detail['brand_model'],
                     'unit_cost' => $unitCost,
                     'total_cost' => $totalCost
                 ]);

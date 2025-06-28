@@ -75,7 +75,7 @@ class UserController extends Controller
 
         if (!empty($search)) {
             $users = $users->where(function($query) use ($search){
-                $query->where('id', $search)
+                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
                     ->orWhere('firstname', 'ILIKE', "%{$search}%")
                     ->orWhere('middlename', 'ILIKE', "%{$search}%")
                     ->orWhere('lastname', 'ILIKE', "%{$search}%")
@@ -145,7 +145,7 @@ class UserController extends Controller
             'password' => 'required|min:6',
             'avatar' => 'nullable|string',
             'signature' => 'nullable|string',
-            'restricted' => 'required|in:true,false',
+            'restricted' => 'required|boolean',
             'allow_signature' => 'boolean',
             'roles' => 'required|string'
         ]);
@@ -260,7 +260,7 @@ class UserController extends Controller
 
             case 'allow_signature':
                 $validated = $request->validate([
-                    'allow_signature' => 'required|in:true,false'
+                    'allow_signature' => 'required|boolean'
                 ]);
                 $allowSignature = filter_var($validated['allow_signature'], FILTER_VALIDATE_BOOLEAN);
                 break;
@@ -279,7 +279,7 @@ class UserController extends Controller
                     'email' => 'email|unique:users,email,' . $user->id . '|nullable',
                     'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
-                    'restricted' => 'required|in:true,false',
+                    'restricted' => 'required|boolean',
                     'roles' => 'required|string'
                 ]);
                 $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);

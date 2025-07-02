@@ -177,7 +177,7 @@ class PrintController extends Controller
         }
 
         $this->logRepository->create([
-            'message' => "Succefully generated the {$data['filename']} document.",
+            'message' => "Successfully generated the {$data['filename']} document.",
             'log_id' => $documentId,
             'log_module' => $logModule,
             'data' => $data

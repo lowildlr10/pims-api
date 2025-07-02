@@ -11,6 +11,18 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class PurchaseOrder extends Model
 {
     use HasUuids;
+    
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status_timestamps' => 'object',
+        ];
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -97,6 +109,14 @@ class PurchaseOrder extends Model
     public function purchase_request(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
+    }
+    
+    /**
+     * The purchase order that has many inspection acceptance report.
+     */
+    public function inspection_acceptance_report(): HasMany
+    {
+        return $this->hasMany(InspectionAcceptanceReport::class);
     }
 
     /**

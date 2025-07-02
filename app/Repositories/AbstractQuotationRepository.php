@@ -152,7 +152,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
 
             $filename = "AOQ-{$aoq->abstract_no}.pdf";
             $blob = $this->generateAbstractQuotationDoc($filename, $pageConfig, $aoq, $company);
-
+            
             return [
                 'success' => true,
                 'blob' => $blob,
@@ -184,7 +184,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $signatoryMember2 = $data->signatory_member_2?->user;
         $signatoryMember3 = $data->signatory_member_3?->user;
 
-        $items = $data->items;
+        $items = $data->items ?? [];
         $details = $data->items[0]->details ?? [];
         $supplierHeaders = collect($details ?? [])->map(function($detail) use ($items) {
             $relevantDetails = collect($items ?? [])->flatMap(function($item) {
@@ -334,10 +334,10 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $pdf->Ln(0);
 
         $htmlTable = '<table border="1" cellpadding="2"><tbody>';
-
-        foreach ($data->items as $item) {
-            if (!$item->included || empty($item->awardee_id)) continue;
-
+        
+        foreach ($items ?? [] as $item) {
+            if (!$item->included) continue;
+            
             $prItem = $item->pr_item;
             $description = trim(str_replace("\r", '<br />', $prItem->description));
             $description = str_replace("\n", '<br />', $description);

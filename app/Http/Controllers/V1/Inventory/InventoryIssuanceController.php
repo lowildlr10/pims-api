@@ -76,6 +76,9 @@ class InventoryIssuanceController extends Controller
                                     ->orWhere('middlename', 'ILIKE', "%{$search}%")
                                     ->orWhere('lastname', 'ILIKE', "%{$search}%");
                             });
+                    })
+                    ->orWhereRelation('supplies', function ($query) use ($search) {
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search]);
                     });
             });
         }

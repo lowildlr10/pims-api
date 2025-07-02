@@ -940,8 +940,8 @@ class PurchaseRequestController extends Controller
                 ], 422);
             }
 
-            if ($rfqCompletedCount < 3) {
-                $message = 'Failed to mark the purchase request as "For Abstract" due to fewer than three RFQs have been completed or canvassed.';
+            if ($rfqCompletedCount === 0) {
+                $message = 'Cannot mark as "For Abstract" because no RFQ has been completed';
                 $this->logRepository->create([
                     'message' => $message,
                     'log_id' => $purchaseRequest->id,

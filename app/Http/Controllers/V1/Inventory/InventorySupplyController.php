@@ -106,6 +106,12 @@ class InventorySupplyController extends Controller
                             ->orWhere('upc', 'ILIKE', "%{$search}%")
                             ->orWhere('name', 'ILIKE', "%{$search}%")
                             ->orWhere('description', 'ILIKE', "%{$search}%");
+                    })
+                    ->orWhereRelation('issuances', function ($query) use ($search) {
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search]);
+                    })
+                    ->orWhereRelation('inspection_acceptance_report', function($query) use ($search){
+                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search]);
                     });
             });
         }

@@ -198,9 +198,9 @@ class RequestQuotationController extends Controller
         ]);
 
         $copies = $validated['copies'] ?? 1;
-        $validated['vat_registered'] = !empty($validated['vat_registered'])
-            ? filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN)
-            : NULL;
+        $validated['vat_registered'] = isset($validated['vat_registered']) 
+            ? $request->boolean('vat_registered') 
+            : null;
 
         try {
             for ($copy = 1; $copy <= $copies; $copy++) {
@@ -347,9 +347,9 @@ class RequestQuotationController extends Controller
             'vat_registered' =>  'nullable|boolean',
         ]);
 
-        $validated['vat_registered'] = !empty($validated['vat_registered'])
-            ? filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN)
-            : NULL;
+        $validated['vat_registered'] = isset($validated['vat_registered']) 
+            ? $request->boolean('vat_registered') 
+            : null;
 
         try {
             $message = 'Request for quotation updated successfully.';

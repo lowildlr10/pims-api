@@ -204,12 +204,12 @@ class InspectionAcceptanceReportController extends Controller
             'received_date' => 'nullable',
             'acceptance_completed' => 'nullable|boolean',
         ]);
-
-        $validated['inspected'] = !empty($validated['inspected'])
-            ? filter_var($validated['inspected'], FILTER_VALIDATE_BOOLEAN)
+        
+        $validated['inspected'] = isset($validated['inspected']) 
+            ? $request->boolean('inspected') 
             : NULL;
-        $validated['acceptance_completed'] = !empty($validated['acceptance_completed'])
-            ? filter_var($validated['acceptance_completed'], FILTER_VALIDATE_BOOLEAN)
+        $validated['acceptance_completed'] = isset($validated['acceptance_completed']) 
+            ? $request->boolean('acceptance_completed') 
             : NULL;
 
         try {

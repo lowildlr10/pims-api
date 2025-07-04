@@ -15,6 +15,8 @@ Route::middleware('auth:sanctum')->group(function() {
             ->name('logout');
         Route::get('/me', [AccountControllers\AuthController::class, 'me'])
             ->name('me');
+        Route::post('/refresh-token', [AccountControllers\AuthController::class, 'refreshToken'])
+            ->name('refresh-token');
     });
 
     Route::name('positions.')->prefix('/accounts/positions')->group(function () {

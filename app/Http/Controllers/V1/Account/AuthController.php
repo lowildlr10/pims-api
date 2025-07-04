@@ -103,6 +103,50 @@ class AuthController extends Controller
             ]
         ]);
     }
+    
+    // Renew login token of a user
+    public function refreshToken(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        try {
+            // Get current token and its abilities
+            $currentToken = $user->currentAccessToken();
+            $abilities = $user->permissions();
+
+            // Delete current token
+            $currentToken?->delete();
+
+            // Generate new token valid for 1 day
+            $newToken = $user->createToken('authToken', $abilities, now()->addDay())->plainTextToken;
+
+            // Log the token refresh
+            $this->logRepository->create([
+                'message' => "Token refreshed successfully.",
+                'log_module' => 'login',
+                'data' => $user
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'access_token' => $newToken,
+                    'message' => 'Token refreshed successfully.'
+                ]
+            ]);
+        } catch (\Throwable $th) {
+            // Log the error
+            $this->logRepository->create([
+                'message' => "Token refresh failed.",
+                'details' => $th->getMessage(),
+                'log_module' => 'login',
+                'data' => $user
+            ], isError: true);
+
+            return response()->json([
+                'message' => 'Failed to refresh token. Please try again.',
+            ], 422);
+        }
+    }
 
     // Logout a user
     public function logout(Request $request): JsonResponse

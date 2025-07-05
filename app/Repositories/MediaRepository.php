@@ -18,9 +18,9 @@ class MediaRepository implements MediaRepositoryInterface
        $this->logRepository = $logRepository; 
     }
     
-    public function upload(string $id, string $file, FileUploadType $type): string
+    public function upload(string $id, string $file, FileUploadType $type, string $disk = 'public'): string
     {
-        //try {
+        try {
             $message = '';
             $logModule = '';
             $fileDirectory = '';
@@ -31,7 +31,13 @@ class MediaRepository implements MediaRepositoryInterface
                     $data = User::find($id);
                     
                     if ($file !== $data->avatar && !empty($file)) {
-                        $fileDirectory = $this->processAndSaveImage($file, $id, 'avatars', 220);
+                        $fileDirectory = $this->processAndSaveImage(
+                            $file, 
+                            $id, 
+                            'avatars', 
+                            220,
+                            disk: $disk
+                        );
                     } else {
                         if (!empty($file)) {
                             $fileDirectory = $file;
@@ -52,7 +58,13 @@ class MediaRepository implements MediaRepositoryInterface
                     $data = User::find($id);
                     
                     if ($file !== $data->avatar && !empty($file)) {
-                        $fileDirectory = $this->processAndSaveImage($file, $id, 'signatures', 300);
+                        $fileDirectory = $this->processAndSaveImage(
+                            $file, 
+                            $id, 
+                            'signatures', 
+                            300,
+                            disk: $disk
+                        );
                     } else {
                         if (!empty($file)) {
                             $fileDirectory = $file;
@@ -73,7 +85,13 @@ class MediaRepository implements MediaRepositoryInterface
                     $data = Company::find($id);
                     
                     if ($file !== $data->company_logo && !empty($file)) {
-                        $fileDirectory = $this->processAndSaveImage($file, $id, 'logo', 300);
+                        $fileDirectory = $this->processAndSaveImage(
+                            $file, 
+                            $id, 
+                            'logo', 
+                            300,
+                            disk: $disk
+                        );
                     } else {
                         if (!empty($file)) {
                             $fileDirectory = $file;
@@ -83,7 +101,14 @@ class MediaRepository implements MediaRepositoryInterface
                     }
                     
                     if ($file !== $data->company_logo && !empty($file)) {
-                        $faviconDirectory = $this->processAndSaveImage($file, $id, 'favicon', 16, 'ico');
+                        $faviconDirectory = $this->processAndSaveImage(
+                            $file, 
+                            $id, 
+                            'favicon', 
+                            16, 
+                            'ico',
+                            disk: $disk
+                        );
                     } else {
                         if (!empty($file)) {
                             $faviconDirectory = $file;
@@ -111,7 +136,8 @@ class MediaRepository implements MediaRepositoryInterface
                             'login-background', 
                             1920,
                             'jpg',
-                            40
+                            40,
+                            disk: $disk
                         );
                     } else {
                         if (!empty($file)) {
@@ -140,12 +166,12 @@ class MediaRepository implements MediaRepositoryInterface
             ]);
             
             return $fileDirectory;
-        //} catch (\Throwable $th) {
-        //    throw new \Exception('File upload failed. Please try again.');
-        //}
+        } catch (\Throwable $th) {
+            throw new \Exception('File upload failed. Please try again.');
+        }
     }
     
-    public function get(string $id, FileUploadType $type): string
+    public function get(string $id, FileUploadType $type, string $disk = 'public'): string
     {
         try {
             $data = '';
@@ -155,7 +181,7 @@ class MediaRepository implements MediaRepositoryInterface
                     $user = User::find($id);
                     
                     if (!empty($user) && !empty($user->avatar)) {
-                        $path = Storage::disk('public')->path($user->avatar);
+                        $path = Storage::disk($disk)->path($user->avatar);
                         
                         if (file_exists($path)) {
                             $type = mime_content_type($path);
@@ -168,7 +194,7 @@ class MediaRepository implements MediaRepositoryInterface
                     $user = User::find($id);
                     
                     if (!empty($user) && !empty($user->signature)) {
-                        $path = Storage::disk('public')->path($user->signature);
+                        $path = Storage::disk($disk)->path($user->signature);
                         
                         if (file_exists($path)) {
                             $type = mime_content_type($path);
@@ -181,7 +207,7 @@ class MediaRepository implements MediaRepositoryInterface
                     $company = Company::find($id);
                     
                     if (!empty($company) && !empty($company->favicon)) {
-                        $path = Storage::disk('public')->path($company->favicon);
+                        $path = Storage::disk($disk)->path($company->favicon);
                         
                         if (file_exists($path)) {
                             $type = mime_content_type($path);
@@ -194,7 +220,7 @@ class MediaRepository implements MediaRepositoryInterface
                     $company = Company::find($id);
                     
                     if (!empty($company) && !empty($company->company_logo)) {
-                        $path = Storage::disk('public')->path($company->company_logo);
+                        $path = Storage::disk($disk)->path($company->company_logo);
                         
                         if (file_exists($path)) {
                             $type = mime_content_type($path);
@@ -207,7 +233,7 @@ class MediaRepository implements MediaRepositoryInterface
                     $company = Company::find($id);
                     
                     if (!empty($company) && !empty($company->login_background)) {
-                        $path = Storage::disk('public')->path($company->login_background);
+                        $path = Storage::disk($disk)->path($company->login_background);
                         
                         if (file_exists($path)) {
                             $type = mime_content_type($path);
@@ -235,13 +261,11 @@ class MediaRepository implements MediaRepositoryInterface
         string $imageName, 
         string $imageDirectory = '', 
         int $width = 150, 
-        $format = 'png', 
-        int $quality = 20
+        string $format = 'png', 
+        int $quality = 20,
+        string $disk = 'public'
     ): string
     {
-        // Fallback if APP_URL is not set
-        $appUrl = env('APP_URL', 'http://localhost');
-
         // Read and scale the image from base64
         $image = Image::read($base64Data)->scale($width);
 
@@ -251,8 +275,8 @@ class MediaRepository implements MediaRepositoryInterface
         $storageDirectory = !empty($imageDirectory) ? "images/{$imageDirectory}" : 'images';
 
         // Ensure the directory exists in the public disk
-        if (!Storage::disk('public')->exists($storageDirectory)) {
-            Storage::disk('public')->makeDirectory($storageDirectory);
+        if (!Storage::disk($disk)->exists($storageDirectory)) {
+            Storage::disk($disk)->makeDirectory($storageDirectory);
         }
 
         if ($format === 'ico') $format = 'png';
@@ -260,8 +284,8 @@ class MediaRepository implements MediaRepositoryInterface
         // Encode the image with quality and progressive settings
         $encodedImage = $image->encodeByExtension($format, quality: $quality, progressive: true);
 
-        // Save the image to the 'public' disk
-        Storage::disk('public')->put("images/{$relativePath}", (string) $encodedImage);
+        // Save the image to the $disk disk
+        Storage::disk($disk)->put("images/{$relativePath}", (string) $encodedImage);
 
         // Return the relative public path (can be used with asset() or URL::to())
         return "images/{$relativePath}";

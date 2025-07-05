@@ -183,7 +183,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     $x + ($x * 0.15),
                     $y + ($y * 0.09),
                     w: $pageConfig['orientation'] === 'P'
-                        ? $x - ($x * 0.04)
+                        ? $x - ($x * 0.1)
                         : $y + ($y * 0.4),
                     type: 'PNG',
                     resize: true,

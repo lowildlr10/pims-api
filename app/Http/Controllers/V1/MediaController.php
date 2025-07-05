@@ -24,7 +24,8 @@ class MediaController extends Controller
         $validated = $request->validate([
             'file' => 'nullable|string',
             'type' => 'required',
-            'parent_id' => 'required'
+            'parent_id' => 'required',
+            'disk' => 'nullable|string'
         ]);
         
         try {
@@ -39,7 +40,8 @@ class MediaController extends Controller
             $file = $this->repository->upload(
                 $validated['parent_id'], 
                 $validated['file'], 
-                $type
+                $type,
+                $request->get('disk', 'public')
             );
             
             return response()->json([
@@ -62,7 +64,8 @@ class MediaController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required',
-            'parent_id' => 'required'
+            'parent_id' => 'required',
+            'disk' => 'nullable|string'
         ]);
         
         try {
@@ -76,7 +79,8 @@ class MediaController extends Controller
         try {
             $file = $this->repository->get(
                 $validated['parent_id'], 
-                $type
+                $type,
+                $request->get('disk', 'public')
             );
             
             return response()->json([

@@ -107,24 +107,24 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
-        // try {
-        //     if ($company->company_logo) {
-        //         $imagePath = FileHelper::getPublicPath(
-        //             $company->company_logo
-        //         );
-        //         $pdf->Image(
-        //             $imagePath,
-        //             $x + ($x * 0.15),
-        //             $y - ($y * 0.04),
-        //             w: $pageConfig['orientation'] === 'P'
-        //                 ? $x - ($x * 0.04)
-        //                 : $y + ($y * 0.4),
-        //             type: 'PNG',
-        //             resize: true,
-        //             dpi: 500,
-        //         );
-        //     }
-        // } catch (\Throwable $th) {}
+         try {
+             if ($company->company_logo) {
+                 $imagePath = FileHelper::getPublicPath(
+                     $company->company_logo
+                 );
+                 $pdf->Image(
+                     $imagePath,
+                     $x + ($x * 0.15),
+                     $y - ($y * 0.04),
+                     w: $pageConfig['orientation'] === 'P'
+                         ? $x - ($x * 0.15)
+                         : $y + ($y * 0.1),
+                     type: 'PNG',
+                     resize: true,
+                     dpi: 500,
+                 );
+             }
+         } catch (\Throwable $th) {}
 
         if ($data->signed_type === 'lce') {
             $pdf->setTextColor(0, 0, 0);
@@ -135,7 +135,7 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         }
 
         $pdf->SetFont($this->fontArial, '', $data->signed_type === 'lce' ? 10 : 14);
-        $pdf->Cell(0, 0, "MUNICIPALITY OF {$company->municipality}", 0, 1, 'C');
+        $pdf->Cell(0, 0, 'MUNICIPALITY OF ' . strtoupper($company->municipality), 0, 1, 'C');
         $pdf->Cell(0, 0, 'BIDS AND AWARDS COMMITTEE', 0, 1, 'C');
 
         if ($data->signed_type === 'lce') {

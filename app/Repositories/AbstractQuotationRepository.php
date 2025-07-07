@@ -480,7 +480,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             ),
             border: 0
         );
-        $pdf->MultiCell(0, 0, "BAC Action: {$bacAction}", 1, 'L', ln: 1);
+        $pdf->MultiCell(0, 0, "BAC Action: {$bacAction}", 1, 'L', ln: 1, ishtml: true);
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell(

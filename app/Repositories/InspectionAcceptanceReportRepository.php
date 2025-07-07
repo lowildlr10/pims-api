@@ -290,7 +290,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Date Inspected:', 'L', 0, 'C');
-        $pdf->Cell($pageWidth * 0.38, 0, date_format(date_create($data->inspected_date), 'm/d/Y'), 'B', 0, 'L');
+        $pdf->Cell($pageWidth * 0.38, 0, $data->inspected_date ? date_format(date_create($data->inspected_date), 'm/d/Y') : '', 'B', 0, 'L');
         $pdf->Cell(0, 0, '', 'R', 1, 'C');
 
         $pdf->Cell(0, 0, '', 'LR', 1, 'C');
@@ -331,7 +331,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Date Received:', 'L', 0, 'C');
-        $pdf->Cell($pageWidth * 0.38, 0, date_format(date_create($data->received_date), 'm/d/Y'), 'B', 0, 'L');
+        $pdf->Cell($pageWidth * 0.38, 0, $data->received_date ? date_format(date_create($data->received_date), 'm/d/Y') : '', 'B', 0, 'L');
         $pdf->Cell(0, 0, '', 'R', 1, 'C');
 
         $pdf->Cell(0, 0, '', 'LR', 1, 'L');

@@ -332,7 +332,7 @@ class InventoryIssuanceController extends Controller
             $inventoryIssuance->update([
                 'status' => $newStatus,
                 'status_timestamps' => StatusTimestampsHelper::generate(
-                    'canvassing_at', $inventoryIssuance->status_timestamps
+                    'pending_at', $inventoryIssuance->status_timestamps
                 )
             ]);
 
@@ -411,7 +411,7 @@ class InventoryIssuanceController extends Controller
             $inventoryIssuance->update([
                 'status' => $newStatus,
                 'status_timestamps' => StatusTimestampsHelper::generate(
-                    'canvassing_at', $inventoryIssuance->status_timestamps
+                    'issued_at', $inventoryIssuance->status_timestamps
                 )
             ]);
 
@@ -460,7 +460,7 @@ class InventoryIssuanceController extends Controller
             $inventoryIssuance->update([
                 'status' => $newStatus,
                 'status_timestamps' => StatusTimestampsHelper::generate(
-                    'canvassing_at', $inventoryIssuance->status_timestamps
+                    'cancelled_at', $inventoryIssuance->status_timestamps
                 )
             ]);
 

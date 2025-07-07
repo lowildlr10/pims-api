@@ -20,7 +20,7 @@ class InventoryIssuance extends Model
     protected function casts(): array
     {
         return [
-            'status_timestamps' => 'object',
+            'status_timestamps' => 'array',
         ];
     }
 

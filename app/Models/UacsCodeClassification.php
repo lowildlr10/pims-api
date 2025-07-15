@@ -16,6 +16,6 @@ class UacsCodeClassification extends Model
      */
     protected $fillable = [
         'classification_name',
-        'active'
+        'active',
     ];
 }

@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
@@ -25,15 +24,15 @@ class AuthController extends Controller
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
-            'roles:id,role_name'
+            'roles:id,role_name',
         ])
-        ->find($request->user()->id);
+            ->find($request->user()->id);
 
         return response()->json([
             'data' => [
                 'user' => $user,
-                'permissions' => $request->user()->permissions()
-            ]
+                'permissions' => $request->user()->permissions(),
+            ],
         ]);
     }
 
@@ -42,7 +41,7 @@ class AuthController extends Controller
         // Validate the request
         $validated = $request->validate([
             'login' => 'required|string',
-            'password' => 'required|string|min:6'
+            'password' => 'required|string|min:6',
         ]);
 
         $loginField = filter_var($validated['login'], FILTER_VALIDATE_EMAIL)
@@ -50,18 +49,18 @@ class AuthController extends Controller
 
         $credentials = [
             $loginField => $validated['login'],
-            'password' => $validated['password']
+            'password' => $validated['password'],
         ];
 
         // Attempt to log the user in
-        if (!auth()->attempt($credentials)) {
+        if (! auth()->attempt($credentials)) {
             $this->logRepository->create([
-                'message' => "Login attempt unsuccessful.",
+                'message' => 'Login attempt unsuccessful.',
                 'details' => 'Invalid credentials.',
                 'log_module' => 'login',
                 'data' => [
-                    'login' => $validated['login']
-                ]
+                    'login' => $validated['login'],
+                ],
             ], isError: true);
 
             return response()->json([
@@ -71,12 +70,12 @@ class AuthController extends Controller
 
         if (auth()->user()->restricted) {
             $this->logRepository->create([
-                'message' => "Login attempt unsuccessful.",
+                'message' => 'Login attempt unsuccessful.',
                 'details' => 'User is restricted.',
                 'log_module' => 'login',
                 'data' => [
-                    'login' => $validated['login']
-                ]
+                    'login' => $validated['login'],
+                ],
             ], isError: true);
 
             return response()->json([
@@ -91,19 +90,19 @@ class AuthController extends Controller
             ->plainTextToken;
 
         $this->logRepository->create([
-            'message' => "Logged in successfully.",
+            'message' => 'Logged in successfully.',
             'log_module' => 'login',
-            'data' => auth()->user()
+            'data' => auth()->user(),
         ]);
 
         return response()->json([
             'data' => [
                 'access_token' => $token,
                 'message' => 'Logged in successfully.',
-            ]
+            ],
         ]);
     }
-    
+
     // Renew login token of a user
     public function refreshToken(Request $request): JsonResponse
     {
@@ -122,24 +121,24 @@ class AuthController extends Controller
 
             // Log the token refresh
             $this->logRepository->create([
-                'message' => "Token refreshed successfully.",
+                'message' => 'Token refreshed successfully.',
                 'log_module' => 'login',
-                'data' => $user
+                'data' => $user,
             ]);
 
             return response()->json([
                 'data' => [
                     'access_token' => $newToken,
-                    'message' => 'Token refreshed successfully.'
-                ]
+                    'message' => 'Token refreshed successfully.',
+                ],
             ]);
         } catch (\Throwable $th) {
             // Log the error
             $this->logRepository->create([
-                'message' => "Token refresh failed.",
+                'message' => 'Token refresh failed.',
                 'details' => $th->getMessage(),
                 'log_module' => 'login',
-                'data' => $user
+                'data' => $user,
             ], isError: true);
 
             return response()->json([
@@ -157,16 +156,16 @@ class AuthController extends Controller
             $request->user()->currentAccessToken()->delete();
 
             $this->logRepository->create([
-                'message' => "Logged out successfully.",
+                'message' => 'Logged out successfully.',
                 'log_module' => 'logout',
-                'data' => $user
+                'data' => $user,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Logout failed.",
+                'message' => 'Logout failed.',
                 'details' => $th->getMessage(),
                 'log_module' => 'logout',
-                'data' => $user
+                'data' => $user,
             ], isError: true);
 
             return response()->json([

@@ -16,7 +16,7 @@ class LogRepository implements LogRepositoryInterface
             'log_type' => $isError ? 'error' : 'log',
             'message' => $data['message'],
             'details' => $data['details'] ?? null,
-            'data' => $data['data'] ?? null
+            'data' => $data['data'] ?? null,
         ]);
     }
 }

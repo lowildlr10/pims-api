@@ -21,7 +21,7 @@ class PaperSizeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class PaperSizeController extends Controller
 
         $paperSizes = PaperSize::query();
 
-        if (!empty($search)) {
-            $paperSizes = $paperSizes->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $paperSizes = $paperSizes->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('paper_type', 'ILIKE', "%{$search}%")
                     ->orWhere('unit', 'ILIKE', "%{$search}%")
                     ->orWhere('width', 'ILIKE', "%{$search}%")
@@ -55,7 +55,7 @@ class PaperSizeController extends Controller
                 : $paperSizes = $paperSizes->limit($perPage)->get();
 
             return response()->json([
-                'data' => $paperSizes
+                'data' => $paperSizes,
             ]);
         }
     }
@@ -69,36 +69,36 @@ class PaperSizeController extends Controller
             'paper_type' => 'required|unique:paper_sizes,paper_type',
             'unit' => 'required|in:mm,cm,in',
             'width' => 'required|numeric',
-            'height' => 'required|numeric'
+            'height' => 'required|numeric',
         ]);
 
         try {
             $paperSize = PaperSize::create($validated);
 
             $this->logRepository->create([
-                'message' => "Paper type created successfully.",
+                'message' => 'Paper type created successfully.',
                 'log_id' => $paperSize->id,
                 'log_module' => 'lib-paper-size',
-                'data' => $paperSize
+                'data' => $paperSize,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Paper type creation failed. Please try again.",
+                'message' => 'Paper type creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-paper-size',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Paper type creation failed. Please try again.'
+                'message' => 'Paper type creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $paperSize,
-                'message' => 'Paper type created successfully.'
-            ]
+                'message' => 'Paper type created successfully.',
+            ],
         ]);
     }
 
@@ -109,8 +109,8 @@ class PaperSizeController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $paperSize
-            ]
+                'data' => $paperSize,
+            ],
         ]);
     }
 
@@ -120,40 +120,40 @@ class PaperSizeController extends Controller
     public function update(Request $request, PaperSize $paperSize)
     {
         $validated = $request->validate([
-            'paper_type' => 'required|unique:paper_sizes,paper_type,' . $paperSize->id,
+            'paper_type' => 'required|unique:paper_sizes,paper_type,'.$paperSize->id,
             'unit' => 'required|in:mm,cm,in',
             'width' => 'required|numeric',
-            'height' => 'required|numeric'
+            'height' => 'required|numeric',
         ]);
 
         try {
             $paperSize->update($validated);
 
             $this->logRepository->create([
-                'message' => "Paper type updated successfully.",
+                'message' => 'Paper type updated successfully.',
                 'log_id' => $paperSize->id,
                 'log_module' => 'lib-paper-size',
-                'data' => $paperSize
+                'data' => $paperSize,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Paper type update failed. Please try again.",
+                'message' => 'Paper type update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $paperSize->id,
                 'log_module' => 'lib-paper-size',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Paper type update failed. Please try again.'
+                'message' => 'Paper type update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $paperSize,
-                'message' => 'Paper type updated successfully.'
-            ]
+                'message' => 'Paper type updated successfully.',
+            ],
         ]);
     }
 

@@ -42,7 +42,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('users');
             $table->string('status');
-            $table->json('status_timestamps');
+            $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });
     }

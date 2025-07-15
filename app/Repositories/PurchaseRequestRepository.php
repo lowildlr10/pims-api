@@ -5,14 +5,28 @@ namespace App\Repositories;
 use App\Helpers\FileHelper;
 use App\Interfaces\PurchaseRequestRepositoryInterface;
 use App\Models\Company;
-use App\Models\Log;
 use App\Models\PurchaseRequest;
 use TCPDF;
 use TCPDF_FONTS;
 
 class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 {
-    public function __construct() {
+    protected string $appUrl;
+
+    protected string $fontArial;
+
+    protected string $fontArialBold;
+
+    protected string $fontArialItalic;
+
+    protected string $fontArialBoldItalic;
+
+    protected string $fontArialNarrow;
+
+    protected string $fontArialNarrowBold;
+
+    public function __construct()
+    {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
@@ -61,7 +75,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 'signatory_approval.detail' => function ($query) {
                     $query->where('document', 'pr')
                         ->where('signatory_type', 'approved_by');
-                }
+                },
             ])->find($prId);
 
             $filename = "PR-{$pr->pr_no}.pdf";
@@ -70,22 +84,21 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
             return [
                 'success' => true,
                 'blob' => $blob,
-                'filename' => $filename
+                'filename' => $filename,
             ];
         } catch (\Throwable $th) {
             return [
                 'success' => false,
                 'message' => $th->getMessage(),
                 'blob' => '',
-                'filename' => ''
+                'filename' => '',
             ];
         }
     }
 
     private function generatePurchaseRequestDoc(
         string $filename, array $pageConfig, PurchaseRequest $data, Company $company
-    ): string
-    {
+    ): string {
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
         $pdf->SetCreator(PDF_CREATOR);
@@ -125,7 +138,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->setCellHeightRatio(0.5);
         $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002]);
@@ -219,27 +233,27 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     <td
                         width="11%"
                         align="center"
-                    >'. $item->quantity .'</td>
+                    >'.$item->quantity.'</td>
                     <td
                         width="8%"
                         align="center"
-                    >'. $item->unit_issue->unit_name .'</td>
+                    >'.$item->unit_issue->unit_name.'</td>
                     <td
                         width="47%"
                         align="left"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         width="8%"
                         align="center"
-                    >'. $item->stock_no .'</td>
+                    >'.$item->stock_no.'</td>
                     <td
                         width="13%"
                         align="right"
-                    >'. number_format($item->estimated_unit_cost, 2) .'</td>
+                    >'.number_format($item->estimated_unit_cost, 2).'</td>
                     <td
                         width="13%"
                         align="right"
-                    >'. number_format($item->estimated_cost, 2) .'</td>
+                    >'.number_format($item->estimated_cost, 2).'</td>
                 </tr>
             ';
         }
@@ -255,8 +269,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         $purpose = trim(str_replace("\r", '<br />', $data->purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
-        $purpose = $purpose . (
-            isset($data->funding_source->title) && !empty($data->funding_source->title)
+        $purpose = $purpose.(
+            isset($data->funding_source->title) && ! empty($data->funding_source->title)
                 ? " (Charged to {$data->funding_source->title})" : ''
         );
         $html = '
@@ -264,7 +278,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 <table cellpadding="2">
                     <tr>
                         <td style="color: red; font-size: 9px; font-style: italic;" width="9%">Purpose:</td>
-                        <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'. $purpose .'</td>
+                        <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'.$purpose.'</td>
                     </tr>
                 </table>
             </div>
@@ -291,7 +305,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $y = $pdf->GetY();
         $xIncrement = $x * 0.25;
         $yIncrement = $x * 0.12;
-        $signatureWidth =  $pageConfig['orientation'] === 'P'
+        $signatureWidth = $pageConfig['orientation'] === 'P'
             ? $x - ($x * 0.63)
             : $x - ($x * 0.69);
 
@@ -314,7 +328,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     dpi: 500
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -338,7 +353,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -362,7 +378,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Printed Name:', 'LT', 0);

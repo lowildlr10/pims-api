@@ -13,7 +13,7 @@ class DeliveryTermController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -24,8 +24,8 @@ class DeliveryTermController extends Controller
 
         $locations = DeliveryTerm::query();
 
-        if (!empty($search)) {
-            $locations = $locations->where(function($query) use ($search){
+        if (! empty($search)) {
+            $locations = $locations->where(function ($query) use ($search) {
                 $query->where('term_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -44,7 +44,7 @@ class DeliveryTermController extends Controller
             }
 
             return response()->json([
-                'data' => $locations
+                'data' => $locations,
             ]);
         }
     }

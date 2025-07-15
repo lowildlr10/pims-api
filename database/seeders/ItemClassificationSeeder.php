@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\ItemClassification;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ItemClassificationSeeder extends Seeder
@@ -28,7 +27,7 @@ class ItemClassificationSeeder extends Seeder
         'Books and Publications',
         'Promotional Items',
         'Food and Beverages',
-        'Health and Safety Supplies'
+        'Health and Safety Supplies',
     ];
 
     /**
@@ -38,7 +37,7 @@ class ItemClassificationSeeder extends Seeder
     {
         foreach ($this->classifications as $classification) {
             ItemClassification::create([
-                'classification_name' => $classification
+                'classification_name' => $classification,
             ]);
         }
     }

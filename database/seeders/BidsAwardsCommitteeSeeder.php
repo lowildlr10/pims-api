@@ -3,13 +3,12 @@
 namespace Database\Seeders;
 
 use App\Models\BidsAwardsCommittee;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class BidsAwardsCommitteeSeeder extends Seeder
 {
-     private $committees = [
-        'Goods & Services'
+    private $committees = [
+        'Goods & Services',
     ];
 
     /**
@@ -19,7 +18,7 @@ class BidsAwardsCommitteeSeeder extends Seeder
     {
         foreach ($this->committees as $committee) {
             BidsAwardsCommittee::create([
-                'committee_name' => $committee
+                'committee_name' => $committee,
             ]);
         }
     }

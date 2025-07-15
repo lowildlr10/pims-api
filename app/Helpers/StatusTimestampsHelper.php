@@ -4,11 +4,36 @@ namespace App\Helpers;
 
 use Carbon\Carbon;
 
-class StatusTimestampsHelper {
-    public static function generate(string $status, string $current): string
+class StatusTimestampsHelper
+{
+    public static function generate(string $status, $current): string
     {
-        $statusTimestamps = json_decode($current, true);
-        $statusTimestamps[$status] = Carbon::now();
-        return json_encode($statusTimestamps);
+        switch ($current) {
+            case is_string($current):
+                $current = json_decode($current, true) ?? [];
+                break;
+
+            case is_object($current):
+                $current = (array) $current;
+                break;
+
+            case ! is_array($current):
+            case is_null($current):
+                $current = [];
+                break;
+
+            default:
+                $current = [];
+                break;
+        }
+
+        $current[$status] = Carbon::now()->toDateTimeString();
+
+        return json_encode($current);
+    }
+
+    public static function clear(): string
+    {
+        return json_encode(new \stdClass);
     }
 }

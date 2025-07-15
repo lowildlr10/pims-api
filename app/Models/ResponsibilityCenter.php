@@ -17,6 +17,6 @@ class ResponsibilityCenter extends Model
     protected $fillable = [
         'code',
         'description',
-        'active'
+        'active',
     ];
 }

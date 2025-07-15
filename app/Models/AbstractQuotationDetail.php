@@ -29,7 +29,7 @@ class AbstractQuotationDetail extends Model
         'supplier_id',
         'brand_model',
         'unit_cost',
-        'total_cost'
+        'total_cost',
     ];
 
     /**
@@ -41,7 +41,7 @@ class AbstractQuotationDetail extends Model
     {
         return [
             'unit_cost' => 'decimal:2',
-            'total_cost' => 'decimal:2'
+            'total_cost' => 'decimal:2',
         ];
     }
 

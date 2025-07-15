@@ -21,7 +21,7 @@ class MfoPapController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class MfoPapController extends Controller
 
         $mfoPaps = MfoPap::query();
 
-        if (!empty($search)) {
-            $mfoPaps = $mfoPaps->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $mfoPaps = $mfoPaps->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%");
             });
@@ -56,14 +56,16 @@ class MfoPapController extends Controller
         if ($paginated) {
             return $mfoPaps->paginate($perPage);
         } else {
-            if (!$showInactive) $mfoPaps = $mfoPaps->where('active', true);
+            if (! $showInactive) {
+                $mfoPaps = $mfoPaps->where('active', true);
+            }
 
             $mfoPaps = $showAll
                 ? $mfoPaps->get()
                 : $mfoPaps = $mfoPaps->limit($perPage)->get();
 
             return response()->json([
-                'data' => $mfoPaps
+                'data' => $mfoPaps,
             ]);
         }
     }
@@ -76,7 +78,7 @@ class MfoPapController extends Controller
         $validated = $request->validate([
             'code' => 'required|unique:mfo_paps,code',
             'description' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -85,29 +87,29 @@ class MfoPapController extends Controller
             $mfoPap = MfoPap::create($validated);
 
             $this->logRepository->create([
-                'message' => "MFO/PAP created successfully.",
+                'message' => 'MFO/PAP created successfully.',
                 'log_id' => $mfoPap->id,
                 'log_module' => 'lib-mfo-pap',
-                'data' => $mfoPap
+                'data' => $mfoPap,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "MFO/PAP creation failed. Please try again.",
+                'message' => 'MFO/PAP creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-mfo-pap',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'MFO/PAP creation failed. Please try again.'
+                'message' => 'MFO/PAP creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $mfoPap,
-                'message' => 'MFO/PAP created successfully.'
-            ]
+                'message' => 'MFO/PAP created successfully.',
+            ],
         ]);
     }
 
@@ -118,8 +120,8 @@ class MfoPapController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $mfoPap
-            ]
+                'data' => $mfoPap,
+            ],
         ]);
     }
 
@@ -129,9 +131,9 @@ class MfoPapController extends Controller
     public function update(Request $request, MfoPap $mfoPap)
     {
         $validated = $request->validate([
-            'code' => 'required|unique:mfo_paps,code,' . $mfoPap->id,
+            'code' => 'required|unique:mfo_paps,code,'.$mfoPap->id,
             'description' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -140,30 +142,30 @@ class MfoPapController extends Controller
             $mfoPap->update($validated);
 
             $this->logRepository->create([
-                'message' => "MFO/PAP updated successfully.",
+                'message' => 'MFO/PAP updated successfully.',
                 'log_id' => $mfoPap->id,
                 'log_module' => 'lib-mfo-pap',
-                'data' => $mfoPap
+                'data' => $mfoPap,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "MFO/PAP update failed. Please try again.",
+                'message' => 'MFO/PAP update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $mfoPap->id,
                 'log_module' => 'lib-mfo-pap',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'MFO/PAP update failed. Please try again.'
+                'message' => 'MFO/PAP update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $mfoPap,
-                'message' => 'MFO/PAP updated successfully.'
-            ]
+                'message' => 'MFO/PAP updated successfully.',
+            ],
         ]);
     }
 }

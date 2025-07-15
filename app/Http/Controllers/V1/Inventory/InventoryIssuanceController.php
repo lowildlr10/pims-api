@@ -6,20 +6,20 @@ use App\Enums\InventoryIssuanceStatus;
 use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\InventoryIssuance;
-use App\Models\InventoryIssuanceItem;
-use App\Models\PurchaseOrder;
 use App\Models\InventorySupply;
+use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Repositories\InventoryIssuanceRepository;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Mockery\Undefined;
 
 class InventoryIssuanceController extends Controller
 {
     private LogRepository $logRepository;
+
+    private InventoryIssuanceRepository $inventoryIssuanceRepository;
 
     public function __construct(LogRepository $logRepository, InventoryIssuanceRepository $inventoryIssuanceRepository)
     {
@@ -30,10 +30,8 @@ class InventoryIssuanceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $user = auth()->user();
-
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 10);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -59,14 +57,14 @@ class InventoryIssuanceController extends Controller
             ])
             ->has('issuances');
 
-        if (!empty($search)) {
-            $purchaseOrders = $purchaseOrders->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $purchaseOrders = $purchaseOrders->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('po_date', 'ILIKE', "%{$search}%")
                     ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('issuances', function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                             ->orWhere('document_type', 'ILIKE', "%{$search}%")
                             ->orWhere('inventory_no', 'ILIKE', "%{$search}%")
                             ->orWhere('inventory_date', 'ILIKE', "%{$search}%")
@@ -78,7 +76,7 @@ class InventoryIssuanceController extends Controller
                             });
                     })
                     ->orWhereRelation('supplies', function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search]);
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
                     });
             });
         }
@@ -117,7 +115,7 @@ class InventoryIssuanceController extends Controller
                 : $purchaseOrders = $purchaseOrders->limit($perPage)->get();
 
             return response()->json([
-                'data' => $purchaseOrders
+                'data' => $purchaseOrders,
             ]);
         }
     }
@@ -127,8 +125,6 @@ class InventoryIssuanceController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $user = auth()->user();
-
         $validated = $request->validate([
             'purchase_order_id' => 'required',
             'responsibility_center_id' => 'nullable',
@@ -144,13 +140,13 @@ class InventoryIssuanceController extends Controller
             'issued_date' => 'nullable',
             'received_by_id' => 'required',
             'received_date' => 'nullable',
-            'items' => 'required|array|min:1'
+            'items' => 'required|array|min:1',
         ]);
 
         try {
             $message = 'Inventory issuance created successfully.';
 
-            $inventoryIssuance = $this->inventoryIssuanceRepository->storeUpdate($validated, NULL);
+            $inventoryIssuance = $this->inventoryIssuanceRepository->storeUpdate($validated, null);
 
             $inventoryIssuance->load('items');
 
@@ -158,14 +154,14 @@ class InventoryIssuanceController extends Controller
                 'message' => $message,
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inventoryIssuance,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Inventory issuance creation failed.';
@@ -174,11 +170,11 @@ class InventoryIssuanceController extends Controller
                 'message' => $message,
                 'details' => $th->getMessage(),
                 'log_module' => 'inv-issuance',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => "$message Please try again."
+                'message' => "$message Please try again.",
             ], 422);
         }
     }
@@ -204,7 +200,7 @@ class InventoryIssuanceController extends Controller
             },
             'recipient',
 
-            'items' => function($query) {
+            'items' => function ($query) {
                 $query->orderBy(
                     InventorySupply::select('item_sequence')
                         ->whereColumn(
@@ -223,8 +219,8 @@ class InventoryIssuanceController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $inventoryIssuance
-            ]
+                'data' => $inventoryIssuance,
+            ],
         ]);
     }
 
@@ -233,8 +229,6 @@ class InventoryIssuanceController extends Controller
      */
     public function update(Request $request, InventoryIssuance $inventoryIssuance): JsonResponse
     {
-        $user = auth()->user();
-
         $validated = $request->validate([
             'purchase_order_id' => 'required',
             'responsibility_center_id' => 'nullable',
@@ -250,7 +244,7 @@ class InventoryIssuanceController extends Controller
             'issued_date' => 'nullable',
             'received_by_id' => 'required',
             'received_date' => 'nullable',
-            'items' => 'required|array|min:1'
+            'items' => 'required|array|min:1',
         ]);
 
         try {
@@ -264,14 +258,14 @@ class InventoryIssuanceController extends Controller
                 'message' => $message,
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inventoryIssuance,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Inventory issuance update failed.';
@@ -280,11 +274,11 @@ class InventoryIssuanceController extends Controller
                 'message' => $message,
                 'details' => $th->getMessage(),
                 'log_module' => 'inv-issuance',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => "$message Please try again."
+                'message' => "$message Please try again.",
             ], 422);
         }
     }
@@ -306,11 +300,11 @@ class InventoryIssuanceController extends Controller
                     'message' => $message,
                     'log_id' => $inventoryIssuance->id,
                     'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance
+                    'data' => $inventoryIssuance,
                 ]);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -321,11 +315,11 @@ class InventoryIssuanceController extends Controller
                     'message' => $message,
                     'log_id' => $inventoryIssuance->id,
                     'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance
+                    'data' => $inventoryIssuance,
                 ]);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -333,7 +327,7 @@ class InventoryIssuanceController extends Controller
                 'status' => $newStatus,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'pending_at', $inventoryIssuance->status_timestamps
-                )
+                ),
             ]);
 
             $inventoryIssuance->load('items');
@@ -342,14 +336,14 @@ class InventoryIssuanceController extends Controller
                 'message' => $message,
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inventoryIssuance,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Failed to set inventory issuance to pending.';
@@ -359,11 +353,11 @@ class InventoryIssuanceController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }
@@ -385,11 +379,11 @@ class InventoryIssuanceController extends Controller
                     'message' => $message,
                     'log_id' => $inventoryIssuance->id,
                     'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance
+                    'data' => $inventoryIssuance,
                 ]);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -400,11 +394,11 @@ class InventoryIssuanceController extends Controller
                     'message' => $message,
                     'log_id' => $inventoryIssuance->id,
                     'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance
+                    'data' => $inventoryIssuance,
                 ]);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -412,7 +406,7 @@ class InventoryIssuanceController extends Controller
                 'status' => $newStatus,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'issued_at', $inventoryIssuance->status_timestamps
-                )
+                ),
             ]);
 
             $inventoryIssuance->load('items');
@@ -421,14 +415,14 @@ class InventoryIssuanceController extends Controller
                 'message' => $message,
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inventoryIssuance,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Failed to set inventory issuance to issued.';
@@ -438,11 +432,11 @@ class InventoryIssuanceController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }
@@ -461,7 +455,7 @@ class InventoryIssuanceController extends Controller
                 'status' => $newStatus,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'cancelled_at', $inventoryIssuance->status_timestamps
-                )
+                ),
             ]);
 
             $inventoryIssuance->load('items');
@@ -470,14 +464,14 @@ class InventoryIssuanceController extends Controller
                 'message' => $message,
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inventoryIssuance,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Failed to set inventory issuance to cancelled.';
@@ -487,11 +481,11 @@ class InventoryIssuanceController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $inventoryIssuance->id,
                 'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance
+                'data' => $inventoryIssuance,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }

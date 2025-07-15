@@ -11,11 +11,13 @@ use ValueError;
 
 class MediaController extends Controller
 {
+    private MediaRepository $repository;
+
     public function __construct(MediaRepository $repository)
     {
         $this->repository = $repository;
     }
-    
+
     /**
      * Store the specified resource in storage.
      */
@@ -25,38 +27,38 @@ class MediaController extends Controller
             'file' => 'nullable|string',
             'type' => 'required',
             'parent_id' => 'required',
-            'disk' => 'nullable|string'
+            'disk' => 'nullable|string',
         ]);
-        
+
         try {
             $type = FileUploadType::from($validated['type']);
         } catch (ValueError $e) {
             return response()->json([
-                'message' => 'Invalid file upload type.'
+                'message' => 'Invalid file upload type.',
             ], 422);
         }
 
         try {
             $file = $this->repository->upload(
-                $validated['parent_id'], 
-                $validated['file'], 
+                $validated['parent_id'],
+                $validated['file'],
                 $type,
                 $request->get('disk', 'public')
             );
-            
+
             return response()->json([
                 'data' => [
                     'data' => $file,
-                    'message' => 'Successfully uploaded file'
-                ]
+                    'message' => 'Successfully uploaded file',
+                ],
             ]);
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => $th->getMessage()
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
-    
+
     /**
      * Display the specified resource.
      */
@@ -65,33 +67,33 @@ class MediaController extends Controller
         $validated = $request->validate([
             'type' => 'required',
             'parent_id' => 'required',
-            'disk' => 'nullable|string'
+            'disk' => 'nullable|string',
         ]);
-        
+
         try {
             $type = FileUploadType::from($validated['type']);
         } catch (ValueError $e) {
             return response()->json([
-                'message' => 'Invalid file upload type.'
+                'message' => 'Invalid file upload type.',
             ], 422);
         }
-        
+
         try {
             $file = $this->repository->get(
-                $validated['parent_id'], 
+                $validated['parent_id'],
                 $type,
                 $request->get('disk', 'public')
             );
-            
+
             return response()->json([
                 'data' => [
                     'data' => $file,
-                    'message' => 'OK'
-                ]
+                    'message' => 'OK',
+                ],
             ]);
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => $th->getMessage()
+                'message' => $th->getMessage(),
             ], 422);
         }
     }

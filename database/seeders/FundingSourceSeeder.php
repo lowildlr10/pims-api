@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\FundingSource;
 use App\Models\Location;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class FundingSourceSeeder extends Seeder
@@ -21,7 +20,7 @@ class FundingSourceSeeder extends Seeder
         'Funding Source 3',
         'Funding Source 4',
         'Funding Source 5',
-        'Funding Source 6'
+        'Funding Source 6',
     ];
 
     /**
@@ -36,7 +35,7 @@ class FundingSourceSeeder extends Seeder
             FundingSource::create([
                 'title' => $title,
                 'location_id' => $location->id,
-                'total_cost' => 1000000
+                'total_cost' => 1000000,
             ]);
         }
     }

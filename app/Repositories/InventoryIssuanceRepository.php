@@ -4,11 +4,11 @@ namespace App\Repositories;
 
 use App\Enums\InventoryIssuanceStatus;
 use App\Helpers\FileHelper;
+use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\InventoryIssuanceRepositoryInterface;
 use App\Models\Company;
 use App\Models\InventoryIssuance;
 use App\Models\InventoryIssuanceItem;
-use App\Models\Log;
 use App\Models\PurchaseRequest;
 use Illuminate\Support\Collection;
 use TCPDF;
@@ -16,7 +16,22 @@ use TCPDF_FONTS;
 
 class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterface
 {
-    public function __construct() {
+    protected string $appUrl;
+
+    protected string $fontArial;
+
+    protected string $fontArialBold;
+
+    protected string $fontArialItalic;
+
+    protected string $fontArialBoldItalic;
+
+    protected string $fontArialNarrow;
+
+    protected string $fontArialNarrowBold;
+
+    public function __construct()
+    {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
@@ -28,7 +43,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
 
     public function storeUpdate(array $data, ?InventoryIssuance $inventoryIssuance): InventoryIssuance
     {
-        if (!empty($inventoryIssuance)) {
+        if (! empty($inventoryIssuance)) {
             $inventoryIssuance->update($data);
         } else {
             $inventoryIssuance = InventoryIssuance::create(
@@ -39,14 +54,16 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                             $data['document_type']
                         ),
                         'status' => InventoryIssuanceStatus::DRAFT,
-                        'status_timestamps' => json_encode((Object)[])
+                        'status_timestamps' => StatusTimestampsHelper::generate(
+                            'draft_at', null
+                        ),
                     ]
                 )
             );
         }
 
         $this->storeUpdateItems(
-            collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+            collect(isset($data['items']) && ! empty($data['items']) ? $data['items'] : []),
             $inventoryIssuance
         );
 
@@ -64,24 +81,24 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
 
             InventoryIssuanceItem::create([
                 'inventory_issuance_id' => $inventoryIssuance->id,
-                'inventory_supply_id'   => $item['inventory_supply_id'],
-                'stock_no'              => isset($item['stock_no']) ? (int) $item['stock_no'] : $key + 1,
-                'description'           => $item['description'],
-                'inventory_item_no'     => isset($item['inventory_item_no'])
-                                            ? ($item['inventory_item_no'] ?? NULL)
-                                            : NULL,
-                'property_no'           => isset($item['property_no'])
-                                            ? ($item['property_no'] ?? NULL)
-                                            : NULL,
-                'quantity'              => $quantity ?? 0,
+                'inventory_supply_id' => $item['inventory_supply_id'],
+                'stock_no' => isset($item['stock_no']) ? (int) $item['stock_no'] : $key + 1,
+                'description' => $item['description'],
+                'inventory_item_no' => isset($item['inventory_item_no'])
+                                            ? ($item['inventory_item_no'] ?? null)
+                                            : null,
+                'property_no' => isset($item['property_no'])
+                                            ? ($item['property_no'] ?? null)
+                                            : null,
+                'quantity' => $quantity ?? 0,
                 'estimated_useful_life' => isset($item['estimated_useful_life'])
-                                            ? ($item['estimated_useful_life'] ?? NULL)
-                                            : NULL,
-                'acquired_date'         => isset($item['acquired_date'])
-                                            ? ($item['acquired_date'] ?? NULL)
-                                            : NULL,
-                'unit_cost'             => $unitCost,
-                'total_cost'            => $totalCost
+                                            ? ($item['estimated_useful_life'] ?? null)
+                                            : null,
+                'acquired_date' => isset($item['acquired_date'])
+                                            ? ($item['acquired_date'] ?? null)
+                                            : null,
+                'unit_cost' => $unitCost,
+                'total_cost' => $totalCost,
             ]);
         }
     }
@@ -126,7 +143,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                 'signatory_approval.detail' => function ($query) {
                     $query->where('document', 'pr')
                         ->where('signatory_type', 'approved_by');
-                }
+                },
             ])->find($prId);
 
             $filename = "PR-{$pr->pr_no}.pdf";
@@ -135,22 +152,21 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             return [
                 'success' => true,
                 'blob' => $blob,
-                'filename' => $filename
+                'filename' => $filename,
             ];
         } catch (\Throwable $th) {
             return [
                 'success' => false,
                 'message' => $th->getMessage(),
                 'blob' => '',
-                'filename' => ''
+                'filename' => '',
             ];
         }
     }
 
     private function generatePurchaseRequestDoc(
         string $filename, array $pageConfig, PurchaseRequest $data, Company $company
-    ): string
-    {
+    ): string {
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
         $pdf->SetCreator(PDF_CREATOR);
@@ -190,7 +206,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->setCellHeightRatio(0.5);
         $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002]);
@@ -284,27 +301,27 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     <td
                         width="11%"
                         align="center"
-                    >'. $item->quantity .'</td>
+                    >'.$item->quantity.'</td>
                     <td
                         width="8%"
                         align="center"
-                    >'. $item->unit_issue->unit_name .'</td>
+                    >'.$item->unit_issue->unit_name.'</td>
                     <td
                         width="47%"
                         align="left"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         width="8%"
                         align="center"
-                    >'. $item->stock_no .'</td>
+                    >'.$item->stock_no.'</td>
                     <td
                         width="13%"
                         align="right"
-                    >'. number_format($item->estimated_unit_cost, 2) .'</td>
+                    >'.number_format($item->estimated_unit_cost, 2).'</td>
                     <td
                         width="13%"
                         align="right"
-                    >'. number_format($item->estimated_cost, 2) .'</td>
+                    >'.number_format($item->estimated_cost, 2).'</td>
                 </tr>
             ';
         }
@@ -320,8 +337,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
 
         $purpose = trim(str_replace("\r", '<br />', $data->purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
-        $purpose = $purpose . (
-            isset($data->funding_source->title) && !empty($data->funding_source->title)
+        $purpose = $purpose.(
+            isset($data->funding_source->title) && ! empty($data->funding_source->title)
                 ? " (Charged to {$data->funding_source->title})" : ''
         );
         $html = '
@@ -329,7 +346,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                 <table cellpadding="2">
                     <tr>
                         <td style="color: red; font-size: 9px; font-style: italic;" width="9%">Purpose:</td>
-                        <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'. $purpose .'</td>
+                        <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'.$purpose.'</td>
                     </tr>
                 </table>
             </div>
@@ -356,7 +373,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $y = $pdf->GetY();
         $xIncrement = $x * 0.25;
         $yIncrement = $x * 0.12;
-        $signatureWidth =  $pageConfig['orientation'] === 'P'
+        $signatureWidth = $pageConfig['orientation'] === 'P'
             ? $x - ($x * 0.63)
             : $x - ($x * 0.69);
 
@@ -379,7 +396,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     dpi: 500
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -403,7 +421,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -427,7 +446,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Printed Name:', 'LT', 0);

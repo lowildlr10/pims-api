@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\ProcurementMode;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class ProcurementModeSeeder extends Seeder
@@ -16,7 +15,7 @@ class ProcurementModeSeeder extends Seeder
         'Public Bidding',
         'Re-Order',
         'Shopping',
-        'Small Value Procurement'
+        'Small Value Procurement',
     ];
 
     /**
@@ -26,7 +25,7 @@ class ProcurementModeSeeder extends Seeder
     {
         foreach ($this->modes as $mode) {
             ProcurementMode::create([
-                'mode_name' => $mode
+                'mode_name' => $mode,
             ]);
         }
     }

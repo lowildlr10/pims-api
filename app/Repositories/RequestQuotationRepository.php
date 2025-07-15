@@ -5,7 +5,6 @@ namespace App\Repositories;
 use App\Helpers\FileHelper;
 use App\Interfaces\RequestQuotationRepositoryInterface;
 use App\Models\Company;
-use App\Models\Log;
 use App\Models\PurchaseRequestItem;
 use App\Models\RequestQuotation;
 use TCPDF;
@@ -13,7 +12,22 @@ use TCPDF_FONTS;
 
 class RequestQuotationRepository implements RequestQuotationRepositoryInterface
 {
-    public function __construct() {
+    protected string $appUrl;
+
+    protected string $fontArial;
+
+    protected string $fontArialBold;
+
+    protected string $fontArialItalic;
+
+    protected string $fontArialBoldItalic;
+
+    protected string $fontArialNarrow;
+
+    protected string $fontArialNarrowBold;
+
+    public function __construct()
+    {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
@@ -41,7 +55,7 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
                 },
                 'canvassers',
                 'canvassers.user:id,firstname,lastname',
-                'items' => function($query) {
+                'items' => function ($query) {
                     $query->orderBy(
                         PurchaseRequestItem::select('item_sequence')
                             ->whereColumn(
@@ -59,22 +73,21 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
             return [
                 'success' => true,
                 'blob' => $blob,
-                'filename' => $filename
+                'filename' => $filename,
             ];
         } catch (\Throwable $th) {
             return [
                 'success' => false,
                 'message' => $th->getMessage(),
                 'blob' => '',
-                'filename' => ''
+                'filename' => '',
             ];
         }
     }
 
     private function generateRequestQuotationDoc(
         string $filename, array $pageConfig, RequestQuotation $data, Company $company
-    ): string
-    {
+    ): string {
         $purchaseRequest = $data->purchase_request;
         $fundingSource = $purchaseRequest->funding_source;
         $supplier = $data->supplier;
@@ -107,24 +120,25 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
-         try {
-             if ($company->company_logo) {
-                 $imagePath = FileHelper::getPublicPath(
-                     $company->company_logo
-                 );
-                 $pdf->Image(
-                     $imagePath,
-                     $x + ($x * 0.15),
-                     $y - ($y * 0.04),
-                     w: $pageConfig['orientation'] === 'P'
-                         ? $x - ($x * 0.15)
-                         : $y + ($y * 0.1),
-                     type: 'PNG',
-                     resize: true,
-                     dpi: 500,
-                 );
-             }
-         } catch (\Throwable $th) {}
+        try {
+            if ($company->company_logo) {
+                $imagePath = FileHelper::getPublicPath(
+                    $company->company_logo
+                );
+                $pdf->Image(
+                    $imagePath,
+                    $x + ($x * 0.15),
+                    $y - ($y * 0.04),
+                    w: $pageConfig['orientation'] === 'P'
+                        ? $x - ($x * 0.15)
+                        : $y + ($y * 0.1),
+                    type: 'PNG',
+                    resize: true,
+                    dpi: 500,
+                );
+            }
+        } catch (\Throwable $th) {
+        }
 
         if ($data->signed_type === 'lce') {
             $pdf->setTextColor(0, 0, 0);
@@ -135,7 +149,7 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         }
 
         $pdf->SetFont($this->fontArial, '', $data->signed_type === 'lce' ? 10 : 14);
-        $pdf->Cell(0, 0, 'MUNICIPALITY OF ' . strtoupper($company->municipality), 0, 1, 'C');
+        $pdf->Cell(0, 0, 'MUNICIPALITY OF '.strtoupper($company->municipality), 0, 1, 'C');
         $pdf->Cell(0, 0, 'BIDS AND AWARDS COMMITTEE', 0, 1, 'C');
 
         if ($data->signed_type === 'lce') {
@@ -152,7 +166,7 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
             $pdf->setCellHeightRatio(2);
             $pdf->Cell($pageWidth * 0.215, 0, 'Name of Project: ', 0, 0, 'L');
             $pdf->SetFont($this->fontArial, 'U', 10);
-            $pdf->Cell(0, 0, !empty($fundingSource->title) ? $fundingSource->title : '', 0, 1, 'L');
+            $pdf->Cell(0, 0, ! empty($fundingSource->title) ? $fundingSource->title : '', 0, 1, 'L');
             $pdf->SetFont($this->fontArial, '', 10);
 
             $pdf->SetFont($this->fontArial, '', 10);
@@ -160,7 +174,7 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
             $pdf->Cell($pageWidth * 0.215, 0, 'Location of the Project: ', 0, 0, 'L');
             $pdf->SetFont($this->fontArial, 'U', 10);
             $pdf->Cell(
-                0, 0, !empty($fundingSource->location) ? $fundingSource->location->location_name : '', 0, 1, 'L'
+                0, 0, ! empty($fundingSource->location) ? $fundingSource->location->location_name : '', 0, 1, 'L'
             );
         }
 
@@ -215,8 +229,8 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         $pdf->Cell(0, 0, 'Sir / Madam:', 0, 1, 'L');
         $pdf->MultiCell(
             0, 0,
-            "        Please quote your lowest price on the item/s listed below, " .
-            'subject to the conditions herein and submit your quotation duly ' .
+            '        Please quote your lowest price on the item/s listed below, '.
+            'subject to the conditions herein and submit your quotation duly '.
             'signed by your representative.',
             0, 'L'
         );
@@ -246,7 +260,7 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         } else {
             $pdf->SetFont($this->fontArialBold, 'B', 12);
             $pdf->setTextColor(0, 0, 0);
-            $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002, 'color' => array(0, 0, 0)]);
+            $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002, 'color' => [0, 0, 0]]);
         }
 
         $pdf->Cell(0, 0, strtoupper($signatoryUser->fullname), 'B', 1, 'C');
@@ -269,49 +283,49 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         $htmlTable = '
             <table border="1" cellpadding="2"><thead><tr>
                 <th
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+            $data->signed_type === 'lce'
+                ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
-                    width="'. ($data->signed_type === 'lce' ? '9%' : '10%') .'"
+        ).'"
+                    width="'.($data->signed_type === 'lce' ? '9%' : '10%').'"
                     align="center"
                 >Item No.</th>
                 <th
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+            $data->signed_type === 'lce'
+                ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
+        ).'"
                     width="11%"
                     align="center"
                 >Qty</th>
                 <th
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+            $data->signed_type === 'lce'
+                ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
-                    width="'. ($data->signed_type === 'lce' ? '44%' : '45%') .'"
+        ).'"
+                    width="'.($data->signed_type === 'lce' ? '44%' : '45%').'"
                     align="center"
                 >Item and Description</th>';
 
         if ($data->signed_type === 'lce') {
             $htmlTable .= '
                 <th
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+                $data->signed_type === 'lce'
+                    ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                    : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
+            ).'"
                     width="10%"
                     align="center"
                 >Brand/<br />Model</th>';
@@ -319,25 +333,25 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
 
         $htmlTable .= '
                 <th
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+            $data->signed_type === 'lce'
+                ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
-                    width="'. ($data->signed_type === 'lce' ? '13%' : '17%') .'"
+        ).'"
+                    width="'.($data->signed_type === 'lce' ? '13%' : '17%').'"
                     align="center"
                 >Unit Cost</th>
                 <th
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+            $data->signed_type === 'lce'
+                ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
-                    width="'. ($data->signed_type === 'lce' ? '13%' : '17%') .'"
+        ).'"
+                    width="'.($data->signed_type === 'lce' ? '13%' : '17%').'"
                     align="center"
                 >Total Cost</th>
             </tr></thead></table>
@@ -368,77 +382,77 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
             $htmlTable .= '
                 <tr>
                     <td
-                        style="'. (
-                            $data->signed_type === 'lce'
-                                ? 'border-left-color:#000;border-top-color:#000;
+                        style="'.(
+                $data->signed_type === 'lce'
+                    ? 'border-left-color:#000;border-top-color:#000;
                                     border-right-color:#000;border-bottom-color:#000;'
-                                : 'border-left-color:#C00000;border-top-color:#C00000;
+                    : 'border-left-color:#C00000;border-top-color:#C00000;
                                     border-right-color:#C00000;border-bottom-color:#C00000;'
-                        ) .'"
-                        width="'. ($data->signed_type === 'lce' ? '9%' : '10%') .'"
+            ).'"
+                        width="'.($data->signed_type === 'lce' ? '9%' : '10%').'"
                         align="center"
-                    >'. $item->pr_item->stock_no .'</td>
+                    >'.$item->pr_item->stock_no.'</td>
                     <td
-                        style="'. (
-                            $data->signed_type === 'lce'
-                                ? 'border-left-color:#000;border-top-color:#000;
+                        style="'.(
+                $data->signed_type === 'lce'
+                    ? 'border-left-color:#000;border-top-color:#000;
                                     border-right-color:#000;border-bottom-color:#000;'
-                                : 'border-left-color:#C00000;border-top-color:#C00000;
+                    : 'border-left-color:#C00000;border-top-color:#C00000;
                                     border-right-color:#C00000;border-bottom-color:#C00000;'
-                        ) .'"
+            ).'"
                         width="11%"
                         align="center"
-                    >'. $item->pr_item->quantity .'</td>
+                    >'.$item->pr_item->quantity.'</td>
                     <td
-                        style="'. (
-                            $data->signed_type === 'lce'
-                                ? 'border-left-color:#000;border-top-color:#000;
+                        style="'.(
+                $data->signed_type === 'lce'
+                    ? 'border-left-color:#000;border-top-color:#000;
                                     border-right-color:#000;border-bottom-color:#000;'
-                                : 'border-left-color:#C00000;border-top-color:#C00000;
+                    : 'border-left-color:#C00000;border-top-color:#C00000;
                                     border-right-color:#C00000;border-bottom-color:#C00000;'
-                        ) .'"
-                        width="'. ($data->signed_type === 'lce' ? '44%' : '45%') .'"
+            ).'"
+                        width="'.($data->signed_type === 'lce' ? '44%' : '45%').'"
                         align="left"
-                    >'. $description .'</td>';
+                    >'.$description.'</td>';
 
             if ($data->signed_type === 'lce') {
                 $htmlTable .= '
                     <th
-                        style="'. (
-                            $data->signed_type === 'lce'
-                                ? 'border-left-color:#000;border-top-color:#000;
+                        style="'.(
+                    $data->signed_type === 'lce'
+                        ? 'border-left-color:#000;border-top-color:#000;
                                     border-right-color:#000;border-bottom-color:#000;'
-                                : 'border-left-color:#C00000;border-top-color:#C00000;
+                        : 'border-left-color:#C00000;border-top-color:#C00000;
                                     border-right-color:#C00000;border-bottom-color:#C00000;'
-                        ) .'"
+                ).'"
                         width="10%"
                         align="left"
-                    >'. $brandModel .'</th>';
+                    >'.$brandModel.'</th>';
             }
 
             $htmlTable .= '
                     <td
-                        style="'. (
-                            $data->signed_type === 'lce'
-                                ? 'border-left-color:#000;border-top-color:#000;
+                        style="'.(
+                $data->signed_type === 'lce'
+                    ? 'border-left-color:#000;border-top-color:#000;
                                     border-right-color:#000;border-bottom-color:#000;'
-                                : 'border-left-color:#C00000;border-top-color:#C00000;
+                    : 'border-left-color:#C00000;border-top-color:#C00000;
                                     border-right-color:#C00000;border-bottom-color:#C00000;'
-                        ) .'"
-                        width="'. ($data->signed_type === 'lce' ? '13%' : '17%') .'"
+            ).'"
+                        width="'.($data->signed_type === 'lce' ? '13%' : '17%').'"
                         align="right"
-                    >'. number_format($item->unit_cost, 2) .'</td>
+                    >'.number_format($item->unit_cost, 2).'</td>
                     <td
-                        style="'. (
-                            $data->signed_type === 'lce'
-                                ? 'border-left-color:#000;border-top-color:#000;
+                        style="'.(
+                $data->signed_type === 'lce'
+                    ? 'border-left-color:#000;border-top-color:#000;
                                     border-right-color:#000;border-bottom-color:#000;'
-                                : 'border-left-color:#C00000;border-top-color:#C00000;
+                    : 'border-left-color:#C00000;border-top-color:#C00000;
                                     border-right-color:#C00000;border-bottom-color:#C00000;'
-                        ) .'"
-                        width="'. ($data->signed_type === 'lce' ? '13%' : '17%') .'"
+            ).'"
+                        width="'.($data->signed_type === 'lce' ? '13%' : '17%').'"
                         align="right"
-                    >'. number_format($item->total_cost, 2) .'</td>
+                    >'.number_format($item->total_cost, 2).'</td>
                 </tr>
             ';
         }
@@ -458,27 +472,27 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         $htmlTable = '<table border="1" cellpadding="2"><tbody>
             <tr>
                 <td
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+            $data->signed_type === 'lce'
+                ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
-                    width="'. ($data->signed_type === 'lce' ? '9%' : '10%') .'"
+        ).'"
+                    width="'.($data->signed_type === 'lce' ? '9%' : '10%').'"
                     align="center"
                 >Purpose</td>
                 <td
-                    style="'. (
-                        $data->signed_type === 'lce'
-                            ? 'border-left-color:#000;border-top-color:#000;
+                    style="'.(
+            $data->signed_type === 'lce'
+                ? 'border-left-color:#000;border-top-color:#000;
                                 border-right-color:#000;border-bottom-color:#000;'
-                            : 'border-left-color:#C00000;border-top-color:#C00000;
+                : 'border-left-color:#C00000;border-top-color:#C00000;
                                 border-right-color:#C00000;border-bottom-color:#C00000;'
-                    ) .'"
-                    width="'. ($data->signed_type === 'lce' ? '91%' : '90%') .'"
+        ).'"
+                    width="'.($data->signed_type === 'lce' ? '91%' : '90%').'"
                     align="left"
-                >'. ($data->signed_type === 'lce' ? $purpose : "<strong>{$purpose}</strong>") .'</td>
+                >'.($data->signed_type === 'lce' ? $purpose : "<strong>{$purpose}</strong>").'</td>
             </tr>
         </tbody></table>';
 

@@ -15,15 +15,18 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use ValueError;
 
-use function Laravel\Prompts\error;
-
 class PrintController extends Controller
 {
     private LogRepository $logRepository;
+
     private PurchaseRequestRepository $purchaseRequestRepository;
+
     private RequestQuotationRepository $requestQuotationRepository;
+
     private AbstractQuotationRepository $abstractQuotationRepository;
+
     private PurchaseOrderRepository $purchaseOrderRepository;
+
     private InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository;
 
     public function __construct(
@@ -59,7 +62,7 @@ class PrintController extends Controller
 
         if (empty($paperData)) {
             return response()->json([
-                'message' => 'Paper type not set.'
+                'message' => 'Paper type not set.',
             ], 422);
         }
 
@@ -67,14 +70,14 @@ class PrintController extends Controller
             'orientation' => $pageOrientation,
             'unit' => $paperData['unit'],
             'dimension' => $paperData['dimension'],
-            'show_signatures' => $showSignatures
+            'show_signatures' => $showSignatures,
         ];
 
         try {
             $documentEnum = DocumentPrintType::from($document);
         } catch (ValueError $e) {
             return response()->json([
-                'message' => 'Invalid document type.'
+                'message' => 'Invalid document type.',
             ], 422);
         }
 
@@ -108,72 +111,72 @@ class PrintController extends Controller
                 return response()->json([
                     'data' => [
                         'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
+                        'filename' => 'test.pdf',
+                    ],
                 ]);
 
             case DocumentPrintType::DV:
                 return response()->json([
                     'data' => [
                         'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
+                        'filename' => 'test.pdf',
+                    ],
                 ]);
 
             case DocumentPrintType::RIS:
                 return response()->json([
                     'data' => [
                         'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
+                        'filename' => 'test.pdf',
+                    ],
                 ]);
 
             case DocumentPrintType::ARE:
                 return response()->json([
                     'data' => [
                         'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
+                        'filename' => 'test.pdf',
+                    ],
                 ]);
 
             case DocumentPrintType::ICS:
                 return response()->json([
                     'data' => [
                         'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
+                        'filename' => 'test.pdf',
+                    ],
                 ]);
 
             case DocumentPrintType::SUMMARY:
                 return response()->json([
                     'data' => [
                         'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
+                        'filename' => 'test.pdf',
+                    ],
                 ]);
 
             case DocumentPrintType::PAYMENT:
                 return response()->json([
                     'data' => [
                         'blob' => 'test',
-                        'filename' => 'test.pdf'
-                    ]
+                        'filename' => 'test.pdf',
+                    ],
                 ]);
 
             default:
                 return response()->json([
-                    'message' => 'Unknown error occurred. Please try again.'
+                    'message' => 'Unknown error occurred. Please try again.',
                 ], 422);
         }
 
-        if (!$data['success']) {
+        if (! $data['success']) {
             $this->logError($documentId, $documentEnum, $data);
 
             return response()->json([
                 'data' => [
                     'blob' => $data['blob'],
-                    'filename' => $data['filename']
-                ]
+                    'filename' => $data['filename'],
+                ],
             ]);
         }
 
@@ -181,45 +184,45 @@ class PrintController extends Controller
             'message' => "Successfully generated the {$data['filename']} document.",
             'log_id' => $documentId,
             'log_module' => $logModule,
-            'data' => $data
+            'data' => $data,
         ]);
 
         return response()->json([
             'data' => [
                 'blob' => $data['blob'],
-                'filename' => $data['filename']
-            ]
+                'filename' => $data['filename'],
+            ],
         ]);
     }
 
-    private function getPaperData(string $paperId): array | NULL
+    private function getPaperData(string $paperId): ?array
     {
         $paper = PaperSize::find($paperId);
 
-        if (!$paper) {
-            return NULL;
+        if (! $paper) {
+            return null;
         }
 
         $measurementUnit = $paper->unit;
         $dimension = [
             floatval($paper->height),
-            floatval($paper->width)
+            floatval($paper->width),
         ];
 
         return [
             'unit' => $measurementUnit,
-            'dimension' => $dimension
+            'dimension' => $dimension,
         ];
     }
 
     private function logError(string $documentId, DocumentPrintType $documentType, array $data): void
     {
         $this->logRepository->create([
-            'message' => "Failed to generated the document.",
+            'message' => 'Failed to generated the document.',
             'details' => $data['message'],
             'log_id' => $documentId,
             'log_module' => $documentType,
-            'data' => $data
+            'data' => $data,
         ], isError: true);
     }
 }

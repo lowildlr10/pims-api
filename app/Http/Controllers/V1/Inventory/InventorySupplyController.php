@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\V1\Inventory;
 
-use App\Enums\PurchaseOrderStatus;
 use App\Http\Controllers\Controller;
-use App\Models\FundingSource;
-use App\Models\PurchaseOrder;
 use App\Models\InventorySupply;
+use App\Models\PurchaseOrder;
 use App\Models\Supplier;
-use App\Repositories\LogRepository;
 use App\Repositories\InventorySupplyRepository;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -17,6 +15,8 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class InventorySupplyController extends Controller
 {
     private LogRepository $logRepository;
+
+    private InventorySupplyRepository $inventorySupplyRepository;
 
     public function __construct(LogRepository $logRepository, InventorySupplyRepository $inventorySupplyRepository)
     {
@@ -27,10 +27,8 @@ class InventorySupplyController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $user = auth()->user();
-
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 10);
         $grouped = filter_var($request->get('grouped', true), FILTER_VALIDATE_BOOLEAN);
@@ -41,36 +39,36 @@ class InventorySupplyController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        if (!$grouped) {
+        if (! $grouped) {
             $inventorySupplies = InventorySupply::with([
                 'unit_issue:id,unit_name',
                 'item_classification:id,classification_name',
             ])
-            ->when($search, function ($query) use ($search, $searchByPo) {
-                if ($searchByPo) {
-                    $query->where(function ($query) use ($search) {
-                        $query->whereRaw("CAST(purchase_order_id AS TEXT) = ?", [$search]);
-                    });
-                } else {
-                    $query->where(function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
-                            ->orWhereRaw("CAST(purchase_order_id AS TEXT) = ?", [$search])
-                            ->orWhere('name', 'like', "%{$search}%")
-                            ->orWhere('description', 'like', "%{$search}%");
-                    });
-                }
-            })
-            ->when($docuementType, function ($query) use ($docuementType) {
-                $query->where('required_document', $docuementType);
-            })
-            ->orderBy('item_sequence');
+                ->when($search, function ($query) use ($search, $searchByPo) {
+                    if ($searchByPo) {
+                        $query->where(function ($query) use ($search) {
+                            $query->whereRaw('CAST(purchase_order_id AS TEXT) = ?', [$search]);
+                        });
+                    } else {
+                        $query->where(function ($query) use ($search) {
+                            $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                                ->orWhereRaw('CAST(purchase_order_id AS TEXT) = ?', [$search])
+                                ->orWhere('name', 'like', "%{$search}%")
+                                ->orWhere('description', 'like', "%{$search}%");
+                        });
+                    }
+                })
+                ->when($docuementType, function ($query) use ($docuementType) {
+                    $query->where('required_document', $docuementType);
+                })
+                ->orderBy('item_sequence');
 
             $inventorySupplies = $showAll
                 ? $inventorySupplies->get()
                 : $inventorySupplies = $inventorySupplies->limit($perPage)->get();
 
             return response()->json([
-                'data' => $inventorySupplies
+                'data' => $inventorySupplies,
             ]);
         }
 
@@ -94,24 +92,24 @@ class InventorySupplyController extends Controller
             ])
             ->has('supplies');
 
-        if (!empty($search)) {
-            $purchaseOrders = $purchaseOrders->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $purchaseOrders = $purchaseOrders->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('po_date', 'ILIKE', "%{$search}%")
                     ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('supplies', function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                             ->orWhere('sku', 'ILIKE', "%{$search}%")
                             ->orWhere('upc', 'ILIKE', "%{$search}%")
                             ->orWhere('name', 'ILIKE', "%{$search}%")
                             ->orWhere('description', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('issuances', function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search]);
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
                     })
-                    ->orWhereRelation('inspection_acceptance_report', function($query) use ($search){
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search]);
+                    ->orWhereRelation('inspection_acceptance_report', function ($query) use ($search) {
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
                     });
             });
         }
@@ -150,7 +148,7 @@ class InventorySupplyController extends Controller
                 : $purchaseOrders = $purchaseOrders->limit($perPage)->get();
 
             return response()->json([
-                'data' => $purchaseOrders
+                'data' => $purchaseOrders,
             ]);
         }
     }
@@ -172,8 +170,8 @@ class InventorySupplyController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $inventorySupply
-            ]
+                'data' => $inventorySupply,
+            ],
         ]);
     }
 
@@ -182,8 +180,6 @@ class InventorySupplyController extends Controller
      */
     public function update(Request $request, InventorySupply $inventorySupply): JsonResponse
     {
-        $user = auth()->user();
-
         $validated = $request->validate([
             'sku' => 'nullable:string',
             'upc' => 'nullable:string',
@@ -202,14 +198,14 @@ class InventorySupplyController extends Controller
                 'message' => $message,
                 'log_id' => $inventorySupply->id,
                 'log_module' => 'inv-supply',
-                'data' => $inventorySupply
+                'data' => $inventorySupply,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inventorySupply,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Inventory supply update failed.';
@@ -219,11 +215,11 @@ class InventorySupplyController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $inventorySupply->id,
                 'log_module' => 'inv-supply',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => "$message Please try again."
+                'message' => "$message Please try again.",
             ], 422);
         }
     }

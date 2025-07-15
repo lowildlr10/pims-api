@@ -22,7 +22,7 @@ class FundingSourceController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -34,9 +34,9 @@ class FundingSourceController extends Controller
 
         $fundingSources = FundingSource::query()->with('location');
 
-        if (!empty($search)) {
-            $fundingSources = $fundingSources->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $fundingSources = $fundingSources->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('title', 'ILIKE', "%{$search}%")
                     ->orWhere('total_cost', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('location', 'location_name', 'ILIKE', "%{$search}%");
@@ -64,14 +64,16 @@ class FundingSourceController extends Controller
         if ($paginated) {
             return $fundingSources->paginate($perPage);
         } else {
-            if (!$showInactive) $fundingSources = $fundingSources->where('active', true);
+            if (! $showInactive) {
+                $fundingSources = $fundingSources->where('active', true);
+            }
 
             $fundingSources = $showAll
                 ? $fundingSources->get()
                 : $fundingSources = $fundingSources->limit($perPage)->get();
 
             return response()->json([
-                'data' => $fundingSources
+                'data' => $fundingSources,
             ]);
         }
     }
@@ -85,7 +87,7 @@ class FundingSourceController extends Controller
             'title' => 'required|unique:funding_sources,title',
             'location' => 'required',
             'total_cost' => 'required|numeric',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -94,7 +96,7 @@ class FundingSourceController extends Controller
             $location = Location::updateOrCreate([
                 'location_name' => $validated['location'],
             ], [
-                'location_name' => $validated['location']
+                'location_name' => $validated['location'],
             ]);
 
             $fundingSource = FundingSource::create(array_merge(
@@ -105,29 +107,29 @@ class FundingSourceController extends Controller
             ));
 
             $this->logRepository->create([
-                'message' => "Funding source/project created successfully.",
+                'message' => 'Funding source/project created successfully.',
                 'log_id' => $fundingSource->id,
                 'log_module' => 'lib-fund-source',
-                'data' => $fundingSource
+                'data' => $fundingSource,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Funding source/project creation failed. Please try again.",
+                'message' => 'Funding source/project creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-fund-source',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Funding source/project creation failed. Please try again.'
+                'message' => 'Funding source/project creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $fundingSource,
-                'message' => 'Funding source/project created successfully.'
-            ]
+                'message' => 'Funding source/project created successfully.',
+            ],
         ]);
     }
 
@@ -141,8 +143,8 @@ class FundingSourceController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $fundingSource
-            ]
+                'data' => $fundingSource,
+            ],
         ]);
     }
 
@@ -152,10 +154,10 @@ class FundingSourceController extends Controller
     public function update(Request $request, FundingSource $fundingSource)
     {
         $validated = $request->validate([
-            'title' => 'required|unique:funding_sources,title,' . $fundingSource->id,
+            'title' => 'required|unique:funding_sources,title,'.$fundingSource->id,
             'location' => 'required',
             'total_cost' => 'required|numeric',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -164,7 +166,7 @@ class FundingSourceController extends Controller
             $location = Location::updateOrCreate([
                 'location_name' => $validated['location'],
             ], [
-                'location_name' => $validated['location']
+                'location_name' => $validated['location'],
             ]);
 
             $fundingSource->update(array_merge(
@@ -175,30 +177,30 @@ class FundingSourceController extends Controller
             ));
 
             $this->logRepository->create([
-                'message' => "Funding source/project update failed. Please try again.",
+                'message' => 'Funding source/project update failed. Please try again.',
                 'log_id' => $fundingSource->id,
                 'log_module' => 'lib-fund-source',
-                'data' => $fundingSource
+                'data' => $fundingSource,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Funding source/project update failed. Please try again.",
+                'message' => 'Funding source/project update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $fundingSource->id,
                 'log_module' => 'lib-fund-source',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Funding source/project update failed. Please try again.'
+                'message' => 'Funding source/project update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $fundingSource,
-                'message' => 'Funding source/project updated successfully.'
-            ]
+                'message' => 'Funding source/project updated successfully.',
+            ],
         ]);
     }
 }

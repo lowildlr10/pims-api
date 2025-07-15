@@ -4,21 +4,34 @@ namespace App\Repositories;
 
 use App\Enums\InspectionAcceptanceReportStatus;
 use App\Helpers\FileHelper;
+use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\InspectionAcceptanceReportInterface;
 use App\Models\Company;
 use App\Models\InspectionAcceptanceReport;
 use App\Models\InspectionAcceptanceReportItem;
-use App\Models\Location;
-use App\Models\Log;
 use App\Models\PurchaseRequestItem;
-use Exception;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
 class InspectionAcceptanceReportRepository implements InspectionAcceptanceReportInterface
 {
-    public function __construct() {
+    protected string $appUrl;
+
+    protected string $fontArial;
+
+    protected string $fontArialBold;
+
+    protected string $fontArialItalic;
+
+    protected string $fontArialBoldItalic;
+
+    protected string $fontArialNarrow;
+
+    protected string $fontArialNarrowBold;
+
+    public function __construct()
+    {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
@@ -28,9 +41,9 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function storeUpdate(array $data, ?InspectionAcceptanceReport $inspectionAcceptanceReport = NULL): InspectionAcceptanceReport
+    public function storeUpdate(array $data, ?InspectionAcceptanceReport $inspectionAcceptanceReport = null): InspectionAcceptanceReport
     {
-        if (!empty($inspectionAcceptanceReport)) {
+        if (! empty($inspectionAcceptanceReport)) {
             $inspectionAcceptanceReport->update($data);
         } else {
             $inspectionAcceptanceReport = InspectionAcceptanceReport::create(
@@ -39,13 +52,15 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                     [
                         'iar_no' => $this->generateNewIarNumber(),
                         'status' => InspectionAcceptanceReportStatus::DRAFT,
-                        'status_timestamps' => json_encode((Object) [])
+                        'status_timestamps' => StatusTimestampsHelper::generate(
+                            'draft_at', null
+                        ),
                     ]
                 )
             );
 
             $this->storeUpdateItems(
-                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                collect(isset($data['items']) && ! empty($data['items']) ? $data['items'] : []),
                 $inspectionAcceptanceReport
             );
         }
@@ -63,7 +78,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
             InspectionAcceptanceReportItem::create([
                 'inspection_acceptance_report_id' => $inspectionAcceptanceReport->id,
                 'pr_item_id' => $item['pr_item_id'],
-                'po_item_id' => $item['po_item_id']
+                'po_item_id' => $item['po_item_id'],
             ]);
         }
     }
@@ -86,7 +101,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
             $iar = InspectionAcceptanceReport::with([
                 'supplier:id,supplier_name',
 
-                'items' => function($query) {
+                'items' => function ($query) {
                     $query->orderBy(
                         PurchaseRequestItem::select('item_sequence')
                             ->whereColumn(
@@ -112,7 +127,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
 
                 'purchase_request:id,section_id',
                 'purchase_request.section:id,section_name',
-                'purchase_order:id,po_no,po_date'
+                'purchase_order:id,po_no,po_date',
             ])->find($iarId);
 
             $filename = "IAR-{$iar->iar_no}.pdf";
@@ -121,22 +136,21 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
             return [
                 'success' => true,
                 'blob' => $blob,
-                'filename' => $filename
+                'filename' => $filename,
             ];
         } catch (\Throwable $th) {
             return [
                 'success' => false,
                 'message' => $th->getMessage(),
                 'blob' => '',
-                'filename' => ''
+                'filename' => '',
             ];
         }
     }
 
     private function generateInspectionAccepantceReportDoc(
         string $filename, array $pageConfig, InspectionAcceptanceReport $data, Company $company
-    ): string
-    {
+    ): string {
         $supplier = $data->supplier;
         $purchaseOrder = $data->purchase_order;
         $purchaseRequest = $data->purchase_request;
@@ -184,7 +198,8 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         // $pdf->setCellHeightRatio(1.6);
         $pdf->Cell(0, 0, '', 'LTR', 1, 'C');
@@ -259,19 +274,19 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                     <td
                         width="10%"
                         align="center"
-                    >'. $prItem->stock_no .'</td>
+                    >'.$prItem->stock_no.'</td>
                     <td
                         width="9%"
                         align="center"
-                    >'. $prItem->unit_issue->unit_name .'</td>
+                    >'.$prItem->unit_issue->unit_name.'</td>
                     <td
                         width="53%"
                         align="left"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         width="28%"
                         align="center"
-                    >'. $prItem->quantity .'</td>
+                    >'.$prItem->quantity.'</td>
                 </tr>
             ';
         }
@@ -338,9 +353,9 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
 
         $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
         $pdf->SetFont($this->fontArial, '', 16);
-        $pdf->Cell($pageWidth * 0.04, 0, !is_null($data->acceptance_completed) && $data->acceptance_completed ? 'x' : '', 'LTRB', 0, 'C');
+        $pdf->Cell($pageWidth * 0.04, 0, ! is_null($data->acceptance_completed) && $data->acceptance_completed ? 'x' : '', 'LTRB', 0, 'C');
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.73, 0, "   Complete", 0, 0, 'L');
+        $pdf->Cell($pageWidth * 0.73, 0, '   Complete', 0, 0, 'L');
         $pdf->Cell(0, 0, '', 'R', 1, 'L');
 
         $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
@@ -353,7 +368,7 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
 
         $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
         $pdf->SetFont($this->fontArial, '', 16);
-        $pdf->Cell($pageWidth * 0.04, 0, !is_null($data->acceptance_completed) && !$data->acceptance_completed ? 'x' : '', 'LTRB', 0, 'C');
+        $pdf->Cell($pageWidth * 0.04, 0, ! is_null($data->acceptance_completed) && ! $data->acceptance_completed ? 'x' : '', 'LTRB', 0, 'C');
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.44, 0, '   Partial', 0, 0, 'L');
         $pdf->Cell($pageWidth * 0.09, 0, '', '', 0, 'L');

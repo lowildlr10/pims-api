@@ -35,10 +35,7 @@ class AbstractQuotation extends Model
         'sig_member_2_id',
         'sig_member_3_id',
         'status',
-        'status_timestamps'
-        // 'pending_at',
-        // 'approved_at',
-        // 'awarded_at'
+        'status_timestamps',
     ];
 
     /**

@@ -20,7 +20,7 @@ class UacsCode extends Model
         'account_title',
         'code',
         'description',
-        'active'
+        'active',
     ];
 
     public function classification(): HasOne

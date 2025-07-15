@@ -16,6 +16,6 @@ class ItemClassification extends Model
      */
     protected $fillable = [
         'classification_name',
-        'active'
+        'active',
     ];
 }

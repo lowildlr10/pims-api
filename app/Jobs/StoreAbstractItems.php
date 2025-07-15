@@ -11,14 +11,14 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
 use Throwable;
 
-use function Laravel\Prompts\error;
-
 class StoreAbstractItems implements ShouldQueue
 {
     use Queueable;
 
     private Collection $items;
+
     private AbstractQuotation $abstractQuotation;
+
     private LogRepository $logRepository;
 
     /**
@@ -46,10 +46,10 @@ class StoreAbstractItems implements ShouldQueue
             $aoqItem = AbstractQuotationItem::create([
                 'abstract_quotation_id' => $this->abstractQuotation->id,
                 'pr_item_id' => $item['pr_item_id'],
-                'awardee_id' => isset($item['awardee_id']) && !empty($item['awardee_id']) ? $item['awardee_id'] : NULL,
-                'document_type' => isset($item['document_type']) && !empty($item['document_type'])
-                    ? $item['document_type'] : NULL,
-                'included' => $item['included']
+                'awardee_id' => isset($item['awardee_id']) && ! empty($item['awardee_id']) ? $item['awardee_id'] : null,
+                'document_type' => isset($item['document_type']) && ! empty($item['document_type'])
+                    ? $item['document_type'] : null,
+                'included' => $item['included'],
             ]);
 
             foreach ($item['details'] ?? [] as $detail) {
@@ -63,21 +63,21 @@ class StoreAbstractItems implements ShouldQueue
                     'supplier_id' => $detail['supplier_id'],
                     'brand_model' => $detail['brand_model'],
                     'unit_cost' => $unitCost,
-                    'total_cost' => $totalCost
+                    'total_cost' => $totalCost,
                 ]);
             }
         }
 
         $this->abstractQuotation->load([
-            'items', 'items.details'
+            'items', 'items.details',
         ]);
 
         $this->logRepository->create([
             'message' => 'Items for Abstract of Quotation were created successfully.',
-            'details' => count($this->items) . ' items',
+            'details' => count($this->items).' items',
             'log_id' => $this->abstractQuotation->id,
             'log_module' => 'aoq',
-            'data' => $this->abstractQuotation->items
+            'data' => $this->abstractQuotation->items,
         ]);
     }
 
@@ -91,7 +91,7 @@ class StoreAbstractItems implements ShouldQueue
             'details' => $exception->getMessage(),
             'log_id' => $this->abstractQuotation->id,
             'log_module' => 'aoq',
-            'data' => $this->items
+            'data' => $this->items,
         ], isError: true);
     }
 }

@@ -21,7 +21,7 @@ class BidsAwardsCommitteeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class BidsAwardsCommitteeController extends Controller
 
         $bidsAwardsCommittees = BidsAwardsCommittee::query();
 
-        if (!empty($search)) {
-            $bidsAwardsCommittees = $bidsAwardsCommittees->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $bidsAwardsCommittees = $bidsAwardsCommittees->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('committee_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -55,14 +55,16 @@ class BidsAwardsCommitteeController extends Controller
         if ($paginated) {
             return $bidsAwardsCommittees->paginate($perPage);
         } else {
-            if (!$showInactive) $bidsAwardsCommittees = $bidsAwardsCommittees->where('active', true);
+            if (! $showInactive) {
+                $bidsAwardsCommittees = $bidsAwardsCommittees->where('active', true);
+            }
 
             $bidsAwardsCommittees = $showAll
                 ? $bidsAwardsCommittees->get()
                 : $bidsAwardsCommittees = $bidsAwardsCommittees->limit($perPage)->get();
 
             return response()->json([
-                'data' => $bidsAwardsCommittees
+                'data' => $bidsAwardsCommittees,
             ]);
         }
     }
@@ -74,7 +76,7 @@ class BidsAwardsCommitteeController extends Controller
     {
         $validated = $request->validate([
             'committee_name' => 'required|unique:bids_awards_committees,committee_name',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -83,29 +85,29 @@ class BidsAwardsCommitteeController extends Controller
             $bidsAwardsCommittee = BidsAwardsCommittee::create($validated);
 
             $this->logRepository->create([
-                'message' => "Bids awards committee created successfully.",
+                'message' => 'Bids awards committee created successfully.',
                 'log_id' => $bidsAwardsCommittee->id,
                 'log_module' => 'lib-bid-committee',
-                'data' => $bidsAwardsCommittee
+                'data' => $bidsAwardsCommittee,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Bids awards committee creation failed. Please try again.",
+                'message' => 'Bids awards committee creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-bid-committee',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Bids awards committee creation failed. Please try again.'
+                'message' => 'Bids awards committee creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $bidsAwardsCommittee,
-                'message' => 'Bids awards committee created successfully.'
-            ]
+                'message' => 'Bids awards committee created successfully.',
+            ],
         ]);
     }
 
@@ -116,8 +118,8 @@ class BidsAwardsCommitteeController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $bidsAwardsCommittee
-            ]
+                'data' => $bidsAwardsCommittee,
+            ],
         ]);
     }
 
@@ -127,8 +129,8 @@ class BidsAwardsCommitteeController extends Controller
     public function update(Request $request, BidsAwardsCommittee $bidsAwardsCommittee)
     {
         $validated = $request->validate([
-            'committee_name' => 'required|unique:bids_awards_committees,committee_name,' . $bidsAwardsCommittee->id,
-            'active' => 'required|boolean'
+            'committee_name' => 'required|unique:bids_awards_committees,committee_name,'.$bidsAwardsCommittee->id,
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -137,30 +139,30 @@ class BidsAwardsCommitteeController extends Controller
             $bidsAwardsCommittee->update($validated);
 
             $this->logRepository->create([
-                'message' => "Bids awards committee updated successfully.",
+                'message' => 'Bids awards committee updated successfully.',
                 'log_id' => $bidsAwardsCommittee->id,
                 'log_module' => 'lib-bid-committee',
-                'data' => $bidsAwardsCommittee
+                'data' => $bidsAwardsCommittee,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Bids awards committee update failed. Please try again.",
+                'message' => 'Bids awards committee update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $bidsAwardsCommittee->id,
                 'log_module' => 'lib-bid-committee',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Bids awards committee update failed. Please try again.'
+                'message' => 'Bids awards committee update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $bidsAwardsCommittee,
-                'message' => 'Bids awards committee updated successfully.'
-            ]
+                'message' => 'Bids awards committee updated successfully.',
+            ],
         ]);
     }
 }

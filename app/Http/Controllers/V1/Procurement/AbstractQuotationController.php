@@ -13,21 +13,21 @@ use App\Models\PurchaseRequestItem;
 use App\Models\User;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class AbstractQuotationController extends Controller
 {
     private LogRepository $logRepository;
+
     private AbstractQuotationRepository $abstractQuotationRepository;
 
     public function __construct(
         LogRepository $logRepository,
         AbstractQuotationRepository $abstractQuotationRepository
-    )
-    {
+    ) {
         $this->logRepository = $logRepository;
         $this->abstractQuotationRepository = $abstractQuotationRepository;
     }
@@ -35,9 +35,9 @@ class AbstractQuotationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -53,25 +53,25 @@ class AbstractQuotationController extends Controller
                 'requestor:id,firstname,lastname',
                 'aoqs' => function ($query) {
                     $query->select(
-                            'id',
-                            'purchase_request_id',
-                            'solicitation_no',
-                            'solicitation_date',
-                            'abstract_no',
-                            'opened_on',
-                            'mode_procurement_id',
-                            'bac_action',
-                            'status'
-                        )
+                        'id',
+                        'purchase_request_id',
+                        'solicitation_no',
+                        'solicitation_date',
+                        'abstract_no',
+                        'opened_on',
+                        'mode_procurement_id',
+                        'bac_action',
+                        'status'
+                    )
                         ->orderByRaw("CAST(REPLACE(abstract_no, '-', '') AS VARCHAR) asc");
                 },
-                'aoqs.mode_procurement:id,mode_name'
+                'aoqs.mode_procurement:id,mode_name',
             ])->whereIn('status', [
                 PurchaseRequestStatus::FOR_RECANVASSING,
                 PurchaseRequestStatus::FOR_ABSTRACT,
                 PurchaseRequestStatus::PARTIALLY_AWARDED,
                 PurchaseRequestStatus::AWARDED,
-                PurchaseRequestStatus::COMPLETED
+                PurchaseRequestStatus::COMPLETED,
             ]);
 
         if ($user->tokenCan('super:*')
@@ -79,13 +79,14 @@ class AbstractQuotationController extends Controller
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
             || $user->tokenCan('accounting:*')
-        ) {} else {
+        ) {
+        } else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
         }
 
-        if (!empty($search)) {
-            $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $purchaseRequests = $purchaseRequests->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
@@ -94,8 +95,8 @@ class AbstractQuotationController extends Controller
                     ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
                     ->orWhere('purpose', 'ILIKE', "%{$search}%")
                     ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('funding_source', 'title', 'ILIKE' , "%{$search}%")
-                    ->orWhereRelation('section', 'section_name', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('funding_source', 'title', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('requestor', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
@@ -109,7 +110,7 @@ class AbstractQuotationController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('aoqs', function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                             ->orWhere('solicitation_no', 'ILIKE', "%{$search}%")
                             ->orWhere('solicitation_date', 'ILIKE', "%{$search}%")
                             ->orWhere('abstract_no', 'ILIKE', "%{$search}%")
@@ -203,18 +204,10 @@ class AbstractQuotationController extends Controller
                 : $purchaseRequests = $purchaseRequests->limit($perPage)->get();
 
             return response()->json([
-                'data' => $purchaseRequests
+                'data' => $purchaseRequests,
             ]);
         }
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    // public function store(Request $request)
-    // {
-    //     //
-    // }
 
     /**
      * Display the specified resource.
@@ -272,7 +265,7 @@ class AbstractQuotationController extends Controller
                 $query->where('document', 'aoq')
                     ->where('signatory_type', 'member_3');
             },
-            'items' => function($query) {
+            'items' => function ($query) {
                 $query->orderBy(
                     PurchaseRequestItem::select('item_sequence')
                         ->whereColumn(
@@ -286,13 +279,13 @@ class AbstractQuotationController extends Controller
             'items.pr_item.unit_issue:id,unit_name',
             'items.details',
             'items.details.supplier:id,supplier_name',
-            'purchase_request:id,purpose'
+            'purchase_request:id,purpose',
         ]);
 
         return response()->json([
             'data' => [
-                'data' => $abstractQuotation
-            ]
+                'data' => $abstractQuotation,
+            ],
         ]);
     }
 
@@ -301,7 +294,7 @@ class AbstractQuotationController extends Controller
      */
     public function update(Request $request, AbstractQuotation $abstractQuotation): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $validated = $request->validate([
             'bids_awards_committee_id' => 'required',
@@ -332,14 +325,14 @@ class AbstractQuotationController extends Controller
                 'message' => $message,
                 'log_id' => $abstractQuotation->id,
                 'log_module' => 'aoq',
-                'data' => $abstractQuotation
+                'data' => $abstractQuotation,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $abstractQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Abstract of bids or quotation update failed.';
@@ -349,11 +342,11 @@ class AbstractQuotationController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $abstractQuotation->id,
                 'log_module' => 'aoq',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => "$message Please try again."
+                'message' => "$message Please try again.",
             ], 422);
         }
     }
@@ -376,11 +369,11 @@ class AbstractQuotationController extends Controller
                     'message' => $message,
                     'log_id' => $abstractQuotation->id,
                     'log_module' => 'aoq',
-                    'data' => $abstractQuotation
+                    'data' => $abstractQuotation,
                 ], isError: true);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -388,14 +381,14 @@ class AbstractQuotationController extends Controller
                 'status' => AbstractQuotationStatus::PENDING,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'pending_at', $abstractQuotation->status_timestamps
-                )
+                ),
             ]);
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $abstractQuotation->id,
                 'log_module' => 'aoq',
-                'data' => $abstractQuotation
+                'data' => $abstractQuotation,
             ]);
 
             $abstractQuotation->load('items');
@@ -403,8 +396,8 @@ class AbstractQuotationController extends Controller
             return response()->json([
                 'data' => [
                     'data' => $abstractQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Abstract of bids and quotation failed to marked as "Pending".';
@@ -414,11 +407,11 @@ class AbstractQuotationController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $abstractQuotation->id,
                 'log_module' => 'aoq',
-                'data' => $abstractQuotation
+                'data' => $abstractQuotation,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }
@@ -441,11 +434,11 @@ class AbstractQuotationController extends Controller
                     'message' => $message,
                     'log_id' => $abstractQuotation->id,
                     'log_module' => 'aoq',
-                    'data' => $abstractQuotation
+                    'data' => $abstractQuotation,
                 ], isError: true);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -453,14 +446,14 @@ class AbstractQuotationController extends Controller
                 'status' => AbstractQuotationStatus::APPROVED,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'approved_at', $abstractQuotation->status_timestamps
-                )
+                ),
             ]);
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $abstractQuotation->id,
                 'log_module' => 'aoq',
-                'data' => $abstractQuotation
+                'data' => $abstractQuotation,
             ]);
 
             $abstractQuotation->load('items');
@@ -468,8 +461,8 @@ class AbstractQuotationController extends Controller
             return response()->json([
                 'data' => [
                     'data' => $abstractQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Abstract of bids and quotation failed to marked as "Approved".';
@@ -479,11 +472,11 @@ class AbstractQuotationController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $abstractQuotation->id,
                 'log_module' => 'aoq',
-                'data' => $abstractQuotation
+                'data' => $abstractQuotation,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }

@@ -22,6 +22,6 @@ class Supplier extends Model
         'telephone',
         'vat_no',
         'contact_person',
-        'active'
+        'active',
     ];
 }

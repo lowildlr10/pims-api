@@ -26,8 +26,8 @@ class CompanyController extends Controller
 
         return response()->json([
             'data' => [
-                'company' => $company
-            ]
+                'company' => $company,
+            ],
         ]);
     }
 
@@ -47,24 +47,24 @@ class CompanyController extends Controller
             'favicon' => 'nullable|string',
             'company_logo' => 'nullable|string',
             'login_background' => 'nullable|string',
-            'theme_colors' => 'required|string'
+            'theme_colors' => 'required|string',
         ]);
 
         $company = Company::first();
 
-        if (!$company) {
+        if (! $company) {
             $this->logRepository->create([
                 'message' => "Company data doesn't exist in the database.",
                 'log_id' => $company->id,
                 'log_module' => 'company',
                 'data' => [
                     'company_model' => $company,
-                    'payload' => $validated
-                ]
+                    'payload' => $validated,
+                ],
             ], isError: true);
 
             return response()->json([
-                'message' => 'There is an issue with the company configuration. Please contact the administrator.'
+                'message' => 'There is an issue with the company configuration. Please contact the administrator.',
             ], 422);
         }
 
@@ -77,30 +77,30 @@ class CompanyController extends Controller
             ));
 
             $this->logRepository->create([
-                'message' => "Company profile updated successfully.",
+                'message' => 'Company profile updated successfully.',
                 'log_id' => $company->id,
                 'log_module' => 'company',
-                'data' => $company
+                'data' => $company,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Company profile update failed.",
+                'message' => 'Company profile update failed.',
                 'details' => $th->getMessage(),
                 'log_id' => $company->id,
                 'log_module' => 'company',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Company profile update failed. Please try again.'
+                'message' => 'Company profile update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $company,
-                'message' => 'Company profile updated successfully.'
-            ]
+                'message' => 'Company profile updated successfully.',
+            ],
         ]);
     }
 }

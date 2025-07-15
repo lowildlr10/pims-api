@@ -34,24 +34,16 @@ class PurchaseRequest extends Model
         'status',
         'status_timestamps',
         'total_estimated_cost',
-        // 'submitted_at',
-        // 'approved_cash_available_at',
-        // 'approved_at',
-        // 'disapproved_at',
-        // 'approved_rfq_at',
-        // 'awarded_at',
-        // 'cancelled_at',
-        // 'completed_at'
     ];
 
     protected $appends = [
-        'total_estimated_cost_formatted'
+        'total_estimated_cost_formatted',
     ];
 
     protected function totalEstimatedCostFormatted(): Attribute
     {
         return new Attribute(
-            get: fn () => '₱' . number_format($this->total_estimated_cost, 2)
+            get: fn () => '₱'.number_format($this->total_estimated_cost, 2)
         );
     }
 

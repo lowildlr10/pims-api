@@ -2,9 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
-use Illuminate\Database\Seeder;
 use App\Models\Role;
+use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
 {
@@ -37,8 +36,8 @@ class RoleSeeder extends Seeder
                 'lib-uacs-class:view',
                 'lib-uacs-code:view',
                 'lib-unit-issue:*',
-                'system-log:*'
-            ]
+                'system-log:*',
+            ],
         ],
         [
             'role_name' => 'End User',
@@ -58,8 +57,8 @@ class RoleSeeder extends Seeder
                 'lib-signatory:view',
                 'lib-supplier:view',
                 'lib-unit-issue:view',
-                'system-log:*'
-            ]
+                'system-log:*',
+            ],
         ],
         [
             'role_name' => 'Administrator',
@@ -90,8 +89,8 @@ class RoleSeeder extends Seeder
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:*',
-                'system-log:*'
-            ]
+                'system-log:*',
+            ],
         ],
         [
             'role_name' => 'Supply Officer',
@@ -116,8 +115,8 @@ class RoleSeeder extends Seeder
                 'lib-signatory:*',
                 'lib-supplier:*',
                 'lib-unit-issue:*',
-                'system-log:*'
-            ]
+                'system-log:*',
+            ],
         ],
         [
             'role_name' => 'Budget',
@@ -141,8 +140,8 @@ class RoleSeeder extends Seeder
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:view',
-                'system-log:*'
-            ]
+                'system-log:*',
+            ],
         ],
         [
             'role_name' => 'Accounting',
@@ -166,8 +165,8 @@ class RoleSeeder extends Seeder
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:view',
-                'system-log:*'
-            ]
+                'system-log:*',
+            ],
         ],
         [
             'role_name' => 'Cashier',
@@ -191,9 +190,9 @@ class RoleSeeder extends Seeder
                 'lib-uacs-class:*',
                 'lib-uacs-code:*',
                 'lib-unit-issue:view',
-                'system-log:*'
-            ]
-        ]
+                'system-log:*',
+            ],
+        ],
     ];
 
     /**

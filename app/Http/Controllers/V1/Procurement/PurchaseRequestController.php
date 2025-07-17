@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1\Procurement;
 
 use App\Enums\AbstractQuotationStatus;
+use App\Enums\NotificationType;
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
 use App\Helpers\StatusTimestampsHelper;
@@ -16,6 +17,7 @@ use App\Models\RequestQuotation;
 use App\Models\User;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\NotificationRepository;
 use App\Repositories\PurchaseOrderRepository;
 use App\Repositories\PurchaseRequestRepository;
 use Carbon\Carbon;
@@ -34,16 +36,20 @@ class PurchaseRequestController extends Controller
 
     private PurchaseOrderRepository $purchaseOrderRepository;
 
+    private NotificationRepository $notificationRepository;
+
     public function __construct(
         LogRepository $logRepository,
         PurchaseRequestRepository $purchaseRequestRepository,
         AbstractQuotationRepository $abstractQuotationRepository,
-        PurchaseOrderRepository $purchaseOrderRepository
+        PurchaseOrderRepository $purchaseOrderRepository,
+        NotificationRepository $notificationRepository
     ) {
         $this->logRepository = $logRepository;
         $this->purchaseRequestRepository = $purchaseRequestRepository;
         $this->abstractQuotationRepository = $abstractQuotationRepository;
         $this->purchaseOrderRepository = $purchaseOrderRepository;
+        $this->notificationRepository = $notificationRepository;
     }
 
     /**
@@ -498,6 +504,10 @@ class PurchaseRequestController extends Controller
                 ),
             ]);
 
+            $this->notificationRepository->notify(NotificationType::PR_PENDING, [
+                'pr' => $purchaseRequest
+            ]);
+
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $purchaseRequest->id,
@@ -570,6 +580,10 @@ class PurchaseRequestController extends Controller
                 ),
             ]);
 
+            $this->notificationRepository->notify(NotificationType::PR_APPROVED_CASH_AVAILABLE, [
+                'pr' => $purchaseRequest
+            ]);
+
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $purchaseRequest->id,
@@ -636,6 +650,10 @@ class PurchaseRequestController extends Controller
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'approved_at', $purchaseRequest->status_timestamps
                 ),
+            ]);
+
+            $this->notificationRepository->notify(NotificationType::PR_APPROVED, [
+                'pr' => $purchaseRequest
             ]);
 
             $this->logRepository->create([
@@ -706,6 +724,10 @@ class PurchaseRequestController extends Controller
                 ),
             ]);
 
+            $this->notificationRepository->notify(NotificationType::PR_DISAPPROVED, [
+                'pr' => $purchaseRequest
+            ]);
+
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $purchaseRequest->id,
@@ -773,6 +795,10 @@ class PurchaseRequestController extends Controller
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'cancelled_at', $purchaseRequest->status_timestamps
                 ),
+            ]);
+
+            $this->notificationRepository->notify(NotificationType::PR_CANCELLED, [
+                'pr' => $purchaseRequest
             ]);
 
             $this->logRepository->create([
@@ -997,6 +1023,10 @@ class PurchaseRequestController extends Controller
                 }),
             ]);
 
+            $this->notificationRepository->notify(NotificationType::PR_FOR_ABSTRACT, [
+                'pr' => $purchaseRequest, 'rfq' => $rfqCompleted[0]
+            ]);
+
             $this->logRepository->create([
                 'message' => 'Abstract of quotation created successfully.',
                 'log_id' => $abstractQuotation->id,
@@ -1164,6 +1194,16 @@ class PurchaseRequestController extends Controller
                     $purchaseRequest->status_timestamps
                 ),
             ]);
+
+            if ($prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
+                $this->notificationRepository->notify(NotificationType::PR_PARTIALLY_AWARDED, [
+                    'pr' => $purchaseRequest, 'aoq' => $aoqApproved[0]
+                ]);
+            } else {
+                $this->notificationRepository->notify(NotificationType::PR_AWARDED, [
+                    'pr' => $purchaseRequest, 'aoq' => $aoqApproved[0]
+                ]);
+            }
 
             $this->logRepository->create([
                 'message' => $message.($prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED ? '"Partially Awarded".' : '"Awarded".'),

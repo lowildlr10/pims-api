@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
+use App\Enums\NotificationType;
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
 use App\Helpers\StatusTimestampsHelper;
@@ -14,6 +15,7 @@ use App\Models\RequestQuotationCanvasser;
 use App\Models\RequestQuotationItem;
 use App\Models\User;
 use App\Repositories\LogRepository;
+use App\Repositories\NotificationRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -23,9 +25,12 @@ class RequestQuotationController extends Controller
 {
     private LogRepository $logRepository;
 
-    public function __construct(LogRepository $logRepository)
+    private NotificationRepository $notificationRepository;
+
+    public function __construct(LogRepository $logRepository, NotificationRepository $notificationRepository)
     {
         $this->logRepository = $logRepository;
+        $this->notificationRepository = $notificationRepository;
     }
 
     /**
@@ -509,6 +514,10 @@ class RequestQuotationController extends Controller
                     'status_timestamps' => StatusTimestampsHelper::generate(
                         'canvassing_at', $purchaseRequest->status_timestamps
                     ),
+                ]);
+
+                $this->notificationRepository->notify(NotificationType::PR_CAMVASSING, [
+                    'pr' => $purchaseRequest, 'rfq' => $requestQuotation
                 ]);
 
                 $this->logRepository->create([

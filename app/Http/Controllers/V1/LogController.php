@@ -4,8 +4,10 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Log;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class LogController extends Controller
 {
@@ -14,7 +16,7 @@ class LogController extends Controller
      */
     public function index(Request $request): LengthAwarePaginator
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -24,12 +26,15 @@ class LogController extends Controller
 
         $logs = Log::with('user:id,firstname,middlename,lastname');
 
-        if ($user->tokenCan('super:*')) {} else {
-            if (empty($logId)) $logs = $logs->where('user_id', $user->id);
+        if ($user->tokenCan('super:*')) {
+        } else {
+            if (empty($logId)) {
+                $logs = $logs->where('user_id', $user->id);
+            }
         }
 
-        if (!empty($search) && empty($logId)) {
-            $logs = $logs->where(function($query) use ($search){
+        if (! empty($search) && empty($logId)) {
+            $logs = $logs->where(function ($query) use ($search) {
                 $query->where('log_id', 'ILIKE', "%{$search}%")
                     ->orWhere('log_module', 'ILIKE', "%{$search}%")
                     ->orWhere('log_type', 'ILIKE', "%{$search}%")
@@ -41,13 +46,15 @@ class LogController extends Controller
             });
         }
 
-        if ($logId) $logs = $logs->where('log_id', $logId);
+        if ($logId) {
+            $logs = $logs->where('log_id', $logId);
+        }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'user_formatted':
                     $columnSort = '';
-                    $signatories = $signatories->orderBy(
+                    $signatories = $logs->orderBy(
                         User::select('firstname')->whereColumn('users.id', 'signatories.user_id')
                     );
                     break;

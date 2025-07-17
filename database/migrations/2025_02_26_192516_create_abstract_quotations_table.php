@@ -63,10 +63,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('signatories');
             $table->string('status');
-            $table->json('status_timestamps');
-            // $table->timestamp('pending_at')->nullable();
-            // $table->timestamp('approved_at')->nullable();
-            // $table->timestamp('awarded_at')->nullable();
+            $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });
     }

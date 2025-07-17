@@ -21,7 +21,7 @@ class UacsCodeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class UacsCodeController extends Controller
 
         $uacsCodes = UacsCode::query()->with('classification');
 
-        if (!empty($search)) {
-            $uacsCodes = $uacsCodes->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $uacsCodes = $uacsCodes->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('account_title', 'ILIKE', "%{$search}%")
                     ->orWhere('code', 'ILIKE', "%{$search}%")
                     ->orWhere('description', 'ILIKE', "%{$search}%")
@@ -61,14 +61,16 @@ class UacsCodeController extends Controller
         if ($paginated) {
             return $uacsCodes->paginate($perPage);
         } else {
-            if (!$showInactive) $uacsCodes = $uacsCodes->where('active', true);
+            if (! $showInactive) {
+                $uacsCodes = $uacsCodes->where('active', true);
+            }
 
             $uacsCodes = $showAll
                 ? $uacsCodes->get()
                 : $uacsCodes = $uacsCodes->limit($perPage)->get();
 
             return response()->json([
-                'data' => $uacsCodes
+                'data' => $uacsCodes,
             ]);
         }
     }
@@ -83,7 +85,7 @@ class UacsCodeController extends Controller
             'account_title' => 'required|string',
             'code' => 'required|unique:uacs_codes,code',
             'description' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -92,29 +94,29 @@ class UacsCodeController extends Controller
             $uacsCode = UacsCode::create($validated);
 
             $this->logRepository->create([
-                'message' => "UACS code created successfully.",
+                'message' => 'UACS code created successfully.',
                 'log_id' => $uacsCode->id,
                 'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode
+                'data' => $uacsCode,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "UACS code creation failed. Please try again.",
+                'message' => 'UACS code creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-uacs-code',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code creation failed. Please try again.'
+                'message' => 'UACS code creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $uacsCode,
-                'message' => 'UACS code created successfully.'
-            ]
+                'message' => 'UACS code created successfully.',
+            ],
         ]);
     }
 
@@ -127,8 +129,8 @@ class UacsCodeController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $uacsCode
-            ]
+                'data' => $uacsCode,
+            ],
         ]);
     }
 
@@ -140,9 +142,9 @@ class UacsCodeController extends Controller
         $validated = $request->validate([
             'classification_id' => 'required',
             'account_title' => 'required|string',
-            'code' => 'required|unique:uacs_codes,code,' . $uacsCode->id,
+            'code' => 'required|unique:uacs_codes,code,'.$uacsCode->id,
             'description' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -151,30 +153,30 @@ class UacsCodeController extends Controller
             $uacsCode->update($validated);
 
             $this->logRepository->create([
-                'message' => "Section updated successfully.",
+                'message' => 'Section updated successfully.',
                 'log_id' => $uacsCode->id,
                 'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode
+                'data' => $uacsCode,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Section update failed.",
+                'message' => 'Section update failed.',
                 'details' => $th->getMessage(),
                 'log_id' => $uacsCode->id,
                 'log_module' => 'lib-uacs-code',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code update failed. Please try again.'
+                'message' => 'UACS code update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $uacsCode,
-                'message' => 'UACS code updated successfully.'
-            ]
+                'message' => 'UACS code updated successfully.',
+            ],
         ]);
     }
 }

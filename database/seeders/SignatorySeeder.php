@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use App\Models\Signatory;
 use App\Models\SignatoryDetail;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class SignatorySeeder extends Seeder
@@ -17,14 +16,14 @@ class SignatorySeeder extends Seeder
                 [
                     'document' => 'pr',
                     'signatory_type' => 'approved_by',
-                    'position' => 'Municipal Mayor'
+                    'position' => 'Municipal Mayor',
                 ],
                 [
                     'document' => 'rfq',
                     'signatory_type' => 'approval',
-                    'position' => 'Municipal Mayor'
-                ]
-            ]
+                    'position' => 'Municipal Mayor',
+                ],
+            ],
         ],
         [
             'employee_id' => '1114',
@@ -32,9 +31,9 @@ class SignatorySeeder extends Seeder
                 [
                     'document' => 'pr',
                     'signatory_type' => 'cash_availability',
-                    'position' => 'Municipal Treasurer'
-                ]
-            ]
+                    'position' => 'Municipal Treasurer',
+                ],
+            ],
         ],
         [
             'employee_id' => '1113',
@@ -42,9 +41,9 @@ class SignatorySeeder extends Seeder
                 [
                     'document' => 'rfq',
                     'signatory_type' => 'approval',
-                    'position' => 'BAC Chairman'
-                ]
-            ]
+                    'position' => 'BAC Chairman',
+                ],
+            ],
         ],
         [
             'employee_id' => '1115',
@@ -52,14 +51,14 @@ class SignatorySeeder extends Seeder
                 [
                     'document' => 'pr',
                     'signatory_type' => 'cash_availability',
-                    'position' => 'Municipal Treasurer'
+                    'position' => 'Municipal Treasurer',
                 ],
                 [
                     'document' => 'rfq',
                     'signatory_type' => 'approval',
-                    'position' => 'BAC Chairman'
-                ]
-            ]
+                    'position' => 'BAC Chairman',
+                ],
+            ],
         ],
         [
             'employee_id' => '1116',
@@ -67,10 +66,10 @@ class SignatorySeeder extends Seeder
                 [
                     'document' => 'pr',
                     'signatory_type' => 'cash_availability',
-                    'position' => 'Municipal Treasurer'
-                ]
-            ]
-        ]
+                    'position' => 'Municipal Treasurer',
+                ],
+            ],
+        ],
     ];
 
     /**
@@ -83,7 +82,7 @@ class SignatorySeeder extends Seeder
                 ->first();
 
             $sigData = Signatory::create([
-                'user_id' => $user->id
+                'user_id' => $user->id,
             ]);
 
             foreach ($signatory['details'] as $detail) {
@@ -91,7 +90,7 @@ class SignatorySeeder extends Seeder
                     'signatory_id' => $sigData->id,
                     'document' => $detail['document'],
                     'signatory_type' => $detail['signatory_type'],
-                    'position' => $detail['position']
+                    'position' => $detail['position'],
                 ]);
             }
         }

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
+use App\Enums\NotificationType;
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
 use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
+use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\RequestQuotation;
@@ -13,26 +15,30 @@ use App\Models\RequestQuotationCanvasser;
 use App\Models\RequestQuotationItem;
 use App\Models\User;
 use App\Repositories\LogRepository;
-use Carbon\Carbon;
+use App\Repositories\NotificationRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class RequestQuotationController extends Controller
 {
     private LogRepository $logRepository;
 
-    public function __construct(LogRepository $logRepository)
+    private NotificationRepository $notificationRepository;
+
+    public function __construct(LogRepository $logRepository, NotificationRepository $notificationRepository)
     {
         $this->logRepository = $logRepository;
+        $this->notificationRepository = $notificationRepository;
     }
 
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -49,21 +55,21 @@ class RequestQuotationController extends Controller
 
                 'rfqs' => function ($query) {
                     $query->select(
-                            'id',
-                            'purchase_request_id',
-                            'batch',
-                            'rfq_no',
-                            'rfq_date',
-                            'signed_type',
-                            'supplier_id',
-                            'status'
-                        )
+                        'id',
+                        'purchase_request_id',
+                        'batch',
+                        'rfq_no',
+                        'rfq_date',
+                        'signed_type',
+                        'supplier_id',
+                        'status'
+                    )
                         ->orderBy('batch')
                         ->orderByRaw("CAST(REPLACE(rfq_no, '-', '') AS VARCHAR) asc");
                 },
                 'rfqs.supplier:id,supplier_name',
                 'rfqs.canvassers',
-                'rfqs.canvassers.user:id,firstname,lastname'
+                'rfqs.canvassers.user:id,firstname,lastname',
             ])->whereIn('status', [
                 PurchaseRequestStatus::APPROVED,
                 PurchaseRequestStatus::FOR_CANVASSING,
@@ -71,7 +77,7 @@ class RequestQuotationController extends Controller
                 PurchaseRequestStatus::FOR_ABSTRACT,
                 PurchaseRequestStatus::PARTIALLY_AWARDED,
                 PurchaseRequestStatus::AWARDED,
-                PurchaseRequestStatus::COMPLETED
+                PurchaseRequestStatus::COMPLETED,
             ]);
 
         if ($user->tokenCan('super:*')
@@ -79,13 +85,14 @@ class RequestQuotationController extends Controller
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
             || $user->tokenCan('accounting:*')
-        ) {} else {
+        ) {
+        } else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
         }
 
-        if (!empty($search)) {
-            $purchaseRequests = $purchaseRequests->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $purchaseRequests = $purchaseRequests->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('pr_no', 'ILIKE', "%{$search}%")
                     ->orWhere('pr_date', 'ILIKE', "%{$search}%")
                     ->orWhere('sai_no', 'ILIKE', "%{$search}%")
@@ -94,8 +101,8 @@ class RequestQuotationController extends Controller
                     ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
                     ->orWhere('purpose', 'ILIKE', "%{$search}%")
                     ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('funding_source', 'title', 'ILIKE' , "%{$search}%")
-                    ->orWhereRelation('section', 'section_name', 'ILIKE' , "%{$search}%")
+                    ->orWhereRelation('funding_source', 'title', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('requestor', function ($query) use ($search) {
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
@@ -109,7 +116,7 @@ class RequestQuotationController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('rfqs', function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                             ->orWhere('rfq_no', 'ILIKE', "%{$search}%")
                             ->orWhere('rfq_date', 'ILIKE', "%{$search}%")
                             ->orWhere('status', 'ILIKE', "%{$search}%");
@@ -171,7 +178,7 @@ class RequestQuotationController extends Controller
                 : $purchaseRequests = $purchaseRequests->limit($perPage)->get();
 
             return response()->json([
-                'data' => $purchaseRequests
+                'data' => $purchaseRequests,
             ]);
         }
     }
@@ -181,8 +188,6 @@ class RequestQuotationController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $user = auth()->user();
-
         $validated = $request->validate([
             'rfq_no' => 'required',
             'purchase_request_id' => 'required',
@@ -194,20 +199,20 @@ class RequestQuotationController extends Controller
             'sig_approval_id' => 'required',
             'canvassers' => 'nullable|array',
             'items' => 'required|array|min:1',
-            'vat_registered' =>  'nullable|boolean',
+            'vat_registered' => 'nullable|boolean',
         ]);
 
         $copies = $validated['copies'] ?? 1;
-        $validated['vat_registered'] = !empty($validated['vat_registered'])
-            ? filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN)
-            : NULL;
+        $validated['vat_registered'] = isset($validated['vat_registered'])
+            ? $request->boolean('vat_registered')
+            : null;
 
         try {
             for ($copy = 1; $copy <= $copies; $copy++) {
                 $message = 'Request for quotation created successfully.';
                 $purchaseRequest = PurchaseRequest::find($validated['purchase_request_id']);
 
-                $existingSupplierCount = !empty($validated['supplier_id'])
+                $existingSupplierCount = ! empty($validated['supplier_id'])
                     ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
                         ->where('purchase_request_id', $validated['purchase_request_id'])
                         ->where('batch', $purchaseRequest->rfq_batch)
@@ -221,11 +226,11 @@ class RequestQuotationController extends Controller
                     $this->logRepository->create([
                         'message' => $message,
                         'log_module' => 'rfq',
-                        'data' => $validated
+                        'data' => $validated,
                     ], isError: true);
 
                     return response()->json([
-                        'message' => $message
+                        'message' => $message,
                     ], 422);
                 }
 
@@ -235,7 +240,9 @@ class RequestQuotationController extends Controller
                         // 'rfq_no' => $this->generateNewRfqNumber(),
                         'batch' => $purchaseRequest->rfq_batch,
                         'status' => RequestQuotationStatus::DRAFT,
-                        'status_timestamps' => json_encode((Object) [])
+                        'status_timestamps' => StatusTimestampsHelper::generate(
+                            'draft_at', null
+                        ),
                     ]
                 ));
 
@@ -244,14 +251,14 @@ class RequestQuotationController extends Controller
                         'request_quotation_id' => $requestQuotation->id,
                         'pr_item_id' => $item['pr_item_id'],
                         'supplier_id' => $validated['supplier_id'],
-                        'included' => $item['included']
+                        'included' => $item['included'],
                     ]);
                 }
 
                 foreach ($validated['canvassers'] ?? [] as $key => $userId) {
                     RequestQuotationCanvasser::create([
                         'request_quotation_id' => $requestQuotation->id,
-                        'user_id' => $userId
+                        'user_id' => $userId,
                     ]);
                 }
 
@@ -264,15 +271,15 @@ class RequestQuotationController extends Controller
                     'message' => $message,
                     'log_id' => $requestQuotation->id,
                     'log_module' => 'rfq',
-                    'data' => $requestQuotation
+                    'data' => $requestQuotation,
                 ]);
             }
 
             return response()->json([
                 'data' => [
                     'data' => $requestQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Request quotation creation failed.';
@@ -281,11 +288,11 @@ class RequestQuotationController extends Controller
                 'message' => $message,
                 'details' => $th->getMessage(),
                 'log_module' => 'rfq',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => "$message Please try again."
+                'message' => "$message Please try again.",
             ], 422);
         }
     }
@@ -306,7 +313,7 @@ class RequestQuotationController extends Controller
             'canvassers',
             'canvassers.user:id,firstname,lastname,position_id,allow_signature,signature',
             'canvassers.user.position:id,position_name',
-            'items' => function($query) {
+            'items' => function ($query) {
                 $query->orderBy(
                     PurchaseRequestItem::select('item_sequence')
                         ->whereColumn(
@@ -318,13 +325,13 @@ class RequestQuotationController extends Controller
             'items.pr_item:id,item_sequence,quantity,description,stock_no,awarded_to_id',
             'purchase_request:id,pr_no,purpose,funding_source_id',
             'purchase_request.funding_source:id,title,location_id',
-            'purchase_request.funding_source.location:id,location_name'
+            'purchase_request.funding_source.location:id,location_name',
         ]);
 
         return response()->json([
             'data' => [
-                'data' => $requestQuotation
-            ]
+                'data' => $requestQuotation,
+            ],
         ]);
     }
 
@@ -333,8 +340,6 @@ class RequestQuotationController extends Controller
      */
     public function update(Request $request, RequestQuotation $requestQuotation): JsonResponse
     {
-        $user = auth()->user();
-
         $validated = $request->validate([
             'rfq_no' => 'required',
             'signed_type' => 'required|string',
@@ -344,19 +349,19 @@ class RequestQuotationController extends Controller
             'sig_approval_id' => 'required',
             'canvassers' => 'nullable|array',
             'items' => 'required|array|min:1',
-            'vat_registered' =>  'nullable|boolean',
+            'vat_registered' => 'nullable|boolean',
         ]);
 
-        $validated['vat_registered'] = !empty($validated['vat_registered'])
-            ? filter_var($validated['vat_registered'], FILTER_VALIDATE_BOOLEAN)
-            : NULL;
+        $validated['vat_registered'] = isset($validated['vat_registered'])
+            ? $request->boolean('vat_registered')
+            : null;
 
         try {
             $message = 'Request for quotation updated successfully.';
             $currentStatus = RequestQuotationStatus::from($requestQuotation->status);
             $purchaseRequest = PurchaseRequest::find($requestQuotation->purchase_request_id);
 
-            $existingSupplierCount = !empty($validated['supplier_id'])
+            $existingSupplierCount = ! empty($validated['supplier_id'])
                 ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
                     ->where('purchase_request_id', $requestQuotation->purchase_request_id)
                     ->where('batch', $purchaseRequest->rfq_batch)
@@ -365,7 +370,7 @@ class RequestQuotationController extends Controller
                 : 0;
 
             if ($existingSupplierCount > 0
-                && (!empty($validated['supplier_id']) && $requestQuotation->supplier_id !== $validated['supplier_id'] )
+                && (! empty($validated['supplier_id']) && $requestQuotation->supplier_id !== $validated['supplier_id'])
                 && $currentStatus !== RequestQuotationStatus::COMPLETED) {
                 $message = 'Request quotation update failed due to an existing RFQ with the supplier.';
 
@@ -373,11 +378,11 @@ class RequestQuotationController extends Controller
                     'message' => $message,
                     'log_id' => $requestQuotation->id,
                     'log_module' => 'rfq',
-                    'data' => $validated
+                    'data' => $validated,
                 ], isError: true);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -388,11 +393,11 @@ class RequestQuotationController extends Controller
                     'message' => $message,
                     'log_id' => $requestQuotation->id,
                     'log_module' => 'rfq',
-                    'data' => $validated
+                    'data' => $validated,
                 ], isError: true);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -406,9 +411,9 @@ class RequestQuotationController extends Controller
             foreach ($validated['items'] ?? [] as $key => $item) {
                 $quantity = intval($item['quantity']);
                 $unitCost =
-                    isset($item['unit_cost']) && !empty($item['unit_cost'])
+                    isset($item['unit_cost']) && ! empty($item['unit_cost'])
                         ? floatval($item['unit_cost'])
-                        : NULL;
+                        : null;
                 $cost = round($quantity * ($unitCost ?? 0), 2);
 
                 RequestQuotationItem::create([
@@ -418,7 +423,7 @@ class RequestQuotationController extends Controller
                     'brand_model' => $item['brand_model'],
                     'unit_cost' => $unitCost,
                     'total_cost' => $cost,
-                    'included' => $item['included']
+                    'included' => $item['included'],
                 ]);
 
                 $grandTotalCost += $cost;
@@ -427,7 +432,7 @@ class RequestQuotationController extends Controller
             foreach ($validated['canvassers'] ?? [] as $key => $userId) {
                 RequestQuotationCanvasser::create([
                     'request_quotation_id' => $requestQuotation->id,
-                    'user_id' => $userId
+                    'user_id' => $userId,
                 ]);
             }
 
@@ -437,27 +442,24 @@ class RequestQuotationController extends Controller
                     'supplier_id' => $currentStatus === RequestQuotationStatus::COMPLETED
                         ? $requestQuotation->supplier_id
                         : $validated['supplier_id'],
-                    'grand_total_cost' => $grandTotalCost
+                    'grand_total_cost' => $grandTotalCost,
                 ]
             ));
 
-            $requestQuotation->items = $validated['items'] ?? [];
-            $requestQuotation->canvassers = User::select('id', 'firstname', 'middlename', 'lastname')
-                ->whereIn('id', $validated['canvassers'] ?? [])
-                ->get();
+            $requestQuotation->load(['items', 'canvassers']);
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $requestQuotation
+                'data' => $requestQuotation,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $requestQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Request quotation update failed.';
@@ -467,11 +469,11 @@ class RequestQuotationController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => "$message Please try again."
+                'message' => "$message Please try again.",
             ], 422);
         }
     }
@@ -488,7 +490,7 @@ class RequestQuotationController extends Controller
                 'status' => RequestQuotationStatus::CANVASSING,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'canvassing_at', $requestQuotation->status_timestamps
-                )
+                ),
             ]);
 
             $purchaseRequest = PurchaseRequest::find($requestQuotation->purchase_request_id);
@@ -511,31 +513,35 @@ class RequestQuotationController extends Controller
                     'status' => $newStatus,
                     'status_timestamps' => StatusTimestampsHelper::generate(
                         'canvassing_at', $purchaseRequest->status_timestamps
-                    )
+                    ),
+                ]);
+
+                $this->notificationRepository->notify(NotificationType::PR_CAMVASSING, [
+                    'pr' => $purchaseRequest, 'rfq' => $requestQuotation
                 ]);
 
                 $this->logRepository->create([
                     'message' => $prMessage,
                     'log_id' => $purchaseRequest->id,
                     'log_module' => 'pr',
-                    'data' => $purchaseRequest
+                    'data' => $purchaseRequest,
                 ]);
             }
 
-            $requestQuotation->purchase_request = $purchaseRequest;
+            $requestQuotation->load('purchase_request');
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $requestQuotation
+                'data' => $requestQuotation,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $requestQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Request for quotation issue for canvassing failed.';
@@ -545,11 +551,11 @@ class RequestQuotationController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $requestQuotation
+                'data' => $requestQuotation,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }
@@ -562,18 +568,18 @@ class RequestQuotationController extends Controller
         try {
             $message = 'Request for quotation successfully marked as "Completed".';
 
-            if (!$requestQuotation->supplier_id) {
+            if (! $requestQuotation->supplier_id) {
                 $message = 'Request for quotation could not be marked as completed. Supplier not set.';
 
                 $this->logRepository->create([
                     'message' => $message,
                     'log_id' => $requestQuotation->id,
                     'log_module' => 'rfq',
-                    'data' => $requestQuotation
+                    'data' => $requestQuotation,
                 ], isError: true);
 
                 return response()->json([
-                    'message' => "{$message} Please try again."
+                    'message' => "{$message} Please try again.",
                 ], 422);
             }
 
@@ -581,21 +587,21 @@ class RequestQuotationController extends Controller
                 'status' => RequestQuotationStatus::COMPLETED,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'completed_at', $requestQuotation->status_timestamps
-                )
+                ),
             ]);
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $requestQuotation
+                'data' => $requestQuotation,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $requestQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Request for quotation failed to marked as completed.';
@@ -605,11 +611,11 @@ class RequestQuotationController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $requestQuotation
+                'data' => $requestQuotation,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }
@@ -626,21 +632,21 @@ class RequestQuotationController extends Controller
                 'status' => RequestQuotationStatus::CANCELLED,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'cancelled_at', $requestQuotation->status_timestamps
-                )
+                ),
             ]);
 
             $this->logRepository->create([
                 'message' => $message,
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $requestQuotation
+                'data' => $requestQuotation,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $requestQuotation,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Request for quotation cancellation failed.';
@@ -650,11 +656,11 @@ class RequestQuotationController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $requestQuotation->id,
                 'log_module' => 'rfq',
-                'data' => $requestQuotation
+                'data' => $requestQuotation,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }

@@ -16,6 +16,6 @@ class ProcurementMode extends Model
      */
     protected $fillable = [
         'mode_name',
-        'active'
+        'active',
     ];
 }

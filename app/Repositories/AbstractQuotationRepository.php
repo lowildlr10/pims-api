@@ -4,23 +4,35 @@ namespace App\Repositories;
 
 use App\Enums\AbstractQuotationStatus;
 use App\Helpers\FileHelper;
+use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\AbstractQuotationRepositoryInterface;
 use App\Jobs\StoreAbstractItems;
 use App\Models\AbstractQuotation;
-use App\Models\AbstractQuotationDetail;
 use App\Models\AbstractQuotationItem;
 use App\Models\Company;
-use App\Models\Log;
 use App\Models\PurchaseRequestItem;
-use App\Models\RequestQuotation;
-use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
 class AbstractQuotationRepository implements AbstractQuotationRepositoryInterface
 {
-    public function __construct() {
+    protected string $appUrl;
+
+    protected string $fontArial;
+
+    protected string $fontArialBold;
+
+    protected string $fontArialItalic;
+
+    protected string $fontArialBoldItalic;
+
+    protected string $fontArialNarrow;
+
+    protected string $fontArialNarrowBold;
+
+    public function __construct()
+    {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
@@ -30,9 +42,9 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function storeUpdate(array $data, ?AbstractQuotation $abstractQuotation = NULL): AbstractQuotation
+    public function storeUpdate(array $data, ?AbstractQuotation $abstractQuotation = null): AbstractQuotation
     {
-        if (!empty($abstractQuotation)) {
+        if (! empty($abstractQuotation)) {
             $abstractQuotation->update($data);
         } else {
             $abstractQuotation = AbstractQuotation::create(
@@ -41,14 +53,16 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                     [
                         'abstract_no' => $this->generateNewAoqNumber(),
                         'status' => AbstractQuotationStatus::DRAFT,
-                        'status_timestamps' => json_encode((Object) [])
+                        'status_timestamps' => StatusTimestampsHelper::generate(
+                            'draft_at', null
+                        ),
                     ]
                 )
             );
         }
 
         $this->storeItems(
-            collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+            collect(isset($data['items']) && ! empty($data['items']) ? $data['items'] : []),
             $abstractQuotation
         );
 
@@ -133,7 +147,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                     $query->where('document', 'aoq')
                         ->where('signatory_type', 'member_3');
                 },
-                'items' => function($query) {
+                'items' => function ($query) {
                     $query->orderBy(
                         PurchaseRequestItem::select('item_sequence')
                             ->whereColumn(
@@ -147,7 +161,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                 'items.pr_item.unit_issue:id,unit_name',
                 'items.details',
                 'items.details.supplier:id,supplier_name',
-                'purchase_request:id,purpose'
+                'purchase_request:id,purpose',
             ])->find($aoqId);
 
             $filename = "AOQ-{$aoq->abstract_no}.pdf";
@@ -156,22 +170,21 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             return [
                 'success' => true,
                 'blob' => $blob,
-                'filename' => $filename
+                'filename' => $filename,
             ];
         } catch (\Throwable $th) {
             return [
                 'success' => false,
                 'message' => $th->getMessage(),
                 'blob' => '',
-                'filename' => ''
+                'filename' => '',
             ];
         }
     }
 
     private function generateAbstractQuotationDoc(
         string $filename, array $pageConfig, AbstractQuotation $data, Company $company
-    ): string
-    {
+    ): string {
         $purchaseRequest = $data->purchase_request;
         $bidsAwardsCommittee = $data->bids_awards_committee;
         $modeProcurement = $data->mode_procurement;
@@ -184,10 +197,10 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         $signatoryMember2 = $data->signatory_member_2?->user;
         $signatoryMember3 = $data->signatory_member_3?->user;
 
-        $items = $data->items;
+        $items = $data->items ?? [];
         $details = $data->items[0]->details ?? [];
-        $supplierHeaders = collect($details ?? [])->map(function($detail) use ($items) {
-            $relevantDetails = collect($items ?? [])->flatMap(function($item) {
+        $supplierHeaders = collect($details ?? [])->map(function ($detail) use ($items) {
+            $relevantDetails = collect($items ?? [])->flatMap(function ($item) {
                 return $item->details ?? [];
             });
 
@@ -195,17 +208,17 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                 'supplier_id' => $detail->supplier_id,
                 'supplier_name' => $detail->supplier->supplier_name,
                 'unit_cost' => $relevantDetails
-                    ->filter(function($itemDetail) use ($detail) {
+                    ->filter(function ($itemDetail) use ($detail) {
                         return $itemDetail->supplier_id === $detail->supplier_id;
                     })
-                    ->reduce(function($carry, $itemDetail) {
+                    ->reduce(function ($carry, $itemDetail) {
                         return $carry + ($itemDetail->unit_cost ?? 0);
                     }, 0),
                 'total_cost' => $relevantDetails
-                    ->filter(function($itemDetail) use ($detail) {
+                    ->filter(function ($itemDetail) use ($detail) {
                         return $itemDetail->supplier_id === $detail->supplier_id;
                     })
-                    ->reduce(function($carry, $itemDetail) {
+                    ->reduce(function ($carry, $itemDetail) {
                         return $carry + ($itemDetail->total_cost ?? 0);
                     }, 0),
             ];
@@ -250,10 +263,11 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell(0, 0, "Republic of the Philippines", 0, 1, 'C');
+        $pdf->Cell(0, 0, 'Republic of the Philippines', 0, 1, 'C');
         $pdf->Cell(0, 0, "BIDS AND AWARDS COMMITTEE ({$bidsAwardsCommittee?->committee_name})", 0, 1, 'C');
         $pdf->Cell(0, 0, "ABSTRACT OF BIDS OR QUOTATION ({$modeProcurement?->mode_name})", 0, 1, 'C');
 
@@ -293,7 +307,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                 >UNIT</th>
                 <th
                     rowspan="2"
-                    width="'. ($supplierHeadersCount > 3 ? '18.5' : '23.5'). '%"
+                    width="'.($supplierHeadersCount > 3 ? '18.5' : '23.5').'%"
                     align="center"
                 >DESCRIPTION/SPECIFICATION OF ARTICLES</th>';
 
@@ -301,7 +315,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             $htmlTable .= '
                 <th
                     colspan="3"
-                    width="'. ($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount .'%"
+                    width="'.($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount.'%"
                     align="center"
                 '.">{$supplierHeader->supplier_name}</th>";
         }
@@ -311,15 +325,15 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
         foreach ($supplierHeaders as $supplierHeader) {
             $htmlTable .= '
                 <th
-                    width="'. (0.24 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                    width="'.(0.24 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                     align="center"
                 >Brand</th>
                 <th
-                    width="'. (0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                    width="'.(0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                     align="center"
                 >Unit Price</th>
                 <th
-                    width="'. (0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                    width="'.(0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                     align="center"
                 >Total Price</th>
             ';
@@ -335,8 +349,10 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
 
         $htmlTable = '<table border="1" cellpadding="2"><tbody>';
 
-        foreach ($data->items as $item) {
-            if (!$item->included || empty($item->awardee_id)) continue;
+        foreach ($items ?? [] as $item) {
+            if (! $item->included) {
+                continue;
+            }
 
             $prItem = $item->pr_item;
             $description = trim(str_replace("\r", '<br />', $prItem->description));
@@ -348,19 +364,19 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                     <td
                         width="3.5%"
                         align="center"
-                    >'. $prItem->stock_no .'</td>
+                    >'.$prItem->stock_no.'</td>
                     <td
                         width="3%"
                         align="center"
-                    >'. $prItem->quantity .'</td>
+                    >'.$prItem->quantity.'</td>
                     <td
                         width="4%"
                         align="center"
-                    >'. $prItem->unit_issue->unit_name .'</td>
+                    >'.$prItem->unit_issue->unit_name.'</td>
                     <td
-                        width="'. ($supplierHeadersCount > 3 ? '18.5' : '23.5'). '%"
+                        width="'.($supplierHeadersCount > 3 ? '18.5' : '23.5').'%"
                         align="left"
-                    >'. $description .'</td>';
+                    >'.$description.'</td>';
 
             foreach ($supplierHeaders as $supplierHeader) {
                 $detail = collect($details ?? [])->first(function ($detail) use ($supplierHeader) {
@@ -372,17 +388,17 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
 
                 $htmlTable .= '
                     <td
-                        width="'. (0.24 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                        width="'.(0.24 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                         align="left"
-                    >'. $brandModel .'</td>
+                    >'.$brandModel.'</td>
                     <td
-                        width="'. (0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                        width="'.(0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                         align="right"
-                    >'. number_format($detail->unit_cost, 2) .'</td>
+                    >'.number_format($detail->unit_cost, 2).'</td>
                     <td
-                        width="'. (0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                        width="'.(0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                         align="right"
-                    >'. number_format($detail->total_cost, 2) .'</td>
+                    >'.number_format($detail->total_cost, 2).'</td>
                 ';
             }
 
@@ -404,22 +420,22 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                     align="center"
                 ><strong>PURPOSE:</strong></td>
                 <td
-                    width="'. ($supplierHeadersCount > 3 ? '18.5' : '23.5'). '%"
+                    width="'.($supplierHeadersCount > 3 ? '18.5' : '23.5').'%"
                     align="left"
-                >'. $purpose .'</td>';
+                >'.$purpose.'</td>';
 
         foreach ($supplierHeaders as $supplierHeader) {
             $htmlTable .= '
                 <td
-                    width="'. (0.24 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                    width="'.(0.24 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                     align="left"
                 ></td>
                 <td
-                    width="'. (0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                    width="'.(0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                     align="right"
                 ></td>
                 <td
-                    width="'. (0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)) .'%"
+                    width="'.(0.38 * (($supplierHeadersCount > 3 ? 71 : 66) / $supplierHeadersCount)).'%"
                     align="right"
                 ></td>
             ';
@@ -448,8 +464,9 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             if ($index === 0) {
                 $pdf->Cell(
                     $pageWidth * (0.38 * (($supplierHeadersCount > 3 ? 0.71 : 0.66) / $supplierHeadersCount)),
-                    0, 'P' . number_format($supplierHeader->total_cost, 2), 1, 0, 'L'
+                    0, 'P'.number_format($supplierHeader->total_cost, 2), 1, 0, 'L'
                 );
+
                 continue;
             }
 
@@ -465,12 +482,11 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                 $index === $supplierHeadersCount - 1
                     ? 0
                     : $pageWidth * (0.38 * (($supplierHeadersCount > 3 ? 0.71 : 0.66) / $supplierHeadersCount)),
-                0, 'P' . number_format($supplierHeader->total_cost, 2), 1,
+                0, 'P'.number_format($supplierHeader->total_cost, 2), 1,
                 $index === $supplierHeadersCount - 1 ? 1 : 0,
                 'L'
             );
         }
-
 
         $pdf->Cell(
             $pageWidth * (
@@ -480,7 +496,7 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             ),
             border: 0
         );
-        $pdf->MultiCell(0, 0, "BAC Action: {$bacAction}", 1, 'L', ln: 1);
+        $pdf->MultiCell(0, 0, "BAC Action: {$bacAction}", 1, 'L', ln: 1, ishtml: true);
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell(

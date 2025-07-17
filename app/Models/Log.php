@@ -11,6 +11,7 @@ class Log extends Model
     use HasUuids;
 
     const CREATED_AT = 'logged_at';
+
     const UPDATED_AT = null;
 
     /**
@@ -25,7 +26,7 @@ class Log extends Model
         'log_type',
         'message',
         'details',
-        'data'
+        'data',
     ];
 
     /**
@@ -36,7 +37,7 @@ class Log extends Model
     protected function casts(): array
     {
         return [
-            'data' => 'array'
+            'data' => 'array',
         ];
     }
 

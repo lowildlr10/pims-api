@@ -25,7 +25,7 @@ class RequestQuotationCanvasser extends Model
      */
     protected $fillable = [
         'request_quotation_id',
-        'user_id'
+        'user_id',
     ];
 
     /**

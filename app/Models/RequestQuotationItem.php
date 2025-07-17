@@ -31,25 +31,25 @@ class RequestQuotationItem extends Model
         'brand_model',
         'unit_cost',
         'total_cost',
-        'included'
+        'included',
     ];
 
     protected $appends = [
         'unit_cost_formatted',
-        'total_cost_formatted'
+        'total_cost_formatted',
     ];
 
     protected function unitCostFormatted(): Attribute
     {
         return new Attribute(
-            get: fn () => '₱' . number_format($this->unit_cost, 2)
+            get: fn () => '₱'.number_format($this->unit_cost, 2)
         );
     }
 
     protected function totalCostFormatted(): Attribute
     {
         return new Attribute(
-            get: fn () => '₱' . number_format($this->total_cost, 2)
+            get: fn () => '₱'.number_format($this->total_cost, 2)
         );
     }
 

@@ -13,18 +13,6 @@ class InventoryIssuance extends Model
     use HasUuids;
 
     /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'status_timestamps' => 'object',
-        ];
-    }
-
-    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -46,7 +34,7 @@ class InventoryIssuance extends Model
         'received_by_id',
         'received_date',
         'status',
-        'status_timestamps'
+        'status_timestamps',
     ];
 
     /**

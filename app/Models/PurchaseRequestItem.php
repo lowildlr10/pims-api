@@ -33,25 +33,25 @@ class PurchaseRequestItem extends Model
         'stock_no',
         'estimated_unit_cost',
         'estimated_cost',
-        'awarded_to_id'
+        'awarded_to_id',
     ];
 
     protected $appends = [
         'estimated_unit_cost_formatted',
-        'estimated_cost_formatted'
+        'estimated_cost_formatted',
     ];
 
     protected function estimatedUnitCostFormatted(): Attribute
     {
         return new Attribute(
-            get: fn () => '₱' . number_format($this->estimated_unit_cost, 2)
+            get: fn () => '₱'.number_format($this->estimated_unit_cost, 2)
         );
     }
 
     protected function estimatedCostFormatted(): Attribute
     {
         return new Attribute(
-            get: fn () => '₱' . number_format($this->estimated_cost, 2)
+            get: fn () => '₱'.number_format($this->estimated_cost, 2)
         );
     }
 

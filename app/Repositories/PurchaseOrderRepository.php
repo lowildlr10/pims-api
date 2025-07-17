@@ -4,24 +4,38 @@ namespace App\Repositories;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Helpers\FileHelper;
+use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\PurchaseOrderRepositoryInterface;
 use App\Jobs\StorePoItems;
 use App\Models\Company;
 use App\Models\DeliveryTerm;
 use App\Models\Location;
-use App\Models\Log;
 use App\Models\PaymentTerm;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequestItem;
-use Exception;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
 class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
 {
-    public function __construct() {
+    protected string $appUrl;
+
+    protected string $fontArial;
+
+    protected string $fontArialBold;
+
+    protected string $fontArialItalic;
+
+    protected string $fontArialBoldItalic;
+
+    protected string $fontArialNarrow;
+
+    protected string $fontArialNarrowBold;
+
+    public function __construct()
+    {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
@@ -31,28 +45,28 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function storeUpdate(array $data, ?PurchaseOrder $purchaseOrder = NULL): PurchaseOrder
+    public function storeUpdate(array $data, ?PurchaseOrder $purchaseOrder = null): PurchaseOrder
     {
-        if (!empty($purchaseOrder)) {
+        if (! empty($purchaseOrder)) {
             $placeDelivery = Location::where('location_name', $data['place_delivery'])->first();
             $deliveryTerm = DeliveryTerm::where('term_name', $data['delivery_term'])->first();
             $paymentTerm = PaymentTerm::where('term_name', $data['payment_term'])->first();
 
-            if (!$placeDelivery) {
+            if (! $placeDelivery) {
                 $placeDelivery = Location::create([
-                    'location_name' => $data['place_delivery']
+                    'location_name' => $data['place_delivery'],
                 ]);
             }
 
-            if (!$deliveryTerm) {
+            if (! $deliveryTerm) {
                 $deliveryTerm = DeliveryTerm::create([
-                    'term_name' => $data['delivery_term']
+                    'term_name' => $data['delivery_term'],
                 ]);
             }
 
-            if (!$paymentTerm) {
+            if (! $paymentTerm) {
                 $paymentTerm = PaymentTerm::create([
-                    'term_name' => $data['payment_term']
+                    'term_name' => $data['payment_term'],
                 ]);
             }
 
@@ -61,12 +75,12 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 [
                     'place_delivery_id' => $placeDelivery->id,
                     'delivery_term_id' => $deliveryTerm->id,
-                    'payment_term_id' => $paymentTerm->id
+                    'payment_term_id' => $paymentTerm->id,
                 ]
             ));
 
             $this->storeUpdateItems(
-                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                collect(isset($data['items']) && ! empty($data['items']) ? $data['items'] : []),
                 $purchaseOrder,
                 false
             );
@@ -79,13 +93,15 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                             $data['document_type']
                         ),
                         'status' => PurchaseOrderStatus::DRAFT,
-                        'status_timestamps' => json_encode((Object) [])
+                        'status_timestamps' => StatusTimestampsHelper::generate(
+                            'draft_at', null
+                        ),
                     ]
                 )
             );
 
             $this->storeUpdateItems(
-                collect(isset($data['items']) && !empty($data['items']) ? $data['items'] : []),
+                collect(isset($data['items']) && ! empty($data['items']) ? $data['items'] : []),
                 $purchaseOrder
             );
         }
@@ -111,7 +127,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     ->first();
 
                 $poItem->update([
-                    'description' => $item['description']
+                    'description' => $item['description'],
                 ]);
             }
         }
@@ -139,7 +155,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 'place_delivery:id,location_name',
                 'delivery_term:id,term_name',
                 'payment_term:id,term_name',
-                'items' => function($query) {
+                'items' => function ($query) {
                     $query->orderBy(
                         PurchaseRequestItem::select('item_sequence')
                             ->whereColumn(
@@ -156,7 +172,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     $query->where('document', 'po')
                         ->where('signatory_type', '	authorized_official');
                 },
-                'purchase_request:id,purpose'
+                'purchase_request:id,purpose',
             ])->find($poId);
 
             if ($po->document_type === 'po') {
@@ -170,22 +186,21 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
             return [
                 'success' => true,
                 'blob' => $blob,
-                'filename' => $filename
+                'filename' => $filename,
             ];
         } catch (\Throwable $th) {
             return [
                 'success' => false,
                 'message' => $th->getMessage(),
                 'blob' => '',
-                'filename' => ''
+                'filename' => '',
             ];
         }
     }
 
     private function generatePurchaseOrderDoc(
         string $filename, array $pageConfig, PurchaseOrder $data, Company $company
-    ): string
-    {
+    ): string {
         $purchaseRequest = $data->purchase_request;
         $supplier = $data->supplier;
         $modeProcurement = $data->mode_procurement;
@@ -227,19 +242,20 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     $x + ($x * 0.15),
                     $y + ($y * 0.09),
                     w: $pageConfig['orientation'] === 'P'
-                        ? $x - ($x * 0.04)
+                        ? $x + ($x * 0.6)
                         : $y + ($y * 0.4),
                     type: 'PNG',
                     resize: true,
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell(0, 0, "Province of {$company->province}", 0, 1, 'C');
         $pdf->SetFont($this->fontArialBold, 'BU', 10);
-        $pdf->Cell(0, 0, 'MUNICIPAL GOVERNMENT OF ' . strtoupper($company->municipality), 0, 1, 'C');
+        $pdf->Cell(0, 0, 'MUNICIPAL GOVERNMENT OF '.strtoupper($company->municipality), 0, 1, 'C');
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->setCellHeightRatio(1.6);
         $pdf->Cell(0, 0, "{$company->municipality}, {$company->province}", 0, 1, 'C');
@@ -388,11 +404,11 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.183, 0, 'Place of Delivery:', 'LT', 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.397, 0, !empty($placeDelivery) ? $placeDelivery->location_name : '', 'TB', 0, 'L');
+        $pdf->Cell($pageWidth * 0.397, 0, ! empty($placeDelivery) ? $placeDelivery->location_name : '', 'TB', 0, 'L');
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.185, 0, 'Delivery Term:', 'T', 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell(0, 0, !empty($deliveryTerm) ? $deliveryTerm->term_name : '', 'TRB', 1, 'L');
+        $pdf->Cell(0, 0, ! empty($deliveryTerm) ? $deliveryTerm->term_name : '', 'TRB', 1, 'L');
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.183, 0, 'Date of Delivery:', 'L', 0, 'L');
@@ -405,7 +421,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.185, 0, 'Payment Term:', 0, 0, 'L');
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell(0, 0, !empty($paymentTerm) ? $paymentTerm->term_name : '', 'RB', 1, 'L');
+        $pdf->Cell(0, 0, ! empty($paymentTerm) ? $paymentTerm->term_name : '', 'RB', 1, 'L');
 
         $pdf->SetFont($this->fontArial, 'I', 5);
         $pdf->Cell(0, 0, '', 'LR', 1);
@@ -455,33 +471,33 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     <td
                         width="8.89%"
                         align="center"
-                    >'. $prItem->stock_no .'</td>
+                    >'.$prItem->stock_no.'</td>
                     <td
                         width="9.43%"
                         align="center"
-                    >'. $prItem->unit_issue->unit_name .'</td>
+                    >'.$prItem->unit_issue->unit_name.'</td>
                     <td
                         width="45.53%"
                         align="left"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         width="9.88%"
                         align="center"
-                    >'. $prItem->quantity .'</td>
+                    >'.$prItem->quantity.'</td>
                     <td
                         width="11.15%"
                         align="right"
-                    >'. number_format($item->unit_cost, 2) .'</td>
+                    >'.number_format($item->unit_cost, 2).'</td>
                     <td
                         width="15.12%"
                         align="right"
-                    >'. number_format($item->total_cost, 2) .'</td>
+                    >'.number_format($item->total_cost, 2).'</td>
                 </tr>
             ';
         }
 
         if (count($items) < 10) {
-            for ($counter = 0; $counter <= (10 - count($items)) ; $counter++) {
+            for ($counter = 0; $counter <= (10 - count($items)); $counter++) {
                 $htmlTable .= '
                     <tr>
                         <td
@@ -530,7 +546,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 <td
                     width="75.99%"
                     align="center"
-                >'. $purpose .'</td>
+                >'.$purpose.'</td>
                 <td
                     width="15.12%"
                     align="center"
@@ -552,12 +568,12 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     width="66.56%"
                     align="center"
                     style="font-weight: bold; font-size: 12px;"
-                >'. strtoupper($data->total_amount_words) .'</td>
+                >'.strtoupper($data->total_amount_words).'</td>
                 <td
                     width="15.12%"
                     align="right"
                     style="font-weight: bold; font-size: 14px;"
-                >'. number_format($data->total_amount, 2) .'</td>
+                >'.number_format($data->total_amount, 2).'</td>
             </tr></tbody></table>
         ';
 
@@ -568,7 +584,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArial, 'I', 10);
         $pdf->Cell(
             0, 0,
-            'In case of failure to make the full delivery within the ' .
+            'In case of failure to make the full delivery within the '.
             'time specified above , a penalty of one tenth(1/10) of one',
             'LR', 1, 'C'
         );
@@ -590,7 +606,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $pdf->SetFont($this->fontArialBold, 'B', 12);
         $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
         $pdf->Cell($pageWidth * 0.464, 0, '', 'B', 0, 'C');
-        $pdf->Cell(0, 0, strtoupper(!empty($signatoryApproval) ? $signatoryApproval->fullname : ''), 'R', 1, 'C');
+        $pdf->Cell(0, 0, strtoupper(! empty($signatoryApproval) ? $signatoryApproval->fullname : ''), 'R', 1, 'C');
 
         $pdf->SetFont($this->fontArial, '', 11);
         $pdf->Cell($pageWidth * 0.089, 0, '', 'L', 0, 'C');
@@ -616,11 +632,9 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         return $pdfBase64;
     }
 
-
     private function generateJobOrderDoc(
         string $filename, array $pageConfig, PurchaseOrder $data, Company $company
-    ): string
-    {
+    ): string {
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
         $pdf->SetCreator(PDF_CREATOR);
@@ -660,7 +674,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->setCellHeightRatio(0.5);
         $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002]);
@@ -754,27 +769,27 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     <td
                         width="11%"
                         align="center"
-                    >'. $item->quantity .'</td>
+                    >'.$item->quantity.'</td>
                     <td
                         width="8%"
                         align="center"
-                    >'. $item->unit_issue->unit_name .'</td>
+                    >'.$item->unit_issue->unit_name.'</td>
                     <td
                         width="47%"
                         align="left"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         width="8%"
                         align="center"
-                    >'. $item->stock_no .'</td>
+                    >'.$item->stock_no.'</td>
                     <td
                         width="13%"
                         align="right"
-                    >'. number_format($item->estimated_unit_cost, 2) .'</td>
+                    >'.number_format($item->estimated_unit_cost, 2).'</td>
                     <td
                         width="13%"
                         align="right"
-                    >'. number_format($item->estimated_cost, 2) .'</td>
+                    >'.number_format($item->estimated_cost, 2).'</td>
                 </tr>
             ';
         }
@@ -790,8 +805,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
 
         $purpose = trim(str_replace("\r", '<br />', $data->purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
-        $purpose = $purpose . (
-            isset($data->funding_source->title) && !empty($data->funding_source->title)
+        $purpose = $purpose.(
+            isset($data->funding_source->title) && ! empty($data->funding_source->title)
                 ? " (Charged to {$data->funding_source->title})" : ''
         );
         $html = '
@@ -799,7 +814,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                 <table cellpadding="2">
                     <tr>
                         <td style="color: red; font-size: 9px; font-style: italic;" width="9%">Purpose:</td>
-                        <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'. $purpose .'</td>
+                        <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'.$purpose.'</td>
                     </tr>
                 </table>
             </div>
@@ -826,7 +841,7 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
         $y = $pdf->GetY();
         $xIncrement = $x * 0.25;
         $yIncrement = $x * 0.12;
-        $signatureWidth =  $pageConfig['orientation'] === 'P'
+        $signatureWidth = $pageConfig['orientation'] === 'P'
             ? $x - ($x * 0.63)
             : $x - ($x * 0.69);
 
@@ -849,7 +864,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     dpi: 500
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -873,7 +889,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -897,7 +914,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell($pageWidth * 0.19, 0, 'Printed Name:', 'LT', 0);

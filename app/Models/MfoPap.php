@@ -17,6 +17,6 @@ class MfoPap extends Model
     protected $fillable = [
         'code',
         'description',
-        'active'
+        'active',
     ];
 }

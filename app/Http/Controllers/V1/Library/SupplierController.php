@@ -21,7 +21,7 @@ class SupplierController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class SupplierController extends Controller
 
         $suppliers = Supplier::query();
 
-        if (!empty($search)) {
-            $suppliers = $suppliers->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $suppliers = $suppliers->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('supplier_name', 'ILIKE', "%{$search}%")
                     ->orWhere('address', 'ILIKE', "%{$search}%")
                     ->orWhere('tin_no', 'ILIKE', "%{$search}%")
@@ -61,14 +61,16 @@ class SupplierController extends Controller
         if ($paginated) {
             return $suppliers->paginate($perPage);
         } else {
-            if (!$showInactive) $suppliers = $suppliers->where('active', true);
+            if (! $showInactive) {
+                $suppliers = $suppliers->where('active', true);
+            }
 
             $suppliers = $showAll
                 ? $suppliers->get()
                 : $suppliers = $suppliers->limit($perPage)->get();
 
             return response()->json([
-                'data' => $suppliers
+                'data' => $suppliers,
             ]);
         }
     }
@@ -86,7 +88,7 @@ class SupplierController extends Controller
             'telephone' => 'nullable',
             'vat_no' => 'nullable',
             'contact_person' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -95,29 +97,29 @@ class SupplierController extends Controller
             $supplier = Supplier::create($validated);
 
             $this->logRepository->create([
-                'message' => "Supplier created successfully.",
+                'message' => 'Supplier created successfully.',
                 'log_id' => $supplier->id,
                 'log_module' => 'lib-supplier',
-                'data' => $supplier
+                'data' => $supplier,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Supplier creation failed. Please try again.",
+                'message' => 'Supplier creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-supplier',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Supplier creation failed. Please try again.'
+                'message' => 'Supplier creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $supplier,
-                'message' => 'Supplier created successfully.'
-            ]
+                'message' => 'Supplier created successfully.',
+            ],
         ]);
     }
 
@@ -128,8 +130,8 @@ class SupplierController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $supplier
-            ]
+                'data' => $supplier,
+            ],
         ]);
     }
 
@@ -139,14 +141,14 @@ class SupplierController extends Controller
     public function update(Request $request, Supplier $supplier)
     {
         $validated = $request->validate([
-            'supplier_name' => 'required|unique:suppliers,supplier_name,' . $supplier->id,
+            'supplier_name' => 'required|unique:suppliers,supplier_name,'.$supplier->id,
             'address' => 'nullable',
             'tin_no' => 'nullable',
             'phone' => 'nullable',
             'telephone' => 'nullable',
             'vat_no' => 'nullable',
             'contact_person' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -155,30 +157,30 @@ class SupplierController extends Controller
             $supplier->update($validated);
 
             $this->logRepository->create([
-                'message' => "Supplier updated successfully.",
+                'message' => 'Supplier updated successfully.',
                 'log_id' => $supplier->id,
                 'log_module' => 'lib-supplier',
-                'data' => $supplier
+                'data' => $supplier,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Supplier update failed. Please try again.",
+                'message' => 'Supplier update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $supplier->id,
                 'log_module' => 'lib-supplier',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Supplier update failed. Please try again.'
+                'message' => 'Supplier update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $supplier,
-                'message' => 'Supplier updated successfully.'
-            ]
+                'message' => 'Supplier updated successfully.',
+            ],
         ]);
     }
 }

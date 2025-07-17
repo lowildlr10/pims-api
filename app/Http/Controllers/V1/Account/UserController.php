@@ -13,9 +13,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Routing\Controllers\Middleware;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Laravel\Facades\Image;
-use Intervention\Image\Drivers\Gd\Driver;
+use Illuminate\Support\Facades\Auth;
+use ValueError;
 
 class UserController extends Controller
 {
@@ -29,9 +28,9 @@ class UserController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -53,18 +52,18 @@ class UserController extends Controller
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
-            'roles:id,role_name'
+            'roles:id,role_name',
         ]);
 
         switch ($documentEnum) {
             case DocumentPrintType::PR:
                 $canAccess = in_array(true, [
                     $user->tokenCan('super:*'),
-                    $user->tokenCan('supply:*')
+                    $user->tokenCan('supply:*'),
                 ]);
 
-                if ($canAccess) {}
-                else {
+                if ($canAccess) {
+                } else {
                     $users = $users->where('id', $user->id);
                 }
                 break;
@@ -73,9 +72,9 @@ class UserController extends Controller
                 break;
         }
 
-        if (!empty($search)) {
-            $users = $users->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $users = $users->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('firstname', 'ILIKE', "%{$search}%")
                     ->orWhere('middlename', 'ILIKE', "%{$search}%")
                     ->orWhere('lastname', 'ILIKE', "%{$search}%")
@@ -113,14 +112,16 @@ class UserController extends Controller
         if ($paginated) {
             return $users->paginate($perPage);
         } else {
-            if (!$showInactive) $users = $users->where('restricted', false);
+            if (! $showInactive) {
+                $users = $users->where('restricted', false);
+            }
 
             $users = $showAll
                 ? $users->get()
                 : $users = $users->limit($perPage)->get();
 
             return response()->json([
-                'data' => $users
+                'data' => $users,
             ]);
         }
     }
@@ -147,7 +148,7 @@ class UserController extends Controller
             'signature' => 'nullable|string',
             'restricted' => 'required|boolean',
             'allow_signature' => 'boolean',
-            'roles' => 'required|string'
+            'roles' => 'required|string',
         ]);
         $validated['restricted'] = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
 
@@ -155,13 +156,13 @@ class UserController extends Controller
             $position = Position::updateOrCreate([
                 'position_name' => $validated['position'],
             ], [
-                'position_name' => $validated['position']
+                'position_name' => $validated['position'],
             ]);
 
             $designation = Designation::updateOrCreate([
                 'designation_name' => $validated['designation'],
             ], [
-                'designation_name' => $validated['designation']
+                'designation_name' => $validated['designation'],
             ]);
 
             $section = Section::find($validated['section_id']);
@@ -175,7 +176,7 @@ class UserController extends Controller
                     'section_id' => $section->id,
                     'avatar' => null,
                     'signature' => null,
-                    'password' => bcrypt($request->password)
+                    'password' => bcrypt($request->password),
                 ]
             ));
 
@@ -185,29 +186,29 @@ class UserController extends Controller
             $user->save();
 
             $this->logRepository->create([
-                'message' => "User registered successfully.",
+                'message' => 'User registered successfully.',
                 'log_id' => $user->id,
                 'log_module' => 'account-user',
-                'data' => $user
+                'data' => $user,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "User registration failed.",
+                'message' => 'User registration failed.',
                 'details' => $th->getMessage(),
                 'log_module' => 'account-user',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'User registration failed. Please try again.'
+                'message' => 'User registration failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $user,
-                'message' => 'User registered successfully.'
-            ]
+                'message' => 'User registered successfully.',
+            ],
         ]);
     }
 
@@ -221,13 +222,13 @@ class UserController extends Controller
             'section:id,section_name',
             'position:id,position_name',
             'designation:id,designation_name',
-            'roles:id,role_name'
+            'roles:id,role_name',
         ]);
 
         return response()->json([
             'data' => [
-                'data' => $user
-            ]
+                'data' => $user,
+            ],
         ]);
     }
 
@@ -251,8 +252,8 @@ class UserController extends Controller
                     'sex' => 'required|string|in:male,female',
                     'position' => 'required',
                     'designation' => 'nullable',
-                    'username' => 'required|unique:users,username,' . $user->id,
-                    'email' => 'email|unique:users,email,' . $user->id . '|nullable',
+                    'username' => 'required|unique:users,username,'.$user->id,
+                    'email' => 'email|unique:users,email,'.$user->id.'|nullable',
                     'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                 ]);
@@ -260,7 +261,7 @@ class UserController extends Controller
 
             case 'allow_signature':
                 $validated = $request->validate([
-                    'allow_signature' => 'required|boolean'
+                    'allow_signature' => 'required|boolean',
                 ]);
                 $allowSignature = filter_var($validated['allow_signature'], FILTER_VALIDATE_BOOLEAN);
                 break;
@@ -275,12 +276,12 @@ class UserController extends Controller
                     'section_id' => 'required',
                     'position' => 'required',
                     'designation' => 'nullable',
-                    'username' => 'required|unique:users,username,' . $user->id,
-                    'email' => 'email|unique:users,email,' . $user->id . '|nullable',
+                    'username' => 'required|unique:users,username,'.$user->id,
+                    'email' => 'email|unique:users,email,'.$user->id.'|nullable',
                     'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                     'restricted' => 'required|boolean',
-                    'roles' => 'required|string'
+                    'roles' => 'required|string',
                 ]);
                 $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
                 break;
@@ -291,13 +292,13 @@ class UserController extends Controller
                 $position = Position::updateOrCreate([
                     'position_name' => $validated['position'],
                 ], [
-                    'position_name' => $validated['position']
+                    'position_name' => $validated['position'],
                 ]);
 
                 $designation = Designation::updateOrCreate([
                     'designation_name' => $validated['designation'],
                 ], [
-                    'designation_name' => $validated['designation']
+                    'designation_name' => $validated['designation'],
                 ]);
             }
 
@@ -317,7 +318,7 @@ class UserController extends Controller
                             'position_id' => $position->id,
                             'designation_id' => $designation->id,
                         ],
-                        !empty(trim($password))
+                        ! empty(trim($password))
                             ? ['password' => bcrypt($password)]
                             : []
                     );
@@ -342,9 +343,9 @@ class UserController extends Controller
                             'designation_id' => $designation->id,
                             'division_id' => $section->division_id,
                             'section_id' => $section->id,
-                            'restricted' => $restricted
+                            'restricted' => $restricted,
                         ],
-                        !empty(trim($password))
+                        ! empty(trim($password))
                             ? ['password' => bcrypt($password)]
                             : []
                     );
@@ -365,11 +366,11 @@ class UserController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $user->id,
                 'log_module' => 'account-user',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => $errorMessage
+                'message' => $errorMessage,
             ], 422);
         }
 
@@ -383,14 +384,14 @@ class UserController extends Controller
             'message' => $successMessage,
             'log_id' => $user->id,
             'log_module' => 'account_user',
-            'data' => $user
+            'data' => $user,
         ]);
 
         return response()->json([
             'data' => [
                 'data' => $request->except('password'),
-                'message' => $successMessage
-            ]
+                'message' => $successMessage,
+            ],
         ]);
     }
 }

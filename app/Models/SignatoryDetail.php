@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -27,7 +26,7 @@ class SignatoryDetail extends Model
         'signatory_id',
         'document',
         'signatory_type',
-        'position'
+        'position',
     ];
 
     public function signatory(): BelongsTo

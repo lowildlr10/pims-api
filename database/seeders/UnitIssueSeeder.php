@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\UnitIssue;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class UnitIssueSeeder extends Seeder
@@ -77,7 +76,7 @@ class UnitIssueSeeder extends Seeder
     {
         foreach ($this->units as $unit) {
             UnitIssue::create([
-                'unit_name' => $unit
+                'unit_name' => $unit,
             ]);
         }
     }

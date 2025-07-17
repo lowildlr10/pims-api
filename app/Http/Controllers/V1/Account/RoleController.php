@@ -21,7 +21,7 @@ class RoleController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -33,9 +33,9 @@ class RoleController extends Controller
 
         $roles = Role::query();
 
-        if (!empty($search)) {
-            $roles = $roles->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $roles = $roles->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('role_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -55,14 +55,16 @@ class RoleController extends Controller
         if ($paginated) {
             return $roles->paginate($perPage);
         } else {
-            if (!$showInactive) $roles = $roles->where('active', true);
+            if (! $showInactive) {
+                $roles = $roles->where('active', true);
+            }
 
             $roles = $showAll
                 ? $roles->get()
                 : $roles = $roles->limit($perPage)->get();
 
-             return response()->json([
-                'data' => $roles
+            return response()->json([
+                'data' => $roles,
             ]);
         }
     }
@@ -75,7 +77,7 @@ class RoleController extends Controller
         $validated = $request->validate([
             'role_name' => 'required|unique:roles,role_name',
             'permissions' => 'required|string',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -84,34 +86,34 @@ class RoleController extends Controller
             $role = Role::create(array_merge(
                 $validated,
                 [
-                    'permissions' => json_decode($validated['permissions'])
+                    'permissions' => json_decode($validated['permissions']),
                 ]
             ));
 
             $this->logRepository->create([
-                'message' => "Role created successfully",
+                'message' => 'Role created successfully',
                 'log_id' => $role->id,
                 'log_module' => 'account-role',
-                'data' => $role
+                'data' => $role,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Role creation failed.",
+                'message' => 'Role creation failed.',
                 'details' => $th->getMessage(),
                 'log_module' => 'account-role',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Role creation failed. Please try again.'
+                'message' => 'Role creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $role,
-                'message' => 'Role created successfully.'
-            ]
+                'message' => 'Role created successfully.',
+            ],
         ]);
     }
 
@@ -122,8 +124,8 @@ class RoleController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $role
-            ]
+                'data' => $role,
+            ],
         ]);
     }
 
@@ -133,9 +135,9 @@ class RoleController extends Controller
     public function update(Request $request, Role $role): JsonResponse
     {
         $validated = $request->validate([
-            'role_name' => 'required|unique:roles,role_name,' . $role->id,
+            'role_name' => 'required|unique:roles,role_name,'.$role->id,
             'permissions' => 'required|string',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -144,35 +146,35 @@ class RoleController extends Controller
             $role->update(array_merge(
                 $validated,
                 [
-                    'permissions' => json_decode($validated['permissions'])
+                    'permissions' => json_decode($validated['permissions']),
                 ]
             ));
 
             $this->logRepository->create([
-                'message' => "Role updated successfully.",
+                'message' => 'Role updated successfully.',
                 'log_id' => $role->id,
                 'log_module' => 'account-role',
-                'data' => $role
+                'data' => $role,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Role update failed.",
+                'message' => 'Role update failed.',
                 'details' => $th->getMessage(),
                 'log_id' => $role->id,
                 'log_module' => 'account-role',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Role update failed. Please try again.'
+                'message' => 'Role update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $role,
-                'message' => 'Role updated successfully.'
-            ]
+                'message' => 'Role updated successfully.',
+            ],
         ]);
     }
 }

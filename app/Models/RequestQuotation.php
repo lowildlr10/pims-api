@@ -30,9 +30,6 @@ class RequestQuotation extends Model
         'status',
         'status_timestamps',
         'grand_total_cost',
-        // 'canvassing_at',
-        // 'completed_at',
-        // 'cancelled_at'
     ];
 
     /**

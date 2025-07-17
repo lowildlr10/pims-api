@@ -20,6 +20,6 @@ class PaperSize extends Model
         'unit',
         'width',
         'height',
-        'unit'
+        'unit',
     ];
 }

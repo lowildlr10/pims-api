@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\UacsCodeClassification;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class UacsCodeClassificationSeeder extends Seeder
@@ -14,7 +13,7 @@ class UacsCodeClassificationSeeder extends Seeder
     public function run(): void
     {
         UacsCodeClassification::create([
-            'classification_name' => 'Awards/Rewards, Prizes and Indemnities'
+            'classification_name' => 'Awards/Rewards, Prizes and Indemnities',
         ]);
     }
 }

@@ -32,7 +32,7 @@ class PurchaseOrder extends Model
         'sig_approval_id',
         'document_type',
         'status',
-        'status_timestamps'
+        'status_timestamps',
     ];
 
     /**
@@ -97,6 +97,14 @@ class PurchaseOrder extends Model
     public function purchase_request(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
+    }
+
+    /**
+     * The purchase order that has many inspection acceptance report.
+     */
+    public function inspection_acceptance_report(): HasMany
+    {
+        return $this->hasMany(InspectionAcceptanceReport::class);
     }
 
     /**

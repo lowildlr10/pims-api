@@ -113,7 +113,7 @@ class InventorySupply extends Model
         'quantity',
         'unit_cost',
         'total_cost',
-        'required_document'
+        'required_document',
     ];
 
     /**

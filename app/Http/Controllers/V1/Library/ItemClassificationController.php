@@ -21,7 +21,7 @@ class ItemClassificationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class ItemClassificationController extends Controller
 
         $itemClassifications = ItemClassification::query();
 
-        if (!empty($search)) {
-            $itemClassifications = $itemClassifications->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $itemClassifications = $itemClassifications->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('classification_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -55,14 +55,16 @@ class ItemClassificationController extends Controller
         if ($paginated) {
             return $itemClassifications->paginate($perPage);
         } else {
-            if (!$showInactive) $itemClassifications = $itemClassifications->where('active', true);
+            if (! $showInactive) {
+                $itemClassifications = $itemClassifications->where('active', true);
+            }
 
             $itemClassifications = $showAll
                 ? $itemClassifications->get()
                 : $itemClassifications = $itemClassifications->limit($perPage)->get();
 
             return response()->json([
-                'data' => $itemClassifications
+                'data' => $itemClassifications,
             ]);
         }
     }
@@ -74,7 +76,7 @@ class ItemClassificationController extends Controller
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:item_classifications,classification_name',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -83,29 +85,29 @@ class ItemClassificationController extends Controller
             $itemClassifications = ItemClassification::create($validated);
 
             $this->logRepository->create([
-                'message' => "Item classification created successfully.",
+                'message' => 'Item classification created successfully.',
                 'log_id' => $itemClassifications->id,
                 'log_module' => 'lib-item-class',
-                'data' => $itemClassifications
+                'data' => $itemClassifications,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Item classification creation failed. Please try again.",
+                'message' => 'Item classification creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-item-class',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Item classification creation failed. Please try again.'
+                'message' => 'Item classification creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $itemClassifications,
-                'message' => 'Item classification created successfully.'
-            ]
+                'message' => 'Item classification created successfully.',
+            ],
         ]);
     }
 
@@ -116,8 +118,8 @@ class ItemClassificationController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $itemClassification
-            ]
+                'data' => $itemClassification,
+            ],
         ]);
     }
 
@@ -127,8 +129,8 @@ class ItemClassificationController extends Controller
     public function update(Request $request, ItemClassification $itemClassification)
     {
         $validated = $request->validate([
-            'classification_name' => 'required|unique:item_classifications,classification_name,' . $itemClassification->id,
-            'active' => 'required|boolean'
+            'classification_name' => 'required|unique:item_classifications,classification_name,'.$itemClassification->id,
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -137,30 +139,30 @@ class ItemClassificationController extends Controller
             $itemClassification->update($validated);
 
             $this->logRepository->create([
-                'message' => "Item classification updated successfully.",
+                'message' => 'Item classification updated successfully.',
                 'log_id' => $itemClassification->id,
                 'log_module' => 'lib-item-class',
-                'data' => $itemClassification
+                'data' => $itemClassification,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Item classification update failed. Please try again.",
+                'message' => 'Item classification update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $itemClassification->id,
                 'log_module' => 'lib-item-class',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Item classification update failed. Please try again.'
+                'message' => 'Item classification update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $itemClassification,
-                'message' => 'Item classification updated successfully.'
-            ]
+                'message' => 'Item classification updated successfully.',
+            ],
         ]);
     }
 }

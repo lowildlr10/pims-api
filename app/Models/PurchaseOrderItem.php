@@ -29,7 +29,7 @@ class PurchaseOrderItem extends Model
         'description',
         'brand_model',
         'unit_cost',
-        'total_cost'
+        'total_cost',
     ];
 
     /**

@@ -4,9 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Division;
 use App\Models\Section;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class DivisionSectionSeeder extends Seeder
 {
@@ -77,7 +75,7 @@ class DivisionSectionSeeder extends Seeder
             'Web Development Section',
             'Systems and Network Administration Section',
             'Data Management Section',
-            'Digital Governance Section'
+            'Digital Governance Section',
         ],
 
         'Municipal General Services Office' => [

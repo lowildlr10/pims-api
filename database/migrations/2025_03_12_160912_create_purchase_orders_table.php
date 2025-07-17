@@ -48,18 +48,7 @@ return new class extends Migration
                 ->on('signatories');
             $table->enum('document_type', ['po', 'jo']);
             $table->string('status');
-            $table->json('status_timestamps');
-            // $table->timestamp('pending_at')->nullable();
-            // $table->timestamp('approved_at')->nullable();
-            // $table->timestamp('issued_at')->nullable();
-            // $table->timestamp('received_at')->nullable();
-            // $table->timestamp('for_delivery_at')->nullable();
-            // $table->timestamp('delivered_at')->nullable();
-            // $table->timestamp('for_inspection_at')->nullable();
-            // $table->timestamp('for_obligation_at')->nullable();
-            // $table->timestamp('for_disbursement_at')->nullable();
-            // $table->timestamp('for_payment_at')->nullable();
-            // $table->timestamp('completed_at')->nullable();
+            $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });
     }

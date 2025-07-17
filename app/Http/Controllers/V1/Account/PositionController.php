@@ -13,7 +13,7 @@ class PositionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -24,8 +24,8 @@ class PositionController extends Controller
 
         $positions = Position::query();
 
-        if (!empty($search)) {
-            $positions = $positions->where(function($query) use ($search){
+        if (! empty($search)) {
+            $positions = $positions->where(function ($query) use ($search) {
                 $query->where('position_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -44,7 +44,7 @@ class PositionController extends Controller
             }
 
             return response()->json([
-                'data' => $positions
+                'data' => $positions,
             ]);
         }
     }

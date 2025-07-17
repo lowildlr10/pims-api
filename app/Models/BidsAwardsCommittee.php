@@ -16,6 +16,6 @@ class BidsAwardsCommittee extends Model
      */
     protected $fillable = [
         'committee_name',
-        'active'
+        'active',
     ];
 }

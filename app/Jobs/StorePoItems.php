@@ -10,14 +10,14 @@ use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Collection;
 use Throwable;
 
-use function Laravel\Prompts\error;
-
 class StorePoItems implements ShouldQueue
 {
     use Queueable;
 
     private Collection $items;
+
     private PurchaseOrder $purchaseOrder;
+
     private LogRepository $logRepository;
 
     /**
@@ -50,23 +50,23 @@ class StorePoItems implements ShouldQueue
                 'brand_model' => $item['brand_model'],
                 'description' => $item['description'],
                 'unit_cost' => $item['unit_cost'],
-                'total_cost' => $item['total_cost']
+                'total_cost' => $item['total_cost'],
             ]);
 
             $totalAmount += $item['total_cost'];
         }
 
         $this->purchaseOrder->update([
-           'total_amount' => round($totalAmount, 2)
+            'total_amount' => round($totalAmount, 2),
         ]);
         $this->purchaseOrder->load('items');
 
         $this->logRepository->create([
             'message' => 'Items for Purchase Order were created successfully.',
-            'details' => count($this->items) . ' items',
+            'details' => count($this->items).' items',
             'log_id' => $this->purchaseOrder->id,
             'log_module' => 'po',
-            'data' => $this->purchaseOrder->items
+            'data' => $this->purchaseOrder->items,
         ]);
     }
 
@@ -80,7 +80,7 @@ class StorePoItems implements ShouldQueue
             'details' => $exception->getMessage(),
             'log_id' => $this->purchaseOrder->id,
             'log_module' => 'po',
-            'data' => $this->items
+            'data' => $this->items,
         ], isError: true);
     }
 }

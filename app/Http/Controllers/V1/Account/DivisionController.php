@@ -22,7 +22,7 @@ class DivisionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -37,15 +37,15 @@ class DivisionController extends Controller
                 $query->orderBy('section_name');
             },
             'sections.head:id,firstname,lastname',
-            'head:id,firstname,lastname'
+            'head:id,firstname,lastname',
         ]);
 
-        if (!empty($search)) {
-            $divisions = $divisions->where(function($query) use ($search) {
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $divisions = $divisions->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('division_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('sections', function($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                    ->orWhereRelation('sections', function ($query) use ($search) {
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                             ->orWhere('section_name', 'ILIKE', "%{$search}%");
                     });
             });
@@ -69,14 +69,16 @@ class DivisionController extends Controller
         if ($paginated) {
             return $divisions->paginate($perPage);
         } else {
-            if (!$showInactive) $divisions = $divisions->where('active', true);
+            if (! $showInactive) {
+                $divisions = $divisions->where('active', true);
+            }
 
             $divisions = $showAll
                 ? $divisions->get()
                 : $divisions = $divisions->limit($perPage)->get();
 
             return response()->json([
-                'data' => $divisions
+                'data' => $divisions,
             ]);
         }
     }
@@ -89,7 +91,7 @@ class DivisionController extends Controller
         $validated = $request->validate([
             'division_name' => 'required|unique:divisions,division_name',
             'division_head_id' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -98,29 +100,29 @@ class DivisionController extends Controller
             $division = Division::create($validated);
 
             $this->logRepository->create([
-                'message' => "Division created successfully.",
+                'message' => 'Division created successfully.',
                 'log_id' => $division->id,
                 'log_module' => 'account-division',
-                'data' => $division
+                'data' => $division,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Division creation failed.",
+                'message' => 'Division creation failed.',
                 'details' => $th->getMessage(),
                 'log_module' => 'account-division',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Division creation failed. Please try again.'
+                'message' => 'Division creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $division,
-                'message' => 'Division created successfully.'
-            ]
+                'message' => 'Division created successfully.',
+            ],
         ]);
     }
 
@@ -133,8 +135,8 @@ class DivisionController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $division
-            ]
+                'data' => $division,
+            ],
         ]);
     }
 
@@ -144,9 +146,9 @@ class DivisionController extends Controller
     public function update(Request $request, Division $division): JsonResponse
     {
         $validated = $request->validate([
-            'division_name' => 'required|unique:divisions,division_name,' . $division->id,
+            'division_name' => 'required|unique:divisions,division_name,'.$division->id,
             'division_head_id' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -154,36 +156,36 @@ class DivisionController extends Controller
         try {
             Section::where('division_id', $division->id)
                 ->update([
-                    'active' => $validated['active']
+                    'active' => $validated['active'],
                 ]);
 
             $division->update($validated);
 
             $this->logRepository->create([
-                'message' => "Division updated successfully.",
+                'message' => 'Division updated successfully.',
                 'log_id' => $division->id,
                 'log_module' => 'account-division',
-                'data' => $division
+                'data' => $division,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Division update failed.",
+                'message' => 'Division update failed.',
                 'details' => $th->getMessage(),
                 'log_id' => $division->id,
                 'log_module' => 'account-division',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Division update failed. Please try again.'
+                'message' => 'Division update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $division,
-                'message' => 'Division updated successfully.'
-            ]
+                'message' => 'Division updated successfully.',
+            ],
         ]);
     }
 }

@@ -24,7 +24,7 @@ class SignatoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -36,12 +36,12 @@ class SignatoryController extends Controller
         $signatoryType = $request->get('signatory_type', '');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        if (!empty($document) && !empty($signatoryType)) {
+        if (! empty($document) && ! empty($signatoryType)) {
             $signatories = SignatoryDetail::with('signatory')
                 ->where('document', $document)
                 ->where('signatory_type', $signatoryType);
 
-            if (!$showInactive) {
+            if (! $showInactive) {
                 $signatories = $signatories->whereRelation('signatory', 'active', true);
             }
 
@@ -55,7 +55,7 @@ class SignatoryController extends Controller
             }
 
             return response()->json([
-                'data' => $signatories
+                'data' => $signatories,
             ]);
         }
 
@@ -63,16 +63,16 @@ class SignatoryController extends Controller
             'details' => function ($query) {
                 $query->orderBy('document');
             },
-            'user:id,firstname,middlename,lastname'
+            'user:id,firstname,middlename,lastname',
         ]);
 
-        if (!empty($search)) {
-            $signatories = $signatories->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $signatories = $signatories->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'middlename', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('details', 'position', 'ILIKE', "%{$search}%");;
+                    ->orWhereRelation('details', 'position', 'ILIKE', "%{$search}%");
             });
         }
 
@@ -97,14 +97,16 @@ class SignatoryController extends Controller
         if ($paginated) {
             return $signatories->paginate($perPage);
         } else {
-            if (!$showInactive) $signatories = $signatories->where('active', true);
+            if (! $showInactive) {
+                $signatories = $signatories->where('active', true);
+            }
 
             $signatories = $showAll
                 ? $signatories->get()
                 : $signatories = $signatories->limit($perPage)->get();
 
             return response()->json([
-                'data' => $signatories
+                'data' => $signatories,
             ]);
         }
     }
@@ -117,7 +119,7 @@ class SignatoryController extends Controller
         $validated = $request->validate([
             'user_id' => 'required|unique:signatories,user_id',
             'details' => 'required|string',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -128,46 +130,46 @@ class SignatoryController extends Controller
             $signatory = Signatory::create($validated);
 
             foreach ($details ?? [] as $detail) {
-                if (!empty($detail->position)) {
+                if (! empty($detail->position)) {
                     $designation = Designation::updateOrCreate([
                         'designation_name' => $detail->position,
                     ], [
-                        'designation_name' => $detail->position
+                        'designation_name' => $detail->position,
                     ]);
 
                     SignatoryDetail::create([
                         'signatory_id' => $signatory->id,
                         'document' => $detail->document,
                         'signatory_type' => $detail->signatory_type,
-                        'position' => $detail->position
+                        'position' => $detail->position,
                     ]);
                 }
             }
 
             $this->logRepository->create([
-                'message' => "Signatory created successfully.",
+                'message' => 'Signatory created successfully.',
                 'log_id' => $signatory->id,
                 'log_module' => 'lib-signatory',
-                'data' => $signatory
+                'data' => $signatory,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Signatory creation failed. Please try again.",
+                'message' => 'Signatory creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-signatory',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Signatory creation failed. Please try again.'
+                'message' => 'Signatory creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $signatory,
-                'message' => 'Signatory created successfully.'
-            ]
+                'message' => 'Signatory created successfully.',
+            ],
         ]);
     }
 
@@ -180,13 +182,13 @@ class SignatoryController extends Controller
             'details' => function ($query) {
                 $query->orderBy('document');
             },
-            'user:id,firstname,middlename,lastname'
+            'user:id,firstname,middlename,lastname',
         ]);
 
         return response()->json([
             'data' => [
-                'data' => $signatory
-            ]
+                'data' => $signatory,
+            ],
         ]);
     }
 
@@ -197,7 +199,7 @@ class SignatoryController extends Controller
     {
         $validated = $request->validate([
             'details' => 'required|string',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -211,47 +213,47 @@ class SignatoryController extends Controller
                 ->delete();
 
             foreach ($details ?? [] as $detail) {
-                if (!empty($detail->position)) {
+                if (! empty($detail->position)) {
                     $designation = Designation::updateOrCreate([
                         'designation_name' => $detail->position,
                     ], [
-                        'designation_name' => $detail->position
+                        'designation_name' => $detail->position,
                     ]);
 
                     SignatoryDetail::create([
                         'signatory_id' => $signatory->id,
                         'document' => $detail->document,
                         'signatory_type' => $detail->signatory_type,
-                        'position' => $detail->position
+                        'position' => $detail->position,
                     ]);
                 }
             }
 
             $this->logRepository->create([
-                'message' => "Signatory updated successfully.",
+                'message' => 'Signatory updated successfully.',
                 'log_id' => $signatory->id,
                 'log_module' => 'lib-signatory',
-                'data' => $signatory
+                'data' => $signatory,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Signatory update failed. Please try again.",
+                'message' => 'Signatory update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $signatory->id,
                 'log_module' => 'lib-signatory',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Signatory update failed. Please try again.'
+                'message' => 'Signatory update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $signatory,
-                'message' => 'Signatory updated successfully.'
-            ]
+                'message' => 'Signatory updated successfully.',
+            ],
         ]);
     }
 }

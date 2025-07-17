@@ -21,7 +21,7 @@ class ProcurementModeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class ProcurementModeController extends Controller
 
         $procurementModes = ProcurementMode::query();
 
-        if (!empty($search)) {
-            $procurementModes = $procurementModes->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $procurementModes = $procurementModes->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('mode_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -55,14 +55,16 @@ class ProcurementModeController extends Controller
         if ($paginated) {
             return $procurementModes->paginate($perPage);
         } else {
-            if (!$showInactive) $procurementModes = $procurementModes->where('active', true);
+            if (! $showInactive) {
+                $procurementModes = $procurementModes->where('active', true);
+            }
 
             $procurementModes = $showAll
                 ? $procurementModes->get()
                 : $procurementModes = $procurementModes->limit($perPage)->get();
 
             return response()->json([
-                'data' => $procurementModes
+                'data' => $procurementModes,
             ]);
         }
     }
@@ -74,7 +76,7 @@ class ProcurementModeController extends Controller
     {
         $validated = $request->validate([
             'mode_name' => 'required|unique:procurement_modes,mode_name',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -83,29 +85,29 @@ class ProcurementModeController extends Controller
             $procurementMode = ProcurementMode::create($validated);
 
             $this->logRepository->create([
-                'message' => "Mode of procurement created successfully.",
+                'message' => 'Mode of procurement created successfully.',
                 'log_id' => $procurementMode->id,
                 'log_module' => 'lib-mode-proc',
-                'data' => $procurementMode
+                'data' => $procurementMode,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Mode of procurement creation failed. Please try again.",
+                'message' => 'Mode of procurement creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-mode-proc',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Mode of procurement creation failed. Please try again.'
+                'message' => 'Mode of procurement creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $procurementMode,
-                'message' => 'Mode of procurement created successfully.'
-            ]
+                'message' => 'Mode of procurement created successfully.',
+            ],
         ]);
     }
 
@@ -116,8 +118,8 @@ class ProcurementModeController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $procurementMode
-            ]
+                'data' => $procurementMode,
+            ],
         ]);
     }
 
@@ -127,8 +129,8 @@ class ProcurementModeController extends Controller
     public function update(Request $request, ProcurementMode $procurementMode)
     {
         $validated = $request->validate([
-            'mode_name' => 'required|unique:procurement_modes,mode_name,' . $procurementMode->id,
-            'active' => 'required|boolean'
+            'mode_name' => 'required|unique:procurement_modes,mode_name,'.$procurementMode->id,
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -137,30 +139,30 @@ class ProcurementModeController extends Controller
             $procurementMode->update($validated);
 
             $this->logRepository->create([
-                'message' => "Mode of procurement updated successfully.",
+                'message' => 'Mode of procurement updated successfully.',
                 'log_id' => $procurementMode->id,
                 'log_module' => 'lib-mode-proc',
-                'data' => $procurementMode
+                'data' => $procurementMode,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Mode of procurement update failed. Please try again.",
+                'message' => 'Mode of procurement update failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_id' => $procurementMode->id,
                 'log_module' => 'lib-mode-proc',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Mode of procurement update failed. Please try again.'
+                'message' => 'Mode of procurement update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $procurementMode,
-                'message' => 'Mode of procurement updated successfully.'
-            ]
+                'message' => 'Mode of procurement updated successfully.',
+            ],
         ]);
     }
 }

@@ -20,17 +20,17 @@ class FundingSource extends Model
         'title',
         'location_id',
         'total_cost',
-        'active'
+        'active',
     ];
 
     protected $appends = [
-        'total_cost_formatted'
+        'total_cost_formatted',
     ];
 
     protected function totalCostFormatted(): Attribute
     {
         return new Attribute(
-            get: fn () => '₱' . number_format($this->total_cost, 2)
+            get: fn () => '₱'.number_format($this->total_cost, 2)
         );
     }
 

@@ -9,6 +9,7 @@ use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class SectionController extends Controller
 {
@@ -22,9 +23,9 @@ class SectionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
@@ -36,8 +37,8 @@ class SectionController extends Controller
 
         $sections = Section::with('division');
 
-        if (!empty($search)) {
-            $sections = $sections->where(function($query) use ($search){
+        if (! empty($search)) {
+            $sections = $sections->where(function ($query) use ($search) {
                 $query->where('section_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('division', 'division_name', 'ILIKE', "%{$search}%");
             });
@@ -50,14 +51,17 @@ class SectionController extends Controller
         if ($paginated) {
             return $sections->paginate($perPage);
         } else {
-            if (!$showInactive) $sections = $sections->where('active', true);
+            if (! $showInactive) {
+                $sections = $sections->where('active', true);
+            }
 
             if ($user->tokenCan('super:*')
                 || $user->tokenCan('head:*')
                 || $user->tokenCan('supply:*')
                 || $user->tokenCan('budget:*')
                 || $user->tokenCan('accounting:*')
-            ) {} else {
+            ) {
+            } else {
                 $sections = $sections->where('id', $user->section_id);
             }
 
@@ -70,7 +74,7 @@ class SectionController extends Controller
             }
 
             return response()->json([
-                'data' => $sections
+                'data' => $sections,
             ]);
         }
     }
@@ -84,7 +88,7 @@ class SectionController extends Controller
             'division_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -93,37 +97,37 @@ class SectionController extends Controller
             $section = Section::create($validated);
             $division = Division::find($validated['division_id']);
 
-            if (!$division->active) {
+            if (! $division->active) {
                 Section::where('division_id', $division->id)
                     ->update([
-                        'active' => $division->active
+                        'active' => $division->active,
                     ]);
             }
 
             $this->logRepository->create([
-                'message' => "Section created successfully.",
+                'message' => 'Section created successfully.',
                 'log_id' => $section->id,
                 'log_module' => 'account-section',
-                'data' => $section
+                'data' => $section,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Section creation failed.",
+                'message' => 'Section creation failed.',
                 'details' => $th->getMessage(),
                 'log_module' => 'account-section',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Section creation failed. Please try again.'
+                'message' => 'Section creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $section,
-                'message' => 'Section created successfully.'
-            ]
+                'message' => 'Section created successfully.',
+            ],
         ]);
     }
 
@@ -136,8 +140,8 @@ class SectionController extends Controller
 
         return response()->json([
             'data' => [
-                'data' => $section
-            ]
+                'data' => $section,
+            ],
         ]);
     }
 
@@ -150,7 +154,7 @@ class SectionController extends Controller
             'division_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -159,38 +163,38 @@ class SectionController extends Controller
             $section->update($validated);
             $division = Division::find($validated['division_id']);
 
-            if (!$division->active) {
+            if (! $division->active) {
                 Section::where('division_id', $division->id)
                     ->update([
-                        'active' => $division->active
+                        'active' => $division->active,
                     ]);
             }
 
             $this->logRepository->create([
-                'message' => "Section updated successfully.",
+                'message' => 'Section updated successfully.',
                 'log_id' => $section->id,
                 'log_module' => 'account-section',
-                'data' => $section
+                'data' => $section,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Section update failed.",
+                'message' => 'Section update failed.',
                 'details' => $th->getMessage(),
                 'log_id' => $section->id,
                 'log_module' => 'account-section',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Section update failed. Please try again.'
+                'message' => 'Section update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $section,
-                'message' => 'Section updated successfully.'
-            ]
+                'message' => 'Section updated successfully.',
+            ],
         ]);
     }
 }

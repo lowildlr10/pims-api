@@ -9,18 +9,20 @@ use App\Http\Controllers\Controller;
 use App\Models\InspectionAcceptanceReport;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequestItem;
-use App\Models\Signatory;
 use App\Models\Supplier;
 use App\Models\User;
-use App\Repositories\LogRepository;
 use App\Repositories\InventorySupplyRepository;
+use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class InspectionAcceptanceReportController extends Controller
 {
-    private LogRepository $logRepository;
+    protected LogRepository $logRepository;
+
+    protected InventorySupplyRepository $inventorySupplyRepository;
 
     public function __construct(LogRepository $logRepository, InventorySupplyRepository $inventorySupplyRepository)
     {
@@ -31,10 +33,8 @@ class InspectionAcceptanceReportController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $user = auth()->user();
-
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -50,7 +50,7 @@ class InspectionAcceptanceReportController extends Controller
                 'iar_no',
                 'iar_date',
                 'sig_inspection_id',
-                'status'
+                'status',
             ])
             ->with([
                 'purchase_order:id,po_no,supplier_id',
@@ -59,12 +59,12 @@ class InspectionAcceptanceReportController extends Controller
                 'signatory_inspection.detail' => function ($query) {
                     $query->where('document', 'iar')
                         ->where('signatory_type', '	inspection');
-                }
+                },
             ]);
 
-        if (!empty($search)) {
+        if (! empty($search)) {
             $inspectionAcceptanceReport->where(function ($query) use ($search) {
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('iar_no', 'ILIKE', "%{$search}%")
                     ->orWhere('iar_date', 'ILIKE', "%{$search}%")
                     ->orWhere('invoice_no', 'ILIKE', "%{$search}%")
@@ -80,7 +80,7 @@ class InspectionAcceptanceReportController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('purchase_order', function ($query) use ($search) {
-                        $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                             ->orWhere('po_no', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('supplier', function ($query) use ($search) {
@@ -141,7 +141,7 @@ class InspectionAcceptanceReportController extends Controller
                 : $inspectionAcceptanceReport = $inspectionAcceptanceReport->limit($perPage)->get();
 
             return response()->json([
-                'data' => $inspectionAcceptanceReport
+                'data' => $inspectionAcceptanceReport,
             ]);
         }
     }
@@ -153,7 +153,7 @@ class InspectionAcceptanceReportController extends Controller
     {
         $inspectionAcceptanceReport->load([
             'supplier:id,supplier_name',
-            'items' => function($query) {
+            'items' => function ($query) {
                 $query->orderBy(
                     PurchaseRequestItem::select('item_sequence')
                         ->whereColumn(
@@ -176,13 +176,13 @@ class InspectionAcceptanceReportController extends Controller
             'acceptance.designation:id,designation_name',
             'purchase_request:id,section_id',
             'purchase_request.section:id,section_name',
-            'purchase_order:id,po_no,po_date,document_type'
+            'purchase_order:id,po_no,po_date,document_type',
         ]);
 
         return response()->json([
             'data' => [
-                'data' => $inspectionAcceptanceReport
-            ]
+                'data' => $inspectionAcceptanceReport,
+            ],
         ]);
     }
 
@@ -191,7 +191,7 @@ class InspectionAcceptanceReportController extends Controller
      */
     public function update(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         $validated = $request->validate([
             'iar_date' => 'required',
@@ -205,12 +205,12 @@ class InspectionAcceptanceReportController extends Controller
             'acceptance_completed' => 'nullable|boolean',
         ]);
 
-        $validated['inspected'] = !empty($validated['inspected'])
-            ? filter_var($validated['inspected'], FILTER_VALIDATE_BOOLEAN)
-            : NULL;
-        $validated['acceptance_completed'] = !empty($validated['acceptance_completed'])
-            ? filter_var($validated['acceptance_completed'], FILTER_VALIDATE_BOOLEAN)
-            : NULL;
+        $validated['inspected'] = isset($validated['inspected'])
+            ? $request->boolean('inspected')
+            : null;
+        $validated['acceptance_completed'] = isset($validated['acceptance_completed'])
+            ? $request->boolean('acceptance_completed')
+            : null;
 
         try {
             $message = 'Inspection and acceptance report updated successfully.';
@@ -223,14 +223,14 @@ class InspectionAcceptanceReportController extends Controller
                 'message' => $message,
                 'log_id' => $inspectionAcceptanceReport->id,
                 'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport
+                'data' => $inspectionAcceptanceReport,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inspectionAcceptanceReport,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Inspection and acceptance repor update failed.';
@@ -240,11 +240,11 @@ class InspectionAcceptanceReportController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $inspectionAcceptanceReport->id,
                 'log_module' => 'iar',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => "$message Please try again."
+                'message' => "$message Please try again.",
             ], 422);
         }
     }
@@ -267,11 +267,11 @@ class InspectionAcceptanceReportController extends Controller
                     'message' => $message,
                     'log_id' => $inspectionAcceptanceReport->id,
                     'log_module' => 'iar',
-                    'data' => $inspectionAcceptanceReport
+                    'data' => $inspectionAcceptanceReport,
                 ], isError: true);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -282,15 +282,15 @@ class InspectionAcceptanceReportController extends Controller
                     'status' => PurchaseOrderStatus::INSPECTION,
                     'status_timestamps' => StatusTimestampsHelper::generate(
                         'inspection_at', $purchaseOrder->status_timestamps
-                    )
+                    ),
                 ]);
 
                 $this->logRepository->create([
-                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job') .
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
                         ' order successfully marked as to inspection.',
                     'log_id' => $purchaseOrder->id,
                     'log_module' => 'po',
-                    'data' => $purchaseOrder
+                    'data' => $purchaseOrder,
                 ]);
             }
 
@@ -298,7 +298,7 @@ class InspectionAcceptanceReportController extends Controller
                 'status' => InspectionAcceptanceReportStatus::PENDING,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'pending_at', $inspectionAcceptanceReport->status_timestamps
-                )
+                ),
             ]);
 
             $inspectionAcceptanceReport->load('items');
@@ -307,14 +307,14 @@ class InspectionAcceptanceReportController extends Controller
                 'message' => $message,
                 'log_id' => $inspectionAcceptanceReport->id,
                 'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport
+                'data' => $inspectionAcceptanceReport,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inspectionAcceptanceReport,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Inspection & acceptance report failed to marked as pending for inspection.';
@@ -324,11 +324,11 @@ class InspectionAcceptanceReportController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $inspectionAcceptanceReport->id,
                 'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport
+                'data' => $inspectionAcceptanceReport,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }
@@ -346,7 +346,7 @@ class InspectionAcceptanceReportController extends Controller
             ]);
         } else {
             $validated = [
-                'items' => []
+                'items' => [],
             ];
         }
 
@@ -363,16 +363,16 @@ class InspectionAcceptanceReportController extends Controller
                     'message' => $message,
                     'log_id' => $inspectionAcceptanceReport->id,
                     'log_module' => 'iar',
-                    'data' => $inspectionAcceptanceReport
+                    'data' => $inspectionAcceptanceReport,
                 ], isError: true);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
             if (empty($inspectionAcceptanceReport->sig_inspection_id)) {
-                $message = 'Failed to set the inspection & acceptance report to inspected. ' .
+                $message = 'Failed to set the inspection & acceptance report to inspected. '.
                     'Please select a signatory for inspection.';
                 $this->logRepository->create([
                     'message' => $message,
@@ -380,12 +380,12 @@ class InspectionAcceptanceReportController extends Controller
                     'log_module' => 'iar',
                     'data' => [
                         'iar' => $inspectionAcceptanceReport,
-                        'supplies' => $request->all()
-                    ]
+                        'supplies' => $request->all(),
+                    ],
                 ], isError: true);
 
                 return response()->json([
-                    'message' => $message
+                    'message' => $message,
                 ], 422);
             }
 
@@ -399,7 +399,7 @@ class InspectionAcceptanceReportController extends Controller
                     'message' => 'Supply created successfully.',
                     'log_id' => $supply->id,
                     'log_module' => 'inv-supply',
-                    'data' => $supply
+                    'data' => $supply,
                 ]);
             }
 
@@ -407,7 +407,7 @@ class InspectionAcceptanceReportController extends Controller
                 'status' => InspectionAcceptanceReportStatus::INSPECTED,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'inspected_at', $inspectionAcceptanceReport->status_timestamps
-                )
+                ),
             ]);
 
             $inspectionAcceptanceReport->load('items');
@@ -416,14 +416,14 @@ class InspectionAcceptanceReportController extends Controller
                 'message' => $message,
                 'log_id' => $inspectionAcceptanceReport->id,
                 'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport
+                'data' => $inspectionAcceptanceReport,
             ]);
 
             return response()->json([
                 'data' => [
                     'data' => $inspectionAcceptanceReport,
-                    'message' => $message
-                ]
+                    'message' => $message,
+                ],
             ]);
         } catch (\Throwable $th) {
             $message = 'Inspection & acceptance report failed to marked as inspected.';
@@ -433,11 +433,11 @@ class InspectionAcceptanceReportController extends Controller
                 'details' => $th->getMessage(),
                 'log_id' => $inspectionAcceptanceReport->id,
                 'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport
+                'data' => $inspectionAcceptanceReport,
             ], isError: true);
 
             return response()->json([
-                'message' => "{$message} Please try again."
+                'message' => "{$message} Please try again.",
             ], 422);
         }
     }

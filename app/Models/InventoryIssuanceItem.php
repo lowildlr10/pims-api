@@ -33,7 +33,7 @@ class InventoryIssuanceItem extends Model
         'estimated_useful_life',
         'acquired_date',
         'unit_cost',
-        'total_cost'
+        'total_cost',
     ];
 
     /**

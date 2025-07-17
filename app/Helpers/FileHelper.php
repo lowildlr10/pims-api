@@ -2,13 +2,17 @@
 
 namespace App\Helpers;
 
-class FileHelper {
-    public static function getPublicPath(string $path): string | NULL
+use Illuminate\Support\Facades\Storage;
+
+class FileHelper
+{
+    public static function getPublicPath(string $path, string $disk = 'public'): ?string
     {
         $appUrl = env('APP_URL') ?? 'http://localhost';
 
-        if (!empty($path)) {
-            $publicPath = str_replace("{$appUrl}/", '', $path);
+        if (! empty($path)) {
+            $publicPath = Storage::disk($disk)->path($path);
+
             return $publicPath;
         }
 

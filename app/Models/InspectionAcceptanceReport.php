@@ -32,10 +32,7 @@ class InspectionAcceptanceReport extends Model
         'acceptance_completed',
         'acceptance_id',
         'status',
-        'status_timestamps'
-        // pending_at
-        // inspected_at
-        // accepted_at
+        'status_timestamps',
     ];
 
     /**

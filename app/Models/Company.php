@@ -38,7 +38,7 @@ class Company extends Model
         'favicon',
         'company_logo',
         'login_background',
-        'theme_colors'
+        'theme_colors',
     ];
 
     /**

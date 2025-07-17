@@ -16,6 +16,6 @@ class UnitIssue extends Model
      */
     protected $fillable = [
         'unit_name',
-        'active'
+        'active',
     ];
 }

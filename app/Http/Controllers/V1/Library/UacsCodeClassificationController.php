@@ -21,7 +21,7 @@ class UacsCodeClassificationController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse | LengthAwarePaginator
+    public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
@@ -33,9 +33,9 @@ class UacsCodeClassificationController extends Controller
 
         $uacsCodeClassifications = UacsCodeClassification::query();
 
-        if (!empty($search)) {
-            $uacsCodeClassifications = $uacsCodeClassifications->where(function($query) use ($search){
-                $query->whereRaw("CAST(id AS TEXT) = ?", [$search])
+        if (! empty($search)) {
+            $uacsCodeClassifications = $uacsCodeClassifications->where(function ($query) use ($search) {
+                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('classification_name', 'ILIKE', "%{$search}%");
             });
         }
@@ -55,14 +55,16 @@ class UacsCodeClassificationController extends Controller
         if ($paginated) {
             return $uacsCodeClassifications->paginate($perPage);
         } else {
-            if (!$showInactive) $uacsCodeClassifications = $uacsCodeClassifications->where('active', true);
+            if (! $showInactive) {
+                $uacsCodeClassifications = $uacsCodeClassifications->where('active', true);
+            }
 
             $uacsCodeClassifications = $showAll
                 ? $uacsCodeClassifications->get()
                 : $uacsCodeClassifications = $uacsCodeClassifications->limit($perPage)->get();
 
             return response()->json([
-                'data' => $uacsCodeClassifications
+                'data' => $uacsCodeClassifications,
             ]);
         }
     }
@@ -74,7 +76,7 @@ class UacsCodeClassificationController extends Controller
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:uacs_code_classifications,classification_name',
-            'active' => 'required|boolean'
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -83,29 +85,29 @@ class UacsCodeClassificationController extends Controller
             $uacsCodeClassification = UacsCodeClassification::create($validated);
 
             $this->logRepository->create([
-                'message' => "UACS code classification created successfully.",
+                'message' => 'UACS code classification created successfully.',
                 'log_id' => $uacsCodeClassification->id,
                 'log_module' => 'lib-uacs-class',
-                'data' => $uacsCodeClassification
+                'data' => $uacsCodeClassification,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "UACS code classification creation failed. Please try again.",
+                'message' => 'UACS code classification creation failed. Please try again.',
                 'details' => $th->getMessage(),
                 'log_module' => 'lib-uacs-class',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code classification creation failed. Please try again.'
+                'message' => 'UACS code classification creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $uacsCodeClassification,
-                'message' => 'UACS code classification created successfully.'
-            ]
+                'message' => 'UACS code classification created successfully.',
+            ],
         ]);
     }
 
@@ -116,8 +118,8 @@ class UacsCodeClassificationController extends Controller
     {
         return response()->json([
             'data' => [
-                'data' => $uacsCodeClassification
-            ]
+                'data' => $uacsCodeClassification,
+            ],
         ]);
     }
 
@@ -127,8 +129,8 @@ class UacsCodeClassificationController extends Controller
     public function update(Request $request, UacsCodeClassification $uacsCodeClassification)
     {
         $validated = $request->validate([
-            'classification_name' => 'required|unique:uacs_code_classifications,classification_name,' . $uacsCodeClassification->id,
-            'active' => 'required|boolean'
+            'classification_name' => 'required|unique:uacs_code_classifications,classification_name,'.$uacsCodeClassification->id,
+            'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
@@ -136,31 +138,31 @@ class UacsCodeClassificationController extends Controller
         try {
             $uacsCodeClassification->update($validated);
 
-             $this->logRepository->create([
-                'message' => "Section updated successfully.",
+            $this->logRepository->create([
+                'message' => 'Section updated successfully.',
                 'log_id' => $uacsCodeClassification->id,
                 'log_module' => 'lib-uacs-class',
-                'data' => $uacsCodeClassification
+                'data' => $uacsCodeClassification,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => "Section update failed.",
+                'message' => 'Section update failed.',
                 'details' => $th->getMessage(),
                 'log_id' => $uacsCodeClassification->id,
                 'log_module' => 'lib-uacs-class',
-                'data' => $validated
+                'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code classification update failed. Please try again.'
+                'message' => 'UACS code classification update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
                 'data' => $uacsCodeClassification,
-                'message' => 'UACS code classification updated successfully.'
-            ]
+                'message' => 'UACS code classification updated successfully.',
+            ],
         ]);
     }
 }

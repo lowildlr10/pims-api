@@ -15,7 +15,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, HasUuids;
+    use HasApiTokens, HasFactory, HasUuids, Notifiable;
 
     /**
      * The attributes that are mass assignable.
@@ -73,37 +73,39 @@ class User extends Authenticatable
     public function fullname(): Attribute
     {
         return Attribute::make(
-            get: fn ($value, $attributes) =>
-                !empty($attributes['firstname']) && !empty($attributes['middlename']) && !empty($attributes['lastname'])
+            get: fn ($value, $attributes) => ! empty($attributes['firstname']) && ! empty($attributes['middlename']) && ! empty($attributes['lastname'])
                     ? "{$attributes['firstname']} {$attributes['middlename'][0]}. {$attributes['lastname']}"
-                    : (!empty($attributes['firstname']) && empty($attributes['middlename']) && !empty($attributes['lastname'])
+                    : (! empty($attributes['firstname']) && empty($attributes['middlename']) && ! empty($attributes['lastname'])
                         ? "{$attributes['firstname']} {$attributes['lastname']}"
                         : '-')
         );
     }
 
     public function permissions(): array
-	{
-		return $this->roles
+    {
+        return $this->roles
             ->pluck('permissions')
             ->flatten()
             ->map(function ($permission) {
                 [$module, $scopes] = explode(':', $permission);
+
                 return collect(explode(',', $scopes))
-                    ->map(fn($scope) => "{$module}:{$scope}");
+                    ->map(fn ($scope) => "{$module}:{$scope}");
             })
             ->flatten()
             ->unique()
             ->values()
             ->toArray();
-	}
+    }
 
     public function hasPermission(array|string $permissions): bool
     {
         switch (gettype($permissions)) {
             case 'array':
                 foreach ($permissions ?? [] as $permission) {
-                    if ($this->tokenCan($permission)) return true;
+                    if ($this->tokenCan($permission)) {
+                        return true;
+                    }
                 }
                 break;
 

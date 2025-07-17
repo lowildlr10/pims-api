@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Company;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class CompanySeeder extends Seeder
@@ -55,8 +54,8 @@ class CompanySeeder extends Seeder
                     '#B5C3C5',
                     '#ACBCBE',
                     '#A3B5B7',
-                ]
-            ]
+                ],
+            ],
         ]);
     }
 }

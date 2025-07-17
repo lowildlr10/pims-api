@@ -18,7 +18,7 @@ class InspectionAcceptanceReportItem extends Model
      */
     public $timestamps = false;
 
-     /**
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
@@ -27,7 +27,7 @@ class InspectionAcceptanceReportItem extends Model
         'inspection_acceptance_report_id',
         'pr_item_id',
         'po_item_id',
-        'accepted'
+        'accepted',
     ];
 
     /**

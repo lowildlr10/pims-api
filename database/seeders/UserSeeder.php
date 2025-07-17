@@ -4,9 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Designation;
 use App\Models\Position;
-use App\Models\Role;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +23,7 @@ class UserSeeder extends Seeder
             'username' => 'sysadmin',
             'email' => 'sysadmin@email.com',
             'restricted' => false,
-            'allow_signature' => true
+            'allow_signature' => true,
         ],
         [
             'position_name' => 'Local Chief Executive',
@@ -39,7 +37,7 @@ class UserSeeder extends Seeder
             'username' => 'mayor',
             'email' => 'mayor@email.com',
             'restricted' => false,
-            'allow_signature' => true
+            'allow_signature' => true,
         ],
         [
             'position_name' => 'Supply Officer III',
@@ -53,7 +51,7 @@ class UserSeeder extends Seeder
             'username' => 'supplyuser',
             'email' => 'supplyuser@email.com',
             'restricted' => false,
-            'allow_signature' => true
+            'allow_signature' => true,
         ],
         [
             'position_name' => 'Budget Officer II',
@@ -67,7 +65,7 @@ class UserSeeder extends Seeder
             'username' => 'budget',
             'email' => 'budget@email.com',
             'restricted' => false,
-            'allow_signature' => true
+            'allow_signature' => true,
         ],
         [
             'position_name' => 'Municipal Accountant III',
@@ -81,7 +79,7 @@ class UserSeeder extends Seeder
             'username' => 'accountant',
             'email' => 'accountant@email.com',
             'restricted' => false,
-            'allow_signature' => true
+            'allow_signature' => true,
         ],
         [
             'position_name' => 'Municipal Cashier III',
@@ -95,7 +93,7 @@ class UserSeeder extends Seeder
             'username' => 'cashier',
             'email' => 'cashier@email.com',
             'restricted' => false,
-            'allow_signature' => true
+            'allow_signature' => true,
         ],
         [
             'position_name' => 'Planning Officer III',
@@ -109,7 +107,7 @@ class UserSeeder extends Seeder
             'username' => 'planning',
             'email' => 'planning@email.com',
             'restricted' => false,
-            'allow_signature' => false
+            'allow_signature' => false,
         ],
         [
             'position_name' => 'IT Officer III',
@@ -123,10 +121,9 @@ class UserSeeder extends Seeder
             'username' => 'misuser',
             'email' => 'misuser@email.com',
             'restricted' => false,
-            'allow_signature' => false
-        ]
+            'allow_signature' => false,
+        ],
     ];
-
 
     /**
      * Run the database seeds.
@@ -135,10 +132,10 @@ class UserSeeder extends Seeder
     {
         foreach ($this->users as $user) {
             $position = Position::create([
-                'position_name' => $user['position_name']
+                'position_name' => $user['position_name'],
             ]);
             $designation = Designation::create([
-                'designation_name' => $user['designation_name']
+                'designation_name' => $user['designation_name'],
             ]);
             $role = DB::table('roles')
                 ->where('role_name', $user['role_name'])
@@ -160,7 +157,7 @@ class UserSeeder extends Seeder
                 'email' => $user['email'],
                 'password' => bcrypt('passwd12345'),
                 'restricted' => $user['restricted'],
-                'allow_signature' => $user['allow_signature']
+                'allow_signature' => $user['allow_signature'],
             ]);
 
             $user->roles()->attach($role->id);

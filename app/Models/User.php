@@ -150,7 +150,7 @@ class User extends Authenticatable
      */
     public function department(): HasOne
     {
-        return $this->hasOne(Department::class, 'id');
+        return $this->hasOne(Department::class, 'id', 'department_id');
     }
 
     /**

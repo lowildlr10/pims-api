@@ -14,9 +14,12 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             CompanySeeder::class,
-            DepartmentSectionSeeder::class,
+            DepartmentSeeder::class,
+            PositionSeeder::class,
+            DesignationSeeder::class,
             RoleSeeder::class,
             UserSeeder::class,
+            SignatorySeeder::class,
             LocationSeeder::class,
             BidsAwardsCommitteeSeeder::class,
             FundingSourceSeeder::class,
@@ -24,11 +27,11 @@ class DatabaseSeeder extends Seeder
             MfoPapSeeder::class,
             ProcurementModeSeeder::class,
             PaperSizeSeeder::class,
-            SignatorySeeder::class,
             SupplierSeeder::class,
             UacsCodeClassificationSeeder::class,
             UacsCodeSeeder::class,
             UnitIssueSeeder::class,
+            PurchaseRequestSeeder::class,
         ]);
     }
 }

@@ -49,10 +49,6 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
                 'supplier:id,supplier_name,address,tin_no,phone,telephone',
                 'signatory_approval:id,user_id',
                 'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-                'signatory_approval.detail' => function ($query) {
-                    $query->where('document', 'rfq')
-                        ->where('signatory_type', 'approval');
-                },
                 'canvassers',
                 'canvassers.user:id,firstname,lastname',
                 'items' => function ($query) {
@@ -66,6 +62,13 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
                 },
                 'items.pr_item:id,item_sequence,quantity,description,stock_no',
             ])->find($rfqId);
+
+            $rfq->load([
+                'signatory_approval.detail' => function ($query) use ($rfq) {
+                    $query->where('document', 'rfq')
+                        ->where('signatory_type', "approval_{$rfq->signed_type}");
+                }
+            ]);
 
             $filename = "RFQ-{$rfq->rfq_no}.pdf";
             $blob = $this->generateRequestQuotationDoc($filename, $pageConfig, $rfq, $company);

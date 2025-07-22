@@ -159,6 +159,10 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         $pdf->setCellHeightRatio(1.6);
 
+        $pdf->SetFont($this->fontArial, '', 1);
+        $pdf->Cell($pageWidth * 0.39, $defaultCellHeight * 0.02, '', 'LT', 0);
+        $pdf->Cell(0, 0, '', 'LTR', 1);
+
         // ===== Department row (with MultiCell)
         $pdf->SetFont($this->fontArial, '', 10);
 
@@ -170,7 +174,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         // Department label
         $pdf->setCellHeightRatio(1.25);
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.12, $deptHeight, 'Department:', 'LT', 0, 'L', valign: 'T');
+        $pdf->Cell($pageWidth * 0.12, $deptHeight, 'Department:', 'L', 0, 'L', valign: 'T');
 
         // Department name (MultiCell with top alignment)
         $pdf->SetFont($this->fontArial, '', 10);
@@ -178,7 +182,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
             $deptWidth,
             $deptHeight,
             $deptText,
-            'T',
+            '',
             'L',
             false,
             0,
@@ -192,17 +196,17 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         // PR No.
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.07, $deptHeight, 'PR No.', 'LT', 0, 'L', valign: 'T');
+        $pdf->Cell($pageWidth * 0.07, $deptHeight, 'PR No.', 'L', 0, 'L', valign: 'T');
 
         $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell($pageWidth * 0.17, $deptHeight, $data->pr_no, 'T', 0, 'L', valign: 'T');
+        $pdf->Cell($pageWidth * 0.17, $deptHeight, $data->pr_no, 0, 0, 'L', valign: 'T');
 
         // PR Date
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.055, $deptHeight, 'Date:', 'T', 0, 'L', valign: 'T');
+        $pdf->Cell($pageWidth * 0.055, $deptHeight, 'Date:', 0, 0, 'L', valign: 'T');
 
         $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell(0, $deptHeight, date_format(date_create($data->pr_date), 'F j, Y'), 'TR', 1, 'L', valign: 'T');
+        $pdf->Cell(0, $deptHeight, date_format(date_create($data->pr_date), 'F j, Y'), 'R', 1, 'L', valign: 'T');
         $y = $pdf->GetY();
 
         // ===== Section and SAI No.

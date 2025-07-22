@@ -2,6 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Department;
+use App\Models\Designation;
+use App\Models\Position;
+use App\Models\Role;
+use App\Models\Section;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -23,22 +29,33 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $sex = $this->faker->randomElement(['male', 'female']);
+
+        $department = Department::inRandomOrder()->first() ?? Department::factory()->create();
+        $section = Section::where('department_id', $department->id)->inRandomOrder()->first() ?? Section::factory()->for($department)->create();
+        $position = Position::inRandomOrder()->first() ?? Position::factory()->create();
+        $designation = Designation::inRandomOrder()->first();
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'id' => (string) Str::uuid(),
+            'employee_id' => strtoupper('EMP-' . Str::random(6)),
+            'firstname' => $this->faker->firstName($sex),
+            'middlename' => $this->faker->optional()->lastName(),
+            'lastname' => $this->faker->lastName(),
+            'sex' => $sex,
+            'department_id' => $department->id,
+            'section_id' => $section->id,
+            'position_id' => $position->id,
+            'designation_id' => $designation?->id,
+            'username' => $this->faker->unique()->userName,
+            'email' => $this->faker->unique()->safeEmail(),
+            'phone' => $this->faker->unique()->numerify('09#########'),
+            'password' => Hash::make('passwd123'), // Default password
+            'avatar' => null,
+            'allow_signature' => $this->faker->boolean(30),
+            'signature' => null,
+            'restricted' => false,
             'remember_token' => Str::random(10),
         ];
-    }
-
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
-    public function unverified(): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
     }
 }

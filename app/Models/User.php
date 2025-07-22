@@ -28,7 +28,7 @@ class User extends Authenticatable
         'middlename',
         'lastname',
         'sex',
-        'division_id',
+        'department_id',
         'section_id',
         'position_id',
         'designation_id',
@@ -146,11 +146,11 @@ class User extends Authenticatable
     }
 
     /**
-     * The division that belong to the user.
+     * The department that belong to the user.
      */
-    public function division(): HasOne
+    public function department(): HasOne
     {
-        return $this->hasOne(Division::class, 'id', 'division_id');
+        return $this->hasOne(Department::class, 'id');
     }
 
     /**

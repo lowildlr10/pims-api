@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class Division extends Model
+class Department extends Model
 {
     use HasUuids;
 
@@ -17,13 +17,13 @@ class Division extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'division_name',
-        'division_head_id',
+        'department_name',
+        'department_head_id',
         'active',
     ];
 
     /**
-     * The division that has many sections.
+     * The department that has many sections.
      */
     public function sections(): HasMany
     {
@@ -31,10 +31,10 @@ class Division extends Model
     }
 
     /**
-     * The division that has one head.
+     * The department that has one head.
      */
     public function head(): HasOne
     {
-        return $this->hasOne(User::class, 'id', 'division_head_id');
+        return $this->hasOne(User::class, 'id', 'department_head_id');
     }
 }

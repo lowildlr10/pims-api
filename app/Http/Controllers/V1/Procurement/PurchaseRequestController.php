@@ -170,7 +170,8 @@ class PurchaseRequestController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'section_id' => 'required|string',
+            'department_id' => 'required',
+            'section_id' => 'nullable',
             'pr_date' => 'required',
             'sai_no' => 'nullable|string',
             'sai_date' => 'nullable',
@@ -283,6 +284,7 @@ class PurchaseRequestController extends Controller
         $purchaseRequest->load([
             'funding_source:id,title,location_id',
             'funding_source.location:id,location_name',
+            'department:id,department_name',
             'section:id,section_name',
 
             'items' => function ($query) {
@@ -323,7 +325,8 @@ class PurchaseRequestController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'section_id' => 'required|string',
+            'department_id' => 'required',
+            'section_id' => 'nullable',
             'pr_date' => 'required',
             'sai_no' => 'nullable|string',
             'sai_date' => 'nullable',

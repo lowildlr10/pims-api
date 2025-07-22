@@ -18,14 +18,14 @@ class Section extends Model
      */
     protected $fillable = [
         'section_name',
-        'division_id',
+        'department_id',
         'section_head_id',
         'active',
     ];
 
-    public function division(): BelongsTo
+    public function department(): BelongsTo
     {
-        return $this->belongsTo(Division::class, 'division_id');
+        return $this->belongsTo(Department::class, 'department_id');
     }
 
     /**

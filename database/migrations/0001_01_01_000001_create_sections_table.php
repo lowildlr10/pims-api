@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('sections', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('section_name');
-            $table->uuid('division_id');
-            $table->foreign('division_id')
+            $table->uuid('department_id');
+            $table->foreign('department_id')
                 ->references('id')
-                ->on('divisions');
-            $table->boolean('active')->default(true);
+                ->on('departments');
+            $table->boolean(column: 'active')->default(true);
             $table->timestamps();
         });
     }

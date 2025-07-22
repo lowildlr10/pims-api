@@ -18,6 +18,7 @@ class PurchaseRequest extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'department_id',
         'section_id',
         'pr_no',
         'pr_date',
@@ -45,6 +46,14 @@ class PurchaseRequest extends Model
         return new Attribute(
             get: fn () => '₱'.number_format($this->total_estimated_cost, 2)
         );
+    }
+
+    /**
+     * The purchase request that has one department.
+     */
+    public function department(): HasOne
+    {
+        return $this->hasOne(Department::class, 'id', 'department_id');
     }
 
     /**

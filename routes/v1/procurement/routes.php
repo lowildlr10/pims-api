@@ -28,18 +28,16 @@ Route::middleware('auth:sanctum')->group(function() {
             ->name('approve');
         Route::put('/{purchaseRequest}/disapprove', [ProcurementControllers\PurchaseRequestController::class, 'disapprove'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:disapprove')
-            ->name('update');
-        Route::put('/{purchaseRequest}/cancel', [ProcurementControllers\PurchaseRequestController::class, 'cancel'])
-            ->name('cancel');
+            ->name('disapprove');
         Route::put('/{purchaseRequest}/issue-all-request-quotations', [ProcurementControllers\PurchaseRequestController::class, 'issueAllDraftRfq'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:issue-rfq')
-            ->name('approve_request_quotations');
+            ->name('issue_all_request_quotations');
         Route::put('/{purchaseRequest}/approve-request-quotations', [ProcurementControllers\PurchaseRequestController::class, 'approveRequestQuotations'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:approve-rfq')
             ->name('approve_request_quotations');
         Route::put('/{purchaseRequest}/award-abstract-quotations', [ProcurementControllers\PurchaseRequestController::class, 'awardAbstractQuotations'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:award-aoq')
-            ->name('approve_request_quotations');
+            ->name('award_abstract_quotations');
     });
 
     Route::name('request_quotations.')->prefix('/request-quotations')->group(function () {

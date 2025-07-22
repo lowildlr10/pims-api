@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('purchase_requests', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('section_id');
+            $table->uuid('department_id');
+            $table->foreign('department_id')
+                ->references('id')
+                ->on('departments');
+            $table->uuid('section_id')->nullable();
             $table->foreign('section_id')
                 ->references('id')
                 ->on('sections');

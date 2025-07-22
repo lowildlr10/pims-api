@@ -149,7 +149,7 @@ class UserSeeder extends Seeder
                 'firstname' => $user['firstname'],
                 'lastname' => $user['lastname'],
                 'sex' => $user['sex'],
-                'division_id' => $section->division_id,
+                'department_id' => $section->department_id,
                 'section_id' => $section->id,
                 'position_id' => $position->id,
                 'designation_id' => $designation->id,

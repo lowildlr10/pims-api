@@ -18,10 +18,10 @@ return new class extends Migration
             $table->string('middlename')->nullable();
             $table->string('lastname');
             $table->enum('sex', ['male', 'female']);
-            $table->uuid('division_id');
-            $table->foreign('division_id')
+            $table->uuid('department_id');
+            $table->foreign('department_id')
                 ->references('id')
-                ->on('divisions');
+                ->on('departments');
             $table->uuid('section_id');
             $table->foreign('section_id')
                 ->references('id')
@@ -46,18 +46,18 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::table('divisions', function (Blueprint $table) {
-            $table->uuid('division_head_id')
-                ->after('division_name')
+        Schema::table('departments', function (Blueprint $table) {
+            $table->uuid('department_head_id')
+                ->after('department_name')
                 ->nullable();
-            $table->foreign('division_head_id')
+            $table->foreign('department_head_id')
                 ->references('id')
                 ->on('users');
         });
 
         Schema::table('sections', function (Blueprint $table) {
             $table->uuid('section_head_id')
-                ->after('division_id')
+                ->after('department_id')
                 ->nullable();
             $table->foreign('section_head_id')
                 ->references('id')
@@ -85,8 +85,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('divisions', function (Blueprint $table) {
-            $table->dropColumn('division_head_id');
+        Schema::table('departments', function (Blueprint $table) {
+            $table->dropColumn('department_head_id');
         });
 
         Schema::table('sections', function (Blueprint $table) {

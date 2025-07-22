@@ -2,13 +2,13 @@
 
 namespace Database\Seeders;
 
-use App\Models\Division;
+use App\Models\Department;
 use App\Models\Section;
 use Illuminate\Database\Seeder;
 
-class DivisionSectionSeeder extends Seeder
+class DepartmentSectionSeeder extends Seeder
 {
-    private $divisions = [
+    private $departments = [
         'Office of the Municipal Mayor' => [
             'Municipal Mayor',
             'Executive Assistant',
@@ -92,14 +92,14 @@ class DivisionSectionSeeder extends Seeder
      */
     public function run(): void
     {
-        foreach ($this->divisions as $division => $sections) {
-            $divData = Division::create(
-                ['division_name' => $division]
+        foreach ($this->departments as $department => $sections) {
+            $divData = Department::create(
+                ['department_name' => $department]
             );
 
             foreach ($sections as $key => $sectionName) {
                 Section::create([
-                    'division_id' => $divData->id,
+                    'department_id' => $divData->id,
                     'section_name' => $sectionName,
                 ]);
             }

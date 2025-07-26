@@ -46,6 +46,7 @@ return new class extends Migration
                 ->on('signatories');
             $table->tinyInteger('rfq_batch')->default(1);
             $table->decimal('total_estimated_cost', 20, 2)->default(0.00);
+            $table->text('disapproved_reason')->nullable();
             $table->string('status');
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();

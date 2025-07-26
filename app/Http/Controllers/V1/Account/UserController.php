@@ -137,7 +137,8 @@ class UserController extends Controller
             'middlename' => 'nullable|string',
             'lastname' => 'required|string',
             'sex' => 'required|string|in:male,female',
-            'section_id' => 'required',
+            'department_id' => 'required',
+            'section_id' => 'nullable',
             'position' => 'required',
             'designation' => 'nullable',
             'username' => 'required|unique:users',
@@ -148,7 +149,7 @@ class UserController extends Controller
             'signature' => 'nullable|string',
             'restricted' => 'required|boolean',
             'allow_signature' => 'boolean',
-            'roles' => 'required|string',
+            'roles' => 'required|array',
         ]);
         $validated['restricted'] = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
 
@@ -180,7 +181,7 @@ class UserController extends Controller
                 ]
             ));
 
-            $roles = json_decode($validated['roles']);
+            $roles = $validated['roles'] ?? [];
             $user->roles()->sync($roles);
 
             $user->save();
@@ -273,7 +274,8 @@ class UserController extends Controller
                     'middlename' => 'nullable|string',
                     'lastname' => 'required|string',
                     'sex' => 'required|string|in:male,female',
-                    'section_id' => 'required',
+                    'department_id' => 'required',
+                    'section_id' => 'nullable',
                     'position' => 'required',
                     'designation' => 'nullable',
                     'username' => 'required|unique:users,username,'.$user->id,
@@ -281,7 +283,7 @@ class UserController extends Controller
                     'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                     'restricted' => 'required|boolean',
-                    'roles' => 'required|string',
+                    'roles' => 'required|array',
                 ]);
                 $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
                 break;
@@ -303,8 +305,7 @@ class UserController extends Controller
             }
 
             if ($updateType === 'account-management') {
-                $section = Section::find($validated['section_id']);
-                $roles = json_decode($validated['roles']);
+                $roles = $validated['roles'] ?? [];
                 $user->roles()->sync($roles);
             }
 
@@ -341,8 +342,6 @@ class UserController extends Controller
                         [
                             'position_id' => $position->id,
                             'designation_id' => $designation->id,
-                            'department_id' => $section->department_id,
-                            'section_id' => $section->id,
                             'restricted' => $restricted,
                         ],
                         ! empty(trim($password))

@@ -214,7 +214,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         // Measure height needed for section name
         $secWidth = $pageWidth * 0.27;
-        $secText = $data->section->section_name;
+        $secText = $data->section?->section_name ?? '';
         $secHeight = $pdf->getStringHeight($secWidth, $secText);
 
         // $pdf->SetY($y + ($defaultCellHeight * (($deptHeight / $defaultCellHeight) - 1)));

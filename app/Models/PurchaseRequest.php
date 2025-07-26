@@ -33,6 +33,7 @@ class PurchaseRequest extends Model
         'sig_cash_availability_id',
         'sig_approved_by_id',
         'rfq_batch',
+        'disapproved_reason',
         'status',
         'status_timestamps',
         'total_estimated_cost',

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreign('department_id')
                 ->references('id')
                 ->on('departments');
-            $table->uuid('section_id');
+            $table->uuid('section_id')->nullable();
             $table->foreign('section_id')
                 ->references('id')
                 ->on('sections');

@@ -29,6 +29,9 @@ Route::middleware('auth:sanctum')->group(function() {
         Route::put('/{purchaseRequest}/disapprove', [ProcurementControllers\PurchaseRequestController::class, 'disapprove'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:disapprove')
             ->name('disapprove');
+        Route::put('/{purchaseRequest}/cancel', [ProcurementControllers\PurchaseRequestController::class, 'cancel'])
+            ->middleware('ability:super:*,supply:*,pr:*,pr:cancel')
+            ->name('cancel');
         Route::put('/{purchaseRequest}/issue-all-request-quotations', [ProcurementControllers\PurchaseRequestController::class, 'issueAllDraftRfq'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:issue-rfq')
             ->name('issue_all_request_quotations');

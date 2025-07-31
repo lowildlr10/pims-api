@@ -170,7 +170,8 @@ class PurchaseRequestController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'section_id' => 'required|string',
+            'department_id' => 'required',
+            'section_id' => 'nullable',
             'pr_date' => 'required',
             'sai_no' => 'nullable|string',
             'sai_date' => 'nullable',
@@ -283,6 +284,7 @@ class PurchaseRequestController extends Controller
         $purchaseRequest->load([
             'funding_source:id,title,location_id',
             'funding_source.location:id,location_name',
+            'department:id,department_name',
             'section:id,section_name',
 
             'items' => function ($query) {
@@ -323,7 +325,8 @@ class PurchaseRequestController extends Controller
         $user = Auth::user();
 
         $validated = $request->validate([
-            'section_id' => 'required|string',
+            'department_id' => 'required',
+            'section_id' => 'nullable',
             'pr_date' => 'required',
             'sai_no' => 'nullable|string',
             'sai_date' => 'nullable',
@@ -418,18 +421,15 @@ class PurchaseRequestController extends Controller
 
                 $purchaseRequest->update([
                     'total_estimated_cost' => $totalEstimatedCost,
-                ]);
-            }
-
-            $purchaseRequest->update(array_merge(
-                $validated,
-                [
+                    'disapproved_reason' => null,
                     'status' => $status,
                     'status_timestamps' => StatusTimestampsHelper::generate(
                         'draft_at', null
                     ),
-                ]
-            ));
+                ]);
+            }
+
+            $purchaseRequest->update($validated);
 
             $purchaseRequest->load('items');
 
@@ -554,6 +554,8 @@ class PurchaseRequestController extends Controller
                 $user->tokenCan('budget:*'),
                 $user->tokenCan('accounting:*'),
                 $user->tokenCan('cashier:*'),
+                $user->tokenCan('pr:*'),
+                $user->tokenCan('pr:approve-cash-available'),
             ]);
 
             if ($canAccess) {
@@ -628,6 +630,8 @@ class PurchaseRequestController extends Controller
                 $user->tokenCan('super:*'),
                 $user->tokenCan('supply:*'),
                 $user->tokenCan('head:*'),
+                $user->tokenCan('pr:*'),
+                $user->tokenCan('pr:approve'),
             ]);
 
             if ($canAccess) {
@@ -689,17 +693,23 @@ class PurchaseRequestController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function disapprove(PurchaseRequest $purchaseRequest): JsonResponse
+    public function disapprove(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
         $user = Auth::user();
 
         try {
+            $validated = $request->validate([
+                'disapproved_reason' => 'nullable|string',
+            ]);
+
             $message = 'Purchase request has been successfully marked as "Disapproved".';
 
             $canAccess = in_array(true, [
                 $user->tokenCan('super:*'),
                 $user->tokenCan('supply:*'),
                 $user->tokenCan('head:*'),
+                $user->tokenCan('pr:*'),
+                $user->tokenCan('pr:disapprove'),
             ]);
 
             if ($canAccess) {
@@ -718,6 +728,7 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
+                'disapproved_reason' => $validated['disapproved_reason'] ?? null,
                 'status' => PurchaseRequestStatus::DISAPPROVED,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'disapproved_at', $purchaseRequest->status_timestamps
@@ -771,6 +782,8 @@ class PurchaseRequestController extends Controller
             $canAccess = in_array(true, [
                 $user->tokenCan('super:*'),
                 $user->tokenCan('supply:*'),
+                $user->tokenCan('pr:*'),
+                $user->tokenCan('pr:cancel'),
             ]);
 
             if ($canAccess) {

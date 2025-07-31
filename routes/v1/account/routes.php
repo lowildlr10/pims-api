@@ -29,18 +29,18 @@ Route::middleware('auth:sanctum')->group(function() {
             ->name('index');
     });
 
-    Route::name('divisions.')->prefix('/accounts/divisions')->group(function () {
-        Route::get('/', [AccountControllers\DivisionController::class, 'index'])
-            ->middleware('ability:super:*,head:*,account-division:*,account-division:view')
+    Route::name('departments.')->prefix('/accounts/departments')->group(function () {
+        Route::get('/', [AccountControllers\DepartmentController::class, 'index'])
+            ->middleware('ability:super:*,head:*,account-department:*,account-department:view')
             ->name('index');
-        Route::post('/', [AccountControllers\DivisionController::class, 'store'])
-            ->middleware('ability:super:*,account-division:*,account-division:create')
+        Route::post('/', [AccountControllers\DepartmentController::class, 'store'])
+            ->middleware('ability:super:*,account-department:*,account-department:create')
             ->name('store');
-        Route::get('/{division}', [AccountControllers\DivisionController::class, 'show'])
-            ->middleware('ability:super:*,account-division:*,account-division:view')
+        Route::get('/{department}', [AccountControllers\DepartmentController::class, 'show'])
+            ->middleware('ability:super:*,account-department:*,account-department:view')
             ->name('show');
-        Route::put('/{division}', [AccountControllers\DivisionController::class, 'update'])
-            ->middleware('ability:super:*,account-division:*,account-division:update')
+        Route::put('/{department}', [AccountControllers\DepartmentController::class, 'update'])
+            ->middleware('ability:super:*,account-department:*,account-department:update')
             ->name('update');
     });
 

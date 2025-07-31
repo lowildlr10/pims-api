@@ -4,13 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PurchaseRequest extends Model
 {
-    use HasUuids;
+    use HasUuids, HasFactory;
 
     /**
      * The attributes that are mass assignable.
@@ -18,6 +19,7 @@ class PurchaseRequest extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'department_id',
         'section_id',
         'pr_no',
         'pr_date',
@@ -31,6 +33,7 @@ class PurchaseRequest extends Model
         'sig_cash_availability_id',
         'sig_approved_by_id',
         'rfq_batch',
+        'disapproved_reason',
         'status',
         'status_timestamps',
         'total_estimated_cost',
@@ -45,6 +48,14 @@ class PurchaseRequest extends Model
         return new Attribute(
             get: fn () => '₱'.number_format($this->total_estimated_cost, 2)
         );
+    }
+
+    /**
+     * The purchase request that has one department.
+     */
+    public function department(): HasOne
+    {
+        return $this->hasOne(Department::class, 'id', 'department_id');
     }
 
     /**

@@ -3,14 +3,15 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Division;
+use App\Models\Department;
 use App\Models\Section;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
-class DivisionController extends Controller
+class DepartmentController extends Controller
 {
     private LogRepository $logRepository;
 
@@ -24,15 +25,17 @@ class DivisionController extends Controller
      */
     public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
+        $user = Auth::user();
+        
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 5);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'division_name');
+        $columnSort = $request->get('column_sort', 'department_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $divisions = Division::query()->with([
+        $departments = Department::query()->with([
             'sections' => function ($query) {
                 $query->orderBy('section_name');
             },
@@ -41,9 +44,9 @@ class DivisionController extends Controller
         ]);
 
         if (! empty($search)) {
-            $divisions = $divisions->where(function ($query) use ($search) {
+            $departments = $departments->where(function ($query) use ($search) {
                 $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('division_name', 'ILIKE', "%{$search}%")
+                    ->orWhere('department_name', 'ILIKE', "%{$search}%")
                     ->orWhereRelation('sections', function ($query) use ($search) {
                         $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                             ->orWhere('section_name', 'ILIKE', "%{$search}%");
@@ -54,31 +57,41 @@ class DivisionController extends Controller
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'headfullname':
-                    $columnSort = 'division_head_id';
+                    $columnSort = 'department_head_id';
                     break;
-                case 'division_name_formatted':
-                    $columnSort = 'division_name';
+                case 'department_name_formatted':
+                    $columnSort = 'department_name';
                     break;
                 default:
                     break;
             }
 
-            $divisions = $divisions->orderBy($columnSort, $sortDirection);
+            $departments = $departments->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $divisions->paginate($perPage);
+            return $departments->paginate($perPage);
         } else {
             if (! $showInactive) {
-                $divisions = $divisions->where('active', true);
+                $departments = $departments->where('active', true);
             }
 
-            $divisions = $showAll
-                ? $divisions->get()
-                : $divisions = $divisions->limit($perPage)->get();
+            if ($user->tokenCan('super:*')
+                || $user->tokenCan('head:*')
+                || $user->tokenCan('supply:*')
+                || $user->tokenCan('budget:*')
+                || $user->tokenCan('accounting:*')
+            ) {
+            } else {
+                $departments = $departments->where('id', $user->department_id);
+            }
+
+            $departments = $showAll
+                ? $departments->get()
+                : $departments = $departments->limit($perPage)->get();
 
             return response()->json([
-                'data' => $divisions,
+                'data' => $departments,
             ]);
         }
     }
@@ -89,39 +102,39 @@ class DivisionController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'division_name' => 'required|unique:divisions,division_name',
-            'division_head_id' => 'nullable',
+            'department_name' => 'required|unique:departments,department_name',
+            'department_head_id' => 'nullable',
             'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $division = Division::create($validated);
+            $department = Department::create($validated);
 
             $this->logRepository->create([
-                'message' => 'Division created successfully.',
-                'log_id' => $division->id,
-                'log_module' => 'account-division',
-                'data' => $division,
+                'message' => 'Department created successfully.',
+                'log_id' => $department->id,
+                'log_module' => 'account-department',
+                'data' => $department,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => 'Division creation failed.',
+                'message' => 'Department creation failed.',
                 'details' => $th->getMessage(),
-                'log_module' => 'account-division',
+                'log_module' => 'account-department',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Division creation failed. Please try again.',
+                'message' => 'Department creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $division,
-                'message' => 'Division created successfully.',
+                'data' => $department,
+                'message' => 'Department created successfully.',
             ],
         ]);
     }
@@ -129,13 +142,13 @@ class DivisionController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Division $division): JsonResponse
+    public function show(department $department): JsonResponse
     {
-        $division->load('head');
+        $department->load('head');
 
         return response()->json([
             'data' => [
-                'data' => $division,
+                'data' => $department,
             ],
         ]);
     }
@@ -143,48 +156,48 @@ class DivisionController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Division $division): JsonResponse
+    public function update(Request $request, Department $department): JsonResponse
     {
         $validated = $request->validate([
-            'division_name' => 'required|unique:divisions,division_name,'.$division->id,
-            'division_head_id' => 'nullable',
+            'department_name' => 'required|unique:departments,department_name,'.$department->id,
+            'department_head_id' => 'nullable',
             'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            Section::where('division_id', $division->id)
+            Section::where('department_id', $department->id)
                 ->update([
                     'active' => $validated['active'],
                 ]);
 
-            $division->update($validated);
+            $department->update($validated);
 
             $this->logRepository->create([
-                'message' => 'Division updated successfully.',
-                'log_id' => $division->id,
-                'log_module' => 'account-division',
-                'data' => $division,
+                'message' => 'Department updated successfully.',
+                'log_id' => $department->id,
+                'log_module' => 'account-department',
+                'data' => $department,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => 'Division update failed.',
+                'message' => 'Department update failed.',
                 'details' => $th->getMessage(),
-                'log_id' => $division->id,
-                'log_module' => 'account-division',
+                'log_id' => $department->id,
+                'log_module' => 'account-department',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'Division update failed. Please try again.',
+                'message' => 'Department update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $division,
-                'message' => 'Division updated successfully.',
+                'data' => $department,
+                'message' => 'Department updated successfully.',
             ],
         ]);
     }

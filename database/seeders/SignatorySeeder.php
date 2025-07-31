@@ -40,7 +40,7 @@ class SignatorySeeder extends Seeder
             'details' => [
                 [
                     'document' => 'rfq',
-                    'signatory_type' => 'approval',
+                    'signatory_type' => 'bac_approval',
                     'position' => 'BAC Chairman',
                 ],
             ],
@@ -77,22 +77,24 @@ class SignatorySeeder extends Seeder
      */
     public function run(): void
     {
-        foreach ($this->signatories as $signatory) {
-            $user = User::where('employee_id', $signatory['employee_id'])
-                ->first();
+        // foreach ($this->signatories as $signatory) {
+        //     $user = User::where('employee_id', $signatory['employee_id'])
+        //         ->first();
 
-            $sigData = Signatory::create([
-                'user_id' => $user->id,
-            ]);
+        //     $sigData = Signatory::create([
+        //         'user_id' => $user->id,
+        //     ]);
 
-            foreach ($signatory['details'] as $detail) {
-                SignatoryDetail::create([
-                    'signatory_id' => $sigData->id,
-                    'document' => $detail['document'],
-                    'signatory_type' => $detail['signatory_type'],
-                    'position' => $detail['position'],
-                ]);
-            }
-        }
+        //     foreach ($signatory['details'] as $detail) {
+        //         SignatoryDetail::create([
+        //             'signatory_id' => $sigData->id,
+        //             'document' => $detail['document'],
+        //             'signatory_type' => $detail['signatory_type'],
+        //             'position' => $detail['position'],
+        //         ]);
+        //     }
+        // }
+
+        Signatory::factory()->count(10)->create();
     }
 }

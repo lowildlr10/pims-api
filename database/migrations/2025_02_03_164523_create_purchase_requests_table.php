@@ -13,7 +13,11 @@ return new class extends Migration
     {
         Schema::create('purchase_requests', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('section_id');
+            $table->uuid('department_id');
+            $table->foreign('department_id')
+                ->references('id')
+                ->on('departments');
+            $table->uuid('section_id')->nullable();
             $table->foreign('section_id')
                 ->references('id')
                 ->on('sections');
@@ -42,6 +46,7 @@ return new class extends Migration
                 ->on('signatories');
             $table->tinyInteger('rfq_batch')->default(1);
             $table->decimal('total_estimated_cost', 20, 2)->default(0.00);
+            $table->text('disapproved_reason')->nullable();
             $table->string('status');
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();

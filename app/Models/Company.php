@@ -42,7 +42,7 @@ class Company extends Model
     ];
 
     /**
-     * The division that has one head.
+     * The department that has one head.
      */
     public function head(): HasOne
     {

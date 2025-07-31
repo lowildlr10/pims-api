@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Division;
+use App\Models\Department;
 use App\Models\Section;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
@@ -29,23 +29,31 @@ class SectionController extends Controller
 
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
+        $filterByDepartment = $request->boolean('filter_by_department', false);
+        $departmentId = $request->get('department_id', '');
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'section_name');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $sections = Section::with('division');
+        $sections = Section::with('department');
 
         if (! empty($search)) {
             $sections = $sections->where(function ($query) use ($search) {
                 $query->where('section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('division', 'division_name', 'ILIKE', "%{$search}%");
+                    ->orWhereRelation('department', 'department_name', 'ILIKE', "%{$search}%");
             });
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
             $sections = $sections->orderBy($columnSort, $sortDirection);
+        }
+
+        if ($filterByDepartment && !empty($departmentId)) {
+            $sections = $sections->where('department_id', $departmentId);
+        } else if ($filterByDepartment && empty($departmentId)) {
+            $sections = $sections->limit(0);
         }
 
         if ($paginated) {
@@ -70,7 +78,7 @@ class SectionController extends Controller
                 : $sections = $sections->limit($perPage)->get();
 
             foreach ($sections ?? [] as $section) {
-                $section->division_section = "{$section->section_name} ({$section->division->division_name})";
+                $section->department_section = "{$section->section_name} ({$section->department->department_name})";
             }
 
             return response()->json([
@@ -85,7 +93,7 @@ class SectionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'division_id' => 'required',
+            'department' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
             'active' => 'required|boolean',
@@ -95,12 +103,12 @@ class SectionController extends Controller
 
         try {
             $section = Section::create($validated);
-            $division = Division::find($validated['division_id']);
+            $department = Department::find($validated['department']);
 
-            if (! $division->active) {
-                Section::where('division_id', $division->id)
+            if (! $department->active) {
+                Section::where('department_id', $department->id)
                     ->update([
-                        'active' => $division->active,
+                        'active' => $department->active,
                     ]);
             }
 
@@ -136,7 +144,7 @@ class SectionController extends Controller
      */
     public function show(Section $section)
     {
-        $section->load(['division', 'head']);
+        $section->load(['department', 'head']);
 
         return response()->json([
             'data' => [
@@ -151,7 +159,7 @@ class SectionController extends Controller
     public function update(Request $request, Section $section)
     {
         $validated = $request->validate([
-            'division_id' => 'required',
+            'department_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
             'active' => 'required|boolean',
@@ -161,12 +169,12 @@ class SectionController extends Controller
 
         try {
             $section->update($validated);
-            $division = Division::find($validated['division_id']);
+            $department = Department::find($validated['department_id']);
 
-            if (! $division->active) {
-                Section::where('division_id', $division->id)
+            if (! $department->active) {
+                Section::where('department_id', $department->id)
                     ->update([
-                        'active' => $division->active,
+                        'active' => $department->active,
                     ]);
             }
 

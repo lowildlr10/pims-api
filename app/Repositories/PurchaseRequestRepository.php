@@ -54,6 +54,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
             $pr = PurchaseRequest::with([
                 'funding_source:id,title',
                 'section:id,section_name',
+                'department:id,department_name',
 
                 'items' => function ($query) {
                     $query->orderBy('item_sequence');
@@ -118,6 +119,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         $pageWidth = $pdf->getPageWidth() * 0.86;
 
+        $defaultCellHeight = $pdf->getStringHeight($pageWidth * 0.17, $data->pr_no);
         $x = $pdf->GetX();
         $y = $pdf->GetY();
 
@@ -144,49 +146,154 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $pdf->setCellHeightRatio(0.5);
         $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002]);
         $pdf->Cell(0, 0, '', 'LTR', 1, 'C');
+
         $pdf->setCellHeightRatio(1.25);
         $pdf->SetFont($this->fontArialBold, '', 14);
         $pdf->Cell(0, 0, 'PURCHASE REQUEST', 'LR', 1, 'C');
+
         $pdf->SetFont($this->fontArialBold, 'BU', 10);
         $pdf->Cell(0, 0, "{$company->municipality}, {$company->province}", 'LR', 1, 'C');
+
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell(0, 0, $company->company_type, 'LR', 1, 'C');
 
         $pdf->setCellHeightRatio(1.6);
-        $pdf->Cell($pageWidth * 0.12, 0, 'Department:', 'LT', 0, 'L');
+
+        $pdf->SetFont($this->fontArial, '', 1);
+        $pdf->Cell($pageWidth * 0.39, $defaultCellHeight * 0.02, '', 'LT', 0);
+        $pdf->Cell(0, 0, '', 'LTR', 1);
+
+        // ===== Department row (with MultiCell)
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.27, 0, $company->company_name, 'T', 0, 'L');
+
+        // Measure height needed for department name
+        $deptWidth = $pageWidth * 0.27;
+        $deptText = $data->department->department_name;
+        $deptHeight = $pdf->getStringHeight($deptWidth, $deptText);
+
+        // Department label
+        $pdf->setCellHeightRatio(1.25);
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.07, 0, 'PR No.', 'LT', 0, 'L');
-        $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell($pageWidth * 0.17, 0, $data->pr_no, 'T', 0, 'L');
+        $pdf->Cell($pageWidth * 0.12, $deptHeight, 'Department:', 'L', 0, 'L', valign: 'T');
+
+        // Department name (MultiCell with top alignment)
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->MultiCell(
+            $deptWidth,
+            $deptHeight,
+            $deptText,
+            '',
+            'L',
+            false,
+            0,
+            stretch: 0,
+            ishtml: false,
+            autopadding: true,
+            maxh: $deptHeight,
+            valign:'T'
+        );
+        $pdf->setCellHeightRatio(1.6);
+
+        // PR No.
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.055, 0, 'Date:', 'T', 0, 'L');
+        $pdf->Cell($pageWidth * 0.07, $deptHeight, 'PR No.', 'L', 0, 'L', valign: 'T');
+
         $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell(0, 0, date_format(date_create($data->pr_date), 'F j, Y'), 'TR', 1, 'L');
+        $pdf->Cell($pageWidth * 0.17, $deptHeight, $data->pr_no, 0, 0, 'L', valign: 'T');
+
+        // PR Date
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.055, $deptHeight, 'Date:', 0, 0, 'L', valign: 'T');
+
+        $pdf->SetFont($this->fontArial, 'U', 10);
+        $pdf->Cell(0, $deptHeight, date_format(date_create($data->pr_date), 'F j, Y'), 'R', 1, 'L', valign: 'T');
+        $y = $pdf->GetY();
+
+        // ===== Section and SAI No.
+        $pdf->SetFont($this->fontArial, '', 10);
+
+        // Measure height needed for section name
+        $secWidth = $pageWidth * 0.27;
+        $secText = $data->section?->section_name ?? '';
+        $secHeight = $pdf->getStringHeight($secWidth, $secText);
+
+        // $pdf->SetY($y + ($defaultCellHeight * (($deptHeight / $defaultCellHeight) - 1)));
+
+        // Section label
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.12, $secHeight, 'Section:', 'L', 0, 'L', valign: 'T');
+
+        // Section name (MultiCell with top alignment)
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->MultiCell(
+            $secWidth,
+            $secHeight,
+            $secText,
+            0,
+            'L',
+            false,
+            0,
+            stretch: 0,
+            ishtml: false,
+            autopadding: true,
+            maxh: $secHeight,
+            valign: 'T'
+        );
+        $pdf->setCellHeightRatio(1.6);
+        $x = $pdf->GetX();
+
+        // SAI No.
+        $pdf->SetXY($x, $y - ($defaultCellHeight * (($deptHeight / $defaultCellHeight) - 1)));
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.075, 0, 'SAI No.', 'L', 0, 'L', valign: 'T');
+
+        $pdf->SetFont($this->fontArial, 'U', 10);
+        $pdf->Cell($pageWidth * 0.165, 0, $data->sai_no ?? '______________', '', 0, 'L', valign: 'T');
+
+        // SAI Date
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.055, 0, 'Date:', '', 0, 'L', valign: 'T');
+
+        $pdf->SetFont($this->fontArial, 'U', 10);
+        $pdf->Cell(0, 0, $data->sai_date ? date_format(date_create($data->sai_date), 'F j, Y') : '______________', 'R', 1, 'L', valign: 'T');
+
+        // ===== ALOBS Row
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell(
+            $pageWidth * 0.39, 
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            '', 'L', 0, 'L', valign: 'T'
+        );
+
+        $pdf->Cell(
+            $pageWidth * 0.11, 
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            'ALOBS No.', 'L', 0, 'L', valign: 'T'
+        );
+
+        $pdf->SetFont($this->fontArial, 'U', 10);
+        $pdf->Cell(
+            $pageWidth * 0.13, 
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            $data->alobs_no ?? '___________', 
+            '', 0, 'L', valign: 'T'
+        );
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.08, 0, 'Section:', 'L', 0, 'L');
-        $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.31, 0, $data->section->section_name, '', 0, 'L');
-        $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.075, 0, 'SAI No.', 'L', 0, 'L');
-        $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell($pageWidth * 0.165, 0, $data->sai_no, '', 0, 'L');
-        $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.055, 0, 'Date:', '', 0, 'L');
-        $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell(0, 0, date_format(date_create($data->sai_date), 'F j, Y'), 'R', 1, 'L');
+        $pdf->Cell(
+            $pageWidth * 0.055, 
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            'Date:', '', 0, 'L', valign: 'T'
+        );
 
-        $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.39, 0, '', 'L', 0, 'L');
-        $pdf->Cell($pageWidth * 0.11, 0, 'ALOBS No.', 'L', 0, 'L');
         $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell($pageWidth * 0.13, 0, $data->alobs_no, '', 0, 'L');
-        $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.055, 0, 'Date:', '', 0, 'L');
-        $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell(0, 0, date_format(date_create($data->alobs_date), 'F j, Y'), 'R', 1, 'L');
+        $pdf->Cell(
+            0, 
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            $data->alobs_date ? date_format(date_create($data->alobs_date), 'F j, Y') : '______________', 
+            'R', 1, 'L', valign: 'T'
+        );
 
         $htmlTable = '
             <table border="1" cellpadding="2"><thead><tr>

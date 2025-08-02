@@ -20,6 +20,36 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
             ->name('index');
     });
 
+    Route::name('account-classifications.')->prefix('/account-classifications')->group(function () {
+        Route::get('/', [LibraryControllers\AccountClassificationController::class, 'index'])
+            ->middleware('ability:super:*,head:*,lib-account-class:*,lib-account-class:view')
+            ->name('index');
+        Route::post('/', [LibraryControllers\AccountClassificationController::class, 'store'])
+            ->middleware('ability:super:*,lib-account-class:*,lib-account-class:create')
+            ->name('store');
+        Route::get('/{accountClassification}', [LibraryControllers\AccountClassificationController::class, 'show'])
+            ->middleware('ability:super:*,lib-account-class:*,lib-account-class:view')
+            ->name('show');
+        Route::put('/{accountClassification}', [LibraryControllers\AccountClassificationController::class, 'update'])
+            ->middleware('ability:super:*,lib-account-class:*,lib-account-class:update')
+            ->name('update');
+    });
+
+    Route::name('accounts.')->prefix('/accounts')->group(function () {
+        Route::get('/', [LibraryControllers\AccountController::class, 'index'])
+            ->middleware('ability:super:*,head:*,lib-account:*,lib-account:view')
+            ->name('index');
+        Route::post('/', [LibraryControllers\AccountController::class, 'store'])
+            ->middleware('ability:super:*,lib-account:*,lib-account:create')
+            ->name('store');
+        Route::get('/{account}', [LibraryControllers\AccountController::class, 'show'])
+            ->middleware('ability:super:*,lib-account:*,lib-account:view')
+            ->name('show');
+        Route::put('/{account}', [LibraryControllers\AccountController::class, 'update'])
+            ->middleware('ability:super:*,lib-account:*,lib-account:update')
+            ->name('update');
+    });
+
     Route::name('bids-awards-committees.')->prefix('/bids-awards-committees')->group(function () {
         Route::get('/', [LibraryControllers\BidsAwardsCommitteeController::class, 'index'])
             ->middleware('ability:super:*,head:*,lib-bid-committee:*,lib-bid-committee:view')
@@ -65,18 +95,18 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
             ->name('update');
     });
 
-    Route::name('mfo-paps.')->prefix('/mfo-paps')->group(function () {
-        Route::get('/', [LibraryControllers\MfoPapController::class, 'index'])
-            ->middleware('ability:super:*,head:*,lib-mfo-pap:*,lib-mfo-pap:view')
+    Route::name('function-program-projects.')->prefix('/function-program-projects')->group(function () {
+        Route::get('/', [LibraryControllers\FunctionProgramProjectController::class, 'index'])
+            ->middleware('ability:super:*,head:*,lib-fpp:*,lib-fpp:view')
             ->name('index');
-        Route::post('/', [LibraryControllers\MfoPapController::class, 'store'])
-            ->middleware('ability:super:*,lib-mfo-pap:*,lib-mfo-pap:create')
+        Route::post('/', [LibraryControllers\FunctionProgramProjectController::class, 'store'])
+            ->middleware('ability:super:*,lib-fpp:*,lib-fpp:create')
             ->name('store');
-        Route::get('/{mfoPap}', [LibraryControllers\MfoPapController::class, 'show'])
-            ->middleware('ability:super:*,lib-mfo-pap:*,lib-mfo-pap:view')
+        Route::get('/{functionProgramProject}', [LibraryControllers\FunctionProgramProjectController::class, 'show'])
+            ->middleware('ability:super:*,lib-fpp:*,lib-fpp:view')
             ->name('show');
-        Route::put('/{mfoPap}', [LibraryControllers\MfoPapController::class, 'update'])
-            ->middleware('ability:super:*,lib-mfo-pap:*,lib-mfo-pap:update')
+        Route::put('/{functionProgramProject}', [LibraryControllers\FunctionProgramProjectController::class, 'update'])
+            ->middleware('ability:super:*,lib-fpp:*,lib-fpp:update')
             ->name('update');
     });
 
@@ -155,36 +185,6 @@ Route::middleware('auth:sanctum')->prefix('/libraries')->group(function() {
             ->name('show');
         Route::put('/{supplier}', [LibraryControllers\SupplierController::class, 'update'])
             ->middleware('ability:super:*,lib-supplier:*,lib-supplier:update')
-            ->name('update');
-    });
-
-    Route::name('uacs-code-classifications.')->prefix('/uacs-code-classifications')->group(function () {
-        Route::get('/', [LibraryControllers\UacsCodeClassificationController::class, 'index'])
-            ->middleware('ability:super:*,head:*,lib-uacs-class:*,lib-uacs-class:view')
-            ->name('index');
-        Route::post('/', [LibraryControllers\UacsCodeClassificationController::class, 'store'])
-            ->middleware('ability:super:*,lib-uacs-class:*,lib-uacs-class:create')
-            ->name('store');
-        Route::get('/{uacsCodeClassification}', [LibraryControllers\UacsCodeClassificationController::class, 'show'])
-            ->middleware('ability:super:*,lib-uacs-class:*,lib-uacs-class:view')
-            ->name('show');
-        Route::put('/{uacsCodeClassification}', [LibraryControllers\UacsCodeClassificationController::class, 'update'])
-            ->middleware('ability:super:*,lib-uacs-class:*,lib-uacs-class:update')
-            ->name('update');
-    });
-
-    Route::name('uacs-codes.')->prefix('/uacs-codes')->group(function () {
-        Route::get('/', [LibraryControllers\UacsCodeController::class, 'index'])
-            ->middleware('ability:super:*,head:*,lib-uacs-code:*,lib-uacs-code:view')
-            ->name('index');
-        Route::post('/', [LibraryControllers\UacsCodeController::class, 'store'])
-            ->middleware('ability:super:*,lib-uacs-code:*,lib-uacs-code:create')
-            ->name('store');
-        Route::get('/{uacsCode}', [LibraryControllers\UacsCodeController::class, 'show'])
-            ->middleware('ability:super:*,lib-uacs-code:*,lib-uacs-code:view')
-            ->name('show');
-        Route::put('/{uacsCode}', [LibraryControllers\UacsCodeController::class, 'update'])
-            ->middleware('ability:super:*,lib-uacs-code:*,lib-uacs-code:update')
             ->name('update');
     });
 

@@ -21,7 +21,7 @@ Route::middleware('auth:sanctum')->group(function() {
         Route::put('/{purchaseRequest}/submit-approval', [ProcurementControllers\PurchaseRequestController::class, 'submitForApproval'])
             ->name('submit');
         Route::put('/{purchaseRequest}/approve-cash-availability', [ProcurementControllers\PurchaseRequestController::class, 'approveForCashAvailability'])
-            ->middleware('ability:super:*,supply:*,cashier:*,budget:*,accounting:*,pr:*,pr:approve-cash-available')
+            ->middleware('ability:super:*,supply:*,cashier:*,budget:*,accountant:*,pr:*,pr:approve-cash-available')
             ->name('approve_for_cash_availability');
         Route::put('/{purchaseRequest}/approve', [ProcurementControllers\PurchaseRequestController::class, 'approve'])
             ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:approve')
@@ -134,5 +134,47 @@ Route::middleware('auth:sanctum')->group(function() {
         // Route::put('/{inspectionAcceptanceReport}/accept', [ProcurementControllers\InspectionAcceptanceReportController::class, 'accept'])
         //     ->middleware('ability:super:*,supply:*,iar:*,iar:accept')
         //     ->name('accept');
+    });
+
+    Route::name('obligation_requests.')->prefix('/obligation-requests')->group(function () {
+        Route::get('/', [ProcurementControllers\ObligationRequestStatusController::class, 'index'])
+            ->middleware('ability:super:*,head:*,budget:*,obr:*,obr:view')
+            ->name('index');
+        Route::get('/{obligationRequest}', [ProcurementControllers\ObligationRequestStatusController::class, 'show'])
+            ->middleware('ability:super:*,budget:*,obr:*,obr:view')
+            ->name('show');
+        Route::put('/{obligationRequest}', [ProcurementControllers\ObligationRequestStatusController::class, 'update'])
+            ->middleware('ability:super:*,budget:*,obr:*,obr:update')
+            ->name('update');
+        Route::put('/{obligationRequest}/submit', [ProcurementControllers\ObligationRequestStatusController::class, 'submit'])
+            ->middleware('ability:super:*,budget:*,obr:*,obr:submit')
+            ->name('submit');
+        Route::put('/{obligationRequest}/disapprove', [ProcurementControllers\ObligationRequestStatusController::class, 'disapprove'])
+            ->middleware('ability:super:*,budget:*,obr:*,obr:disapprove')
+            ->name('disapprove');
+        Route::put('/{obligationRequest}/approve', [ProcurementControllers\ObligationRequestStatusController::class, 'approve'])
+            ->middleware('ability:super:*,budget:*,obr:*,obr:approve')
+            ->name('approve');
+    });
+
+    Route::name('disbursement_vouchers.')->prefix('/disbursement-vouchers')->group(function () {
+        Route::get('/', [ProcurementControllers\DisbursementVoucherController::class, 'index'])
+            ->middleware('ability:super:*,head:*,accountant:*,dv:*,dv:view')
+            ->name('index');
+        Route::get('/{disbursementVoucher}', [ProcurementControllers\DisbursementVoucherController::class, 'show'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:view')
+            ->name('show');
+        Route::put('/{disbursementVoucher}', [ProcurementControllers\DisbursementVoucherController::class, 'update'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:update')
+            ->name('update');
+        Route::put('/{disbursementVoucher}/submit', [ProcurementControllers\DisbursementVoucherController::class, 'submit'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:submit')
+            ->name('submit');
+        Route::put('/{disbursementVoucher}/disapprove', [ProcurementControllers\DisbursementVoucherController::class, 'disapprove'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:disapprove')
+            ->name('disapprove');
+        Route::put('/{disbursementVoucher}/approve', [ProcurementControllers\DisbursementVoucherController::class, 'approve'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:approve')
+            ->name('approve');
     });
 });

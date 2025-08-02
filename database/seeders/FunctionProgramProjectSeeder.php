@@ -2,19 +2,19 @@
 
 namespace Database\Seeders;
 
-use App\Models\MfoPap;
+use App\Models\FunctionProgramProject;
 use Illuminate\Database\Seeder;
 
-class MfoPapSeeder extends Seeder
+class FunctionProgramProjectSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        MfoPap::create([
+        FunctionProgramProject::create([
             'code' => 'a.1.1.1',
-            'description' => 'Test MFO/PAP 1',
+            'description' => 'Test FPP 1',
         ]);
     }
 }

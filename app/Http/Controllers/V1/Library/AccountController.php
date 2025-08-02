@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\MfoPap;
+use App\Models\Account;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class MfoPapController extends Controller
+class AccountController extends Controller
 {
     private LogRepository $logRepository;
 
@@ -31,13 +31,15 @@ class MfoPapController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $mfoPaps = MfoPap::query();
+        $accounts = Account::query()->with('classification');
 
         if (! empty($search)) {
-            $mfoPaps = $mfoPaps->where(function ($query) use ($search) {
+            $accounts = $accounts->where(function ($query) use ($search) {
                 $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                    ->orWhere('account_title', 'ILIKE', "%{$search}%")
                     ->orWhere('code', 'ILIKE', "%{$search}%")
-                    ->orWhere('description', 'ILIKE', "%{$search}%");
+                    ->orWhere('description', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('classification', 'classification_name', 'ILIKE', "%{$search}%");
             });
         }
 
@@ -46,26 +48,29 @@ class MfoPapController extends Controller
                 case 'code_formatted':
                     $columnSort = 'code';
                     break;
+                case 'classification_name':
+                    $columnSort = 'classification.classification_name';
+                    break;
                 default:
                     break;
             }
 
-            $mfoPaps = $mfoPaps->orderBy($columnSort, $sortDirection);
+            $accounts = $accounts->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $mfoPaps->paginate($perPage);
+            return $accounts->paginate($perPage);
         } else {
             if (! $showInactive) {
-                $mfoPaps = $mfoPaps->where('active', true);
+                $accounts = $accounts->where('active', true);
             }
 
-            $mfoPaps = $showAll
-                ? $mfoPaps->get()
-                : $mfoPaps = $mfoPaps->limit($perPage)->get();
+            $accounts = $showAll
+                ? $accounts->get()
+                : $accounts = $accounts->limit($perPage)->get();
 
             return response()->json([
-                'data' => $mfoPaps,
+                'data' => $accounts,
             ]);
         }
     }
@@ -76,7 +81,9 @@ class MfoPapController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'code' => 'required|unique:mfo_paps,code',
+            'classification_id' => 'required',
+            'account_title' => 'required|string',
+            'code' => 'required|unique:accounts,code',
             'description' => 'nullable',
             'active' => 'required|boolean',
         ]);
@@ -84,31 +91,31 @@ class MfoPapController extends Controller
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $mfoPap = MfoPap::create($validated);
+            $account = Account::create($validated);
 
             $this->logRepository->create([
-                'message' => 'MFO/PAP created successfully.',
-                'log_id' => $mfoPap->id,
-                'log_module' => 'lib-mfo-pap',
-                'data' => $mfoPap,
+                'message' => 'Account created successfully.',
+                'log_id' => $account->id,
+                'log_module' => 'lib-account',
+                'data' => $account,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => 'MFO/PAP creation failed. Please try again.',
+                'message' => 'Account creation failed. Please try again.',
                 'details' => $th->getMessage(),
-                'log_module' => 'lib-mfo-pap',
+                'log_module' => 'lib-account',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'MFO/PAP creation failed. Please try again.',
+                'message' => 'Account creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $mfoPap,
-                'message' => 'MFO/PAP created successfully.',
+                'data' => $account,
+                'message' => 'Account created successfully.',
             ],
         ]);
     }
@@ -116,11 +123,13 @@ class MfoPapController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(MfoPap $mfoPap)
+    public function show(Account $account)
     {
+        $account->load('classification');
+
         return response()->json([
             'data' => [
-                'data' => $mfoPap,
+                'data' => $account,
             ],
         ]);
     }
@@ -128,10 +137,12 @@ class MfoPapController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, MfoPap $mfoPap)
+    public function update(Request $request, Account $account)
     {
         $validated = $request->validate([
-            'code' => 'required|unique:mfo_paps,code,'.$mfoPap->id,
+            'classification_id' => 'required',
+            'account_title' => 'required|string',
+            'code' => 'required|unique:accounts,code,'.$account->id,
             'description' => 'nullable',
             'active' => 'required|boolean',
         ]);
@@ -139,32 +150,32 @@ class MfoPapController extends Controller
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $mfoPap->update($validated);
+            $account->update($validated);
 
             $this->logRepository->create([
-                'message' => 'MFO/PAP updated successfully.',
-                'log_id' => $mfoPap->id,
-                'log_module' => 'lib-mfo-pap',
-                'data' => $mfoPap,
+                'message' => 'Section updated successfully.',
+                'log_id' => $account->id,
+                'log_module' => 'lib-account',
+                'data' => $account,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => 'MFO/PAP update failed. Please try again.',
+                'message' => 'Section update failed.',
                 'details' => $th->getMessage(),
-                'log_id' => $mfoPap->id,
-                'log_module' => 'lib-mfo-pap',
+                'log_id' => $account->id,
+                'log_module' => 'lib-account',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'MFO/PAP update failed. Please try again.',
+                'message' => 'Account update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $mfoPap,
-                'message' => 'MFO/PAP updated successfully.',
+                'data' => $account,
+                'message' => 'Account updated successfully.',
             ],
         ]);
     }

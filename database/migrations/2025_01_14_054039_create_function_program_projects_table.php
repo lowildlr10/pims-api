@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('mfo_paps', function (Blueprint $table) {
+        Schema::create('function_program_projects', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('code');
             $table->text('description')->nullable();
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('mfo_paps');
+        Schema::dropIfExists('function_program_projects');
     }
 };

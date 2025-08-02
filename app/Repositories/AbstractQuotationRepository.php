@@ -83,13 +83,11 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
 
     private function generateNewAoqNumber(): string
     {
-        $month = date('m');
         $year = date('Y');
-        $sequence = AbstractQuotation::whereMonth('created_at', $month)
-            ->whereYear('created_at', $year)
+        $sequence = AbstractQuotation::whereYear('created_at', $year)
             ->count() + 1;
 
-        return "{$year}-{$sequence}-{$month}";
+        return "{$year}-{$sequence}";
     }
 
     public function print(array $pageConfig, string $aoqId): array

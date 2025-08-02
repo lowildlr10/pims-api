@@ -80,7 +80,7 @@ class DepartmentController extends Controller
                 || $user->tokenCan('head:*')
                 || $user->tokenCan('supply:*')
                 || $user->tokenCan('budget:*')
-                || $user->tokenCan('accounting:*')
+                || $user->tokenCan('accountant:*')
             ) {
             } else {
                 $departments = $departments->where('id', $user->department_id);

@@ -113,7 +113,7 @@ class PurchaseOrderController extends Controller
             || $user->tokenCan('head:*')
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
-            || $user->tokenCan('accounting:*')
+            || $user->tokenCan('accountant:*')
         ) {
         } else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);

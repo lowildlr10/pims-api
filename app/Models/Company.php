@@ -37,6 +37,7 @@ class Company extends Model
         'company_head_id',
         'favicon',
         'company_logo',
+        'bagong_pilipinas_logo',
         'login_background',
         'theme_colors',
     ];

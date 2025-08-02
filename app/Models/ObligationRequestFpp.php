@@ -5,9 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-class MfoPap extends Model
+class ObligationRequestFpp extends Model
 {
     use HasUuids;
+
+    /**
+     * Indicates if the model should be timestamped.
+     *
+     * @var bool
+     */
+    public $timestamps = false;
 
     /**
      * The attributes that are mass assignable.
@@ -15,8 +22,7 @@ class MfoPap extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'code',
-        'description',
-        'active',
+        'obligation_request_id',
+        'fpp_id',
     ];
 }

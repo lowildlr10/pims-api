@@ -42,7 +42,7 @@ class DisbursementVoucher extends Model
         'received_date',
         'or_other_document',
         'jev_no',
-        'jevt_date',
+        'jev_date',
         'status',
         'status_timestamps'
     ];

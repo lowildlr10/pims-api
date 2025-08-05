@@ -154,7 +154,9 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $supplier = $data->supplier;
         $purchaseOrder = $data->purchase_order;
         $purchaseRequest = $data->purchase_request;
+        $department = $purchaseRequest->department;
         $section = $purchaseRequest->section;
+        $officeName = $section->section_name ?? $department->department_name;
         $items = $data->items;
         $signatoryInspection = $data->signatory_inspection;
         $acceptance = $data->acceptance;
@@ -227,10 +229,10 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $pdf->Cell($pageWidth * 0.11, 0, 'Invoice No.', '', 0, 'R');
         $pdf->Cell($pageWidth * 0.06, 0, $data->invoice_no, 'B', 0, 'L');
         $pdf->Cell($pageWidth * 0.08, 0, 'Date:', '', 0, 'R');
-        $pdf->Cell(0, 0, date_format(date_create($data->invoice_date), 'm/d/Y'), 'BR', 1, 'L');
+        $pdf->Cell(0, 0, $data->invoice_date ?? '', 'BR', 1, 'L');
 
         $pdf->Cell($pageWidth * 0.31, 0, 'Requesting Office/Dept.', 'L', 0, 'L');
-        $pdf->Cell($pageWidth * 0.5, 0, $section->section_name, 'B', 0, 'L');
+        $pdf->Cell($pageWidth * 0.5, 0, $officeName, 'B', 0, 'L');
         $pdf->Cell(0, 0, '', 'R', 1, 'L');
 
         $pdf->setCellHeightRatio(1.25);

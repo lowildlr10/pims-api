@@ -46,8 +46,8 @@ class AwardedNotification extends Notification implements ShouldQueue
             'id' => $this->pr->id,
             'href' => "/procurement/pr?search={$this->pr->id}",
             'title' => 'Purchase Request Awarded',
-            'message' => "<q>Purchase Request #{$this->pr->pr_no}</q> with ".
-                "<q>Abstract #{$this->aoq->abstract_no}</q> has been fully ".
+            'message' => "<q>Purchase Request - {$this->pr->pr_no}</q> with ".
+                "<q>Abstract - {$this->aoq->abstract_no}</q> has been fully ".
                 "awarded.",
         ];
     }

@@ -87,14 +87,14 @@ class AccountClassificationController extends Controller
             $this->logRepository->create([
                 'message' => 'Account classification created successfully.',
                 'log_id' => $accountClassification->id,
-                'log_module' => 'lib-uacs-class',
+                'log_module' => 'lib-account-class',
                 'data' => $accountClassification,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
                 'message' => 'Account classification creation failed. Please try again.',
                 'details' => $th->getMessage(),
-                'log_module' => 'lib-uacs-class',
+                'log_module' => 'lib-account-class',
                 'data' => $validated,
             ], isError: true);
 
@@ -141,7 +141,7 @@ class AccountClassificationController extends Controller
             $this->logRepository->create([
                 'message' => 'Section updated successfully.',
                 'log_id' => $accountClassification->id,
-                'log_module' => 'lib-uacs-class',
+                'log_module' => 'lib-account-class',
                 'data' => $accountClassification,
             ]);
         } catch (\Throwable $th) {
@@ -149,7 +149,7 @@ class AccountClassificationController extends Controller
                 'message' => 'Section update failed.',
                 'details' => $th->getMessage(),
                 'log_id' => $accountClassification->id,
-                'log_module' => 'lib-uacs-class',
+                'log_module' => 'lib-account-class',
                 'data' => $validated,
             ], isError: true);
 

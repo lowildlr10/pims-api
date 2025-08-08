@@ -6,7 +6,7 @@ use Carbon\Carbon;
 
 class StatusTimestampsHelper
 {
-    public static function generate(string $status, $current): string
+    public static function generate(string $status, mixed $current): array
     {
         switch ($current) {
             case is_string($current):
@@ -29,7 +29,7 @@ class StatusTimestampsHelper
 
         $current[$status] = Carbon::now()->toDateTimeString();
 
-        return json_encode($current);
+        return $current;
     }
 
     public static function clear(): string

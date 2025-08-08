@@ -55,7 +55,7 @@ class ObligationRequest extends Model
      */
     public function payee(): HasOne
     {
-        return $this->hasOne(Supplier::class, 'id', 'supplier_id');
+        return $this->hasOne(Supplier::class, 'id', 'payee_id');
     }
 
     /**

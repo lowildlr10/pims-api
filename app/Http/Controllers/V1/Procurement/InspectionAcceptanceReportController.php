@@ -13,6 +13,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Repositories\InventorySupplyRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\ObligationRequestRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -24,10 +25,16 @@ class InspectionAcceptanceReportController extends Controller
 
     protected InventorySupplyRepository $inventorySupplyRepository;
 
-    public function __construct(LogRepository $logRepository, InventorySupplyRepository $inventorySupplyRepository)
-    {
+    protected ObligationRequestRepository $obligationRequestRepository;
+
+    public function __construct(
+        LogRepository $logRepository,
+        InventorySupplyRepository $inventorySupplyRepository,
+        ObligationRequestRepository $obligationRequestRepository
+    ) {
         $this->logRepository = $logRepository;
         $this->inventorySupplyRepository = $inventorySupplyRepository;
+        $this->obligationRequestRepository = $obligationRequestRepository;
     }
 
     /**
@@ -338,17 +345,17 @@ class InspectionAcceptanceReportController extends Controller
      */
     public function inspect(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport)
     {
-        $inspectionAcceptanceReport->load('purchase_order');
+        $inspectionAcceptanceReport->load([
+            'purchase_order',
+            'purchase_order.supplier'
+        ]);
 
-        if ($inspectionAcceptanceReport->purchase_order->document_type === 'po') {
-            $validated = $request->validate([
+        $validated = $inspectionAcceptanceReport->purchase_order->document_type === 'po' 
+            ? $request->validate([
                 'items' => 'required|array|min:1',
-            ]);
-        } else {
-            $validated = [
-                'items' => [],
+            ]) : [
+                'items' => []
             ];
-        }
 
         try {
             $message = 'Inspection & acceptance report successfully marked as inspected.';
@@ -389,6 +396,7 @@ class InspectionAcceptanceReportController extends Controller
                 ], 422);
             }
 
+            // Save inspected items to inventory property and supplies
             foreach ($validated['items'] ?? [] as $key => $item) {
                 $supply = $this->inventorySupplyRepository->storeUpdate(array_merge(
                     $item,
@@ -402,6 +410,22 @@ class InspectionAcceptanceReportController extends Controller
                     'data' => $supply,
                 ]);
             }
+
+            // Create an obligation request
+            $obligationRequest = $this->obligationRequestRepository->storeUpdate([
+                'purchase_request_id' => $inspectionAcceptanceReport->purchase_request_id,
+                'purchase_order_id'   => $inspectionAcceptanceReport->purchase_order_id,
+                'payee_id'            => $inspectionAcceptanceReport->purchase_order->supplier_id,
+                'address'             => $inspectionAcceptanceReport->purchase_order->supplier->address ?? null,
+                'total_amount'        => $inspectionAcceptanceReport->purchase_order->total_amount ?? 0.00,
+            ]);
+
+            $this->logRepository->create([
+                'message' => 'Obligation request created successfully.',
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ]);
 
             $inspectionAcceptanceReport->update([
                 'status' => InspectionAcceptanceReportStatus::INSPECTED,

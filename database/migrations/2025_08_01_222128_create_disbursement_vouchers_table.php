@@ -33,7 +33,7 @@ return new class extends Migration
                 ->on('suppliers');
             $table->text('address')->nullable();
             $table->string('office')->nullable();
-            $table->uuid('responsibility_center_id');
+            $table->uuid('responsibility_center_id')->nullable();
             $table->foreign('responsibility_center_id')
                 ->references('id')
                 ->on('responsibility_centers');

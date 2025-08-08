@@ -36,7 +36,7 @@ return new class extends Migration
             $table->string('obr_no');
             $table->string('office')->nullable();
             $table->text('address')->nullable();
-            $table->uuid('responsibility_center_id');
+            $table->uuid('responsibility_center_id')->nullable();
             $table->foreign('responsibility_center_id')
                 ->references('id')
                 ->on('responsibility_centers');

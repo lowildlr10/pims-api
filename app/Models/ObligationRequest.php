@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ObligationRequest extends Model
@@ -96,5 +97,21 @@ class ObligationRequest extends Model
     public function purchase_request(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
+    }
+
+    /**
+     * The obligation request that has many fpps.
+     */
+    public function fpps(): HasMany
+    {
+        return $this->hasMany(ObligationRequestFpp::class);
+    }
+
+    /**
+     * The obligation request that has many accounts.
+     */
+    public function accounts(): HasMany
+    {
+        return $this->hasMany(ObligationRequestAccount::class);
     }
 }

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class ObligationRequestFpp extends Model
 {
@@ -25,4 +26,12 @@ class ObligationRequestFpp extends Model
         'obligation_request_id',
         'fpp_id',
     ];
+
+    /**
+     * The obligation request FPP that has one FPP.
+     */
+    public function fpp(): HasOne
+    {
+        return $this->hasOne(FunctionProgramProject::class, 'id', 'fpp_id');
+    }
 }

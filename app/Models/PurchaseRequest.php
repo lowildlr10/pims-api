@@ -39,6 +39,18 @@ class PurchaseRequest extends Model
         'total_estimated_cost',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status_timestamps' => 'array',
+        ];
+    }
+    
     protected $appends = [
         'total_estimated_cost_formatted',
     ];

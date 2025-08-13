@@ -54,7 +54,7 @@ class ObligationRequestStatusController extends Controller
                             ->orWhere('po_no', 'ILIKE',"%$search%");
                     })
                     ->orWhereRelation('payee', function ($query) use ($search) {
-                        $query->where('payee_name', 'ILIKE', "%{$search}%");
+                        $query->where('supplier_name', 'ILIKE', "%{$search}%");
                     })
                     ->orWhereRelation('responsibility_center', function ($query) use ($search) {
                         $query->where('code', 'ILIKE', "%{$search}%")
@@ -129,9 +129,32 @@ class ObligationRequestStatusController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(ObligationRequest $obligationRequest): JsonResponse
     {
-        //
+        $obligationRequest->load([
+            'payee:id,supplier_name',
+            'purchase_order:id,po_no,total_amount',
+            'signatory_budget:id,user_id',
+            'signatory_budget.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_budget.detail' => function ($query) {
+                $query->where('document', 'obr')
+                    ->where('signatory_type', 'budget');
+            },
+            'signatory_head:id,user_id',
+            'signatory_head.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_head.detail' => function ($query) {
+                $query->where('document', 'obr')
+                    ->where('signatory_type', 'head');
+            },
+            'fpps',
+            'accounts'
+        ]);
+
+        return response()->json([
+            'data' => [
+                'data' => $obligationRequest,
+            ],
+        ]);
     }
 
     /**

@@ -38,6 +38,18 @@ class InventoryIssuance extends Model
     ];
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status_timestamps' => 'array',
+        ];
+    }
+
+    /**
      * The inventory issuance that has one responsibility center.
      */
     public function responsibility_center(): HasOne

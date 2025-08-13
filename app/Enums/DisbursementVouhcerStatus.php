@@ -6,6 +6,8 @@ enum DisbursementVouhcerStatus: string
 {
     case DRAFT = 'draft';
     case PENDING = 'pending';
-    case APPROVED = 'approved';
     case DISAPPROVED = 'disapproved';
+    case DISBURSED = 'disbursed';
+    case FOR_PAYMENT = 'for_payment';
+    case PAID = 'paid';
 }

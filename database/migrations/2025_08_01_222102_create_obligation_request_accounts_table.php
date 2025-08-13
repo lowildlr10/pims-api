@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('obligation_request_accounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
+            $table->smallInteger('item_sequence');
             $table->uuid('obligation_request_id');
             $table->foreign('obligation_request_id')
                 ->references('id')

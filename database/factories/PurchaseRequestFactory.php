@@ -81,9 +81,9 @@ class PurchaseRequestFactory extends Factory
             'rfq_batch' => 1,
             'total_estimated_cost' => 0,
             'status' => 'draft',
-            'status_timestamps' => json_encode([
+            'status_timestamps' => [
                 'draft' => $now->toDateTimeString(),
-            ]),
+            ],
         ];
 
         return $data;

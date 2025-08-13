@@ -156,7 +156,7 @@ class InspectionAcceptanceReportController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(InspectionAcceptanceReport $inspectionAcceptanceReport)
+    public function show(InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
     {
         $inspectionAcceptanceReport->load([
             'supplier:id,supplier_name',
@@ -286,15 +286,15 @@ class InspectionAcceptanceReportController extends Controller
 
             if ($purchaseOrder) {
                 $purchaseOrder->update([
-                    'status' => PurchaseOrderStatus::INSPECTION,
+                    'status' => PurchaseOrderStatus::FOR_INSPECTION,
                     'status_timestamps' => StatusTimestampsHelper::generate(
-                        'inspection_at', $purchaseOrder->status_timestamps
+                        'for_inspection_at', $purchaseOrder->status_timestamps
                     ),
                 ]);
 
                 $this->logRepository->create([
                     'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                        ' order successfully marked as to inspection.',
+                        ' order successfully marked as to for inspection.',
                     'log_id' => $purchaseOrder->id,
                     'log_module' => 'po',
                     'data' => $purchaseOrder,
@@ -426,6 +426,25 @@ class InspectionAcceptanceReportController extends Controller
                 'log_module' => 'obr',
                 'data' => $obligationRequest,
             ]);
+
+            $purchaseOrder = PurchaseOrder::find($inspectionAcceptanceReport->purchase_order_id);
+
+            if ($purchaseOrder) {
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::INSPECTED,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'inspected_at', $purchaseOrder->status_timestamps
+                    ),
+                ]);
+
+                $this->logRepository->create([
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
+                        ' order successfully marked as to inspected.',
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder,
+                ]);
+            }
 
             $inspectionAcceptanceReport->update([
                 'status' => InspectionAcceptanceReportStatus::INSPECTED,

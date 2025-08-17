@@ -39,6 +39,18 @@ class AbstractQuotation extends Model
     ];
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status_timestamps' => 'array',
+        ];
+    }
+
+    /**
      * The abstract of quotation that has one bids awards committee.
      */
     public function bids_awards_committee(): HasOne

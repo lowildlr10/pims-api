@@ -107,7 +107,7 @@ class PrintController extends Controller
                 $logModule = 'iar';
                 break;
 
-            case DocumentPrintType::ORS:
+            case DocumentPrintType::OBR:
                 return response()->json([
                     'data' => [
                         'blob' => 'test',

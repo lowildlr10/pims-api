@@ -113,7 +113,7 @@ class PurchaseOrderController extends Controller
             || $user->tokenCan('head:*')
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
-            || $user->tokenCan('accounting:*')
+            || $user->tokenCan('accountant:*')
         ) {
         } else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
@@ -268,8 +268,6 @@ class PurchaseOrderController extends Controller
      */
     public function update(Request $request, PurchaseOrder $purchaseOrder)
     {
-        $user = Auth::user();
-
         $validated = $request->validate([
             'po_date' => 'required',
             'place_delivery' => 'required',
@@ -323,7 +321,7 @@ class PurchaseOrderController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function pending(PurchaseOrder $purchaseOrder)
+    public function pending(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
             $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
@@ -390,7 +388,7 @@ class PurchaseOrderController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function approve(PurchaseOrder $purchaseOrder)
+    public function approve(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
             $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
@@ -457,7 +455,7 @@ class PurchaseOrderController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function issue(PurchaseOrder $purchaseOrder)
+    public function issue(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
             $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
@@ -524,7 +522,7 @@ class PurchaseOrderController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function receive(PurchaseOrder $purchaseOrder)
+    public function receive(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
             $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
@@ -592,7 +590,7 @@ class PurchaseOrderController extends Controller
     /**
      * Update the status of the specified resource in storage.
      */
-    public function delivered(PurchaseOrder $purchaseOrder)
+    public function delivered(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
             $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').

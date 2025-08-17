@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\UacsCode;
+use App\Models\FunctionProgramProject;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class UacsCodeController extends Controller
+class FunctionProgramProjectController extends Controller
 {
     private LogRepository $logRepository;
 
@@ -31,15 +31,13 @@ class UacsCodeController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $uacsCodes = UacsCode::query()->with('classification');
+        $functionProgramProjects = FunctionProgramProject::query();
 
         if (! empty($search)) {
-            $uacsCodes = $uacsCodes->where(function ($query) use ($search) {
+            $functionProgramProjects = $functionProgramProjects->where(function ($query) use ($search) {
                 $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('account_title', 'ILIKE', "%{$search}%")
                     ->orWhere('code', 'ILIKE', "%{$search}%")
-                    ->orWhere('description', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('classification', 'classification_name', 'ILIKE', "%{$search}%");
+                    ->orWhere('description', 'ILIKE', "%{$search}%");
             });
         }
 
@@ -48,29 +46,26 @@ class UacsCodeController extends Controller
                 case 'code_formatted':
                     $columnSort = 'code';
                     break;
-                case 'classification_name':
-                    $columnSort = 'classification.classification_name';
-                    break;
                 default:
                     break;
             }
 
-            $uacsCodes = $uacsCodes->orderBy($columnSort, $sortDirection);
+            $functionProgramProjects = $functionProgramProjects->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $uacsCodes->paginate($perPage);
+            return $functionProgramProjects->paginate($perPage);
         } else {
             if (! $showInactive) {
-                $uacsCodes = $uacsCodes->where('active', true);
+                $functionProgramProjects = $functionProgramProjects->where('active', true);
             }
 
-            $uacsCodes = $showAll
-                ? $uacsCodes->get()
-                : $uacsCodes = $uacsCodes->limit($perPage)->get();
+            $functionProgramProjects = $showAll
+                ? $functionProgramProjects->get()
+                : $functionProgramProjects = $functionProgramProjects->limit($perPage)->get();
 
             return response()->json([
-                'data' => $uacsCodes,
+                'data' => $functionProgramProjects,
             ]);
         }
     }
@@ -81,9 +76,7 @@ class UacsCodeController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'classification_id' => 'required',
-            'account_title' => 'required|string',
-            'code' => 'required|unique:uacs_codes,code',
+            'code' => 'required|unique:function_program_projects,code',
             'description' => 'nullable',
             'active' => 'required|boolean',
         ]);
@@ -91,31 +84,31 @@ class UacsCodeController extends Controller
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCode = UacsCode::create($validated);
+            $functionProgramProject = FunctionProgramProject::create($validated);
 
             $this->logRepository->create([
-                'message' => 'UACS code created successfully.',
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode,
+                'message' => 'FPP created successfully.',
+                'log_id' => $functionProgramProject->id,
+                'log_module' => 'lib-fpp',
+                'data' => $functionProgramProject,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => 'UACS code creation failed. Please try again.',
+                'message' => 'FPP creation failed. Please try again.',
                 'details' => $th->getMessage(),
-                'log_module' => 'lib-uacs-code',
+                'log_module' => 'lib-fpp',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code creation failed. Please try again.',
+                'message' => 'FPP creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCode,
-                'message' => 'UACS code created successfully.',
+                'data' => $functionProgramProject,
+                'message' => 'FPP created successfully.',
             ],
         ]);
     }
@@ -123,13 +116,11 @@ class UacsCodeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(UacsCode $uacsCode)
+    public function show(FunctionProgramProject $functionProgramProject)
     {
-        $uacsCode->load('classification');
-
         return response()->json([
             'data' => [
-                'data' => $uacsCode,
+                'data' => $functionProgramProject,
             ],
         ]);
     }
@@ -137,12 +128,10 @@ class UacsCodeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, UacsCode $uacsCode)
+    public function update(Request $request, FunctionProgramProject $functionProgramProject)
     {
         $validated = $request->validate([
-            'classification_id' => 'required',
-            'account_title' => 'required|string',
-            'code' => 'required|unique:uacs_codes,code,'.$uacsCode->id,
+            'code' => 'required|unique:function_program_projects,code,'.$functionProgramProject->id,
             'description' => 'nullable',
             'active' => 'required|boolean',
         ]);
@@ -150,32 +139,32 @@ class UacsCodeController extends Controller
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCode->update($validated);
+            $functionProgramProject->update($validated);
 
             $this->logRepository->create([
-                'message' => 'Section updated successfully.',
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
-                'data' => $uacsCode,
+                'message' => 'FPP updated successfully.',
+                'log_id' => $functionProgramProject->id,
+                'log_module' => 'lib-fpp',
+                'data' => $functionProgramProject,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => 'Section update failed.',
+                'message' => 'FPP update failed. Please try again.',
                 'details' => $th->getMessage(),
-                'log_id' => $uacsCode->id,
-                'log_module' => 'lib-uacs-code',
+                'log_id' => $functionProgramProject->id,
+                'log_module' => 'lib-fpp',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code update failed. Please try again.',
+                'message' => 'FPP update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCode,
-                'message' => 'UACS code updated successfully.',
+                'data' => $functionProgramProject,
+                'message' => 'FPP updated successfully.',
             ],
         ]);
     }

@@ -2,19 +2,21 @@
 
 namespace App\Repositories;
 
-use App\Enums\InspectionAcceptanceReportStatus;
+use App\Enums\ObligationRequestStatus;
 use App\Helpers\FileHelper;
 use App\Helpers\StatusTimestampsHelper;
-use App\Interfaces\InspectionAcceptanceReportInterface;
+use App\Interfaces\ObligationRequestInterface;
 use App\Models\Company;
 use App\Models\InspectionAcceptanceReport;
-use App\Models\InspectionAcceptanceReportItem;
+use App\Models\ObligationRequest;
+use App\Models\ObligationRequestAccount;
+use App\Models\ObligationRequestFpp;
 use App\Models\PurchaseRequestItem;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
-class InspectionAcceptanceReportRepository implements InspectionAcceptanceReportInterface
+class ObligationRequestRepository implements ObligationRequestInterface
 {
     protected string $appUrl;
 
@@ -41,53 +43,69 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function storeUpdate(array $data, ?InspectionAcceptanceReport $inspectionAcceptanceReport = null): InspectionAcceptanceReport
+    public function storeUpdate(array $data, ?ObligationRequest $obligationRequest = null): ObligationRequest
     {
-        if (! empty($inspectionAcceptanceReport)) {
-            $inspectionAcceptanceReport->update($data);
+        if (! empty($obligationRequest)) {
+            $obligationRequest->update($data);
         } else {
-            $inspectionAcceptanceReport = InspectionAcceptanceReport::create(
+            $obligationRequest = ObligationRequest::create(
                 array_merge(
                     $data,
                     [
-                        'iar_no' => $this->generateNewIarNumber(),
-                        'status' => InspectionAcceptanceReportStatus::DRAFT,
+                        'obr_no' => $this->generateNewObrNumber(),
+                        'status' => ObligationRequestStatus::DRAFT,
                         'status_timestamps' => StatusTimestampsHelper::generate(
                             'draft_at', null
                         ),
                     ]
                 )
             );
-
-            $this->storeUpdateItems(
-                collect(isset($data['items']) && ! empty($data['items']) ? $data['items'] : []),
-                $inspectionAcceptanceReport
-            );
         }
 
-        return $inspectionAcceptanceReport;
+        $this->storeUpdateFpps(
+            collect(isset($data['fpps']) && ! empty($data['fpps']) ? $data['fpps'] : []),
+            $obligationRequest
+        );
+
+        $this->storeUpdateAccounts(
+            collect(isset($data['accounts']) && ! empty($data['accounts']) ? $data['accounts'] : []),
+            $obligationRequest
+        );
+
+        return $obligationRequest;
     }
 
-    private function storeUpdateItems(Collection $items, InspectionAcceptanceReport $inspectionAcceptanceReport): void
+    private function storeUpdateFpps(Collection $fpps, ObligationRequest $obligationRequest): void
     {
-        foreach ($items as $item) {
-            InspectionAcceptanceReportItem::where('inspection_acceptance_report_id', $inspectionAcceptanceReport->id)
-                ->where('po_item_id', $item['po_item_id'])
-                ->delete();
-
-            InspectionAcceptanceReportItem::create([
-                'inspection_acceptance_report_id' => $inspectionAcceptanceReport->id,
-                'pr_item_id' => $item['pr_item_id'],
-                'po_item_id' => $item['po_item_id'],
+        ObligationRequestFpp::where('obligation_request_id', $obligationRequest->id)->delete();
+        
+        foreach ($fpps as $fppId) {
+            ObligationRequestFpp::create([
+                'obligation_request_id' => $obligationRequest->id,
+                'fpp_id' => $fppId
             ]);
         }
     }
 
-    private function generateNewIarNumber(): string
+    private function storeUpdateAccounts(Collection $accounts, ObligationRequest $obligationRequest): void
+    {
+        ObligationRequestAccount::where('obligation_request_id', $obligationRequest->id)->delete();
+
+        foreach ($accounts as $key => $account) {
+            ObligationRequestAccount::create([
+                'item_sequence' => $key,
+                'obligation_request_id' => $obligationRequest->id,
+                'account_id' => $account['account_id'],
+                'amount' => $account['amount'],
+            ]);
+        }
+    }
+
+    private function generateNewObrNumber(): string
     {
         $month = date('m');
         $year = date('Y');
-        $sequence = InspectionAcceptanceReport::whereMonth('created_at', $month)
+        $sequence = ObligationRequest::whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
             ->count() + 1;
 

@@ -84,7 +84,7 @@ class RequestQuotationController extends Controller
             || $user->tokenCan('head:*')
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
-            || $user->tokenCan('accounting:*')
+            || $user->tokenCan('accountant:*')
         ) {
         } else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
@@ -208,9 +208,24 @@ class RequestQuotationController extends Controller
             : null;
 
         try {
+            $purchaseRequest = PurchaseRequest::find($validated['purchase_request_id']);
+
+            if ($purchaseRequest->rfq_batch > 1) {
+                $message = 'Cannot create RFQ: Abstract of Bids and Quotation is ongoing or completed.';
+
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_module' => 'rfq',
+                    'data' => $validated,
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message,
+                ], 422);
+            }
+
             for ($copy = 1; $copy <= $copies; $copy++) {
                 $message = 'Request for quotation created successfully.';
-                $purchaseRequest = PurchaseRequest::find($validated['purchase_request_id']);
 
                 $existingSupplierCount = ! empty($validated['supplier_id'])
                     ? RequestQuotation::where('supplier_id', $validated['supplier_id'])
@@ -221,7 +236,7 @@ class RequestQuotationController extends Controller
                     : 0;
 
                 if ($existingSupplierCount > 0) {
-                    $message = 'Request quotation creation failed due to an existing RFQ with the supplier.';
+                    $message = 'RFQ creation failed due to an existing RFQ with the supplier.';
 
                     $this->logRepository->create([
                         'message' => $message,
@@ -499,15 +514,15 @@ class RequestQuotationController extends Controller
             if ($purchaseRequest
                 && ($prCurrentStatus === PurchaseRequestStatus::APPROVED
                     || $prCurrentStatus === PurchaseRequestStatus::FOR_ABSTRACT
-                    || $prCurrentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED)) {
+                    /* || $prCurrentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED */)) {
                 $newStatus = PurchaseRequestStatus::FOR_CANVASSING;
                 $prMessage = 'Purchase request successfully marked as "For Canvassing".';
 
-                if ($prCurrentStatus === PurchaseRequestStatus::FOR_ABSTRACT
-                    || $prCurrentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
-                    $prMessage = 'Purchase request successfully marked as "For Recanvassing".';
-                    $newStatus = PurchaseRequestStatus::FOR_RECANVASSING;
-                }
+                // if ($prCurrentStatus === PurchaseRequestStatus::FOR_ABSTRACT
+                //     || $prCurrentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
+                //     $prMessage = 'Purchase request successfully marked as "For Recanvassing".';
+                //     $newStatus = PurchaseRequestStatus::FOR_RECANVASSING;
+                // }
 
                 $purchaseRequest->update([
                     'status' => $newStatus,

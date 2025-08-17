@@ -70,9 +70,9 @@ class UserSeeder extends Seeder
         // ],
         // [
         //     'position_name' => 'Municipal Accountant III',
-        //     'designation_name' => 'Accounting Services',
-        //     'section_name' => 'Accounting Section',
-        //     'role_name' => 'Accounting',
+        //     'designation_name' => 'Accountant Services',
+        //     'section_name' => 'Accountant Section',
+        //     'role_name' => 'Accountant',
         //     'employee_id' => '1115',
         //     'firstname' => 'Ana',
         //     'lastname' => 'Lopez',
@@ -166,7 +166,7 @@ class UserSeeder extends Seeder
         $roles = Role::all();
 
         // Generate 20 users (adjust number as needed)
-        User::factory(100)->create()->each(function (User $user) use ($roles) {
+        User::factory(10)->create()->each(function (User $user) use ($roles) {
             // Attach a random role to each user
             $user->roles()->attach($roles->random()->id);
         });

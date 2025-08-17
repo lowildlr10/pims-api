@@ -67,7 +67,7 @@ class SectionController extends Controller
                 || $user->tokenCan('head:*')
                 || $user->tokenCan('supply:*')
                 || $user->tokenCan('budget:*')
-                || $user->tokenCan('accounting:*')
+                || $user->tokenCan('accountant:*')
             ) {
             } else {
                 $sections = $sections->where('id', $user->section_id);

@@ -77,7 +77,7 @@ class PurchaseRequestController extends Controller
             || $user->tokenCan('head:*')
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
-            || $user->tokenCan('accounting:*')
+            || $user->tokenCan('accountant:*')
         ) {
         } else {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
@@ -421,7 +421,6 @@ class PurchaseRequestController extends Controller
 
                 $purchaseRequest->update([
                     'total_estimated_cost' => $totalEstimatedCost,
-                    'disapproved_reason' => null,
                     'status' => $status,
                     'status_timestamps' => StatusTimestampsHelper::generate(
                         'draft_at', null
@@ -498,6 +497,7 @@ class PurchaseRequestController extends Controller
             }
 
             $purchaseRequest->update([
+                'disapproved_reason' => null,
                 'status' => PurchaseRequestStatus::PENDING,
                 'status_timestamps' => StatusTimestampsHelper::generate(
                     'pending_at', $purchaseRequest->status_timestamps
@@ -552,7 +552,7 @@ class PurchaseRequestController extends Controller
                 $user->tokenCan('super:*'),
                 $user->tokenCan('supply:*'),
                 $user->tokenCan('budget:*'),
-                $user->tokenCan('accounting:*'),
+                $user->tokenCan('accountant:*'),
                 $user->tokenCan('cashier:*'),
                 $user->tokenCan('pr:*'),
                 $user->tokenCan('pr:approve-cash-available'),
@@ -741,6 +741,7 @@ class PurchaseRequestController extends Controller
 
             $this->logRepository->create([
                 'message' => $message,
+                'details' => $validated['disapproved_reason'] ? 'Reason: '.$validated['disapproved_reason'] : null,
                 'log_id' => $purchaseRequest->id,
                 'log_module' => 'pr',
                 'data' => $purchaseRequest,
@@ -1017,6 +1018,7 @@ class PurchaseRequestController extends Controller
                     return [
                         'pr_item_id' => $item->id,
                         'included' => empty($item->awarded_to) ? true : false,
+                        'document_type' => 'po',
                         'details' => $rfqCompleted->map(function (RequestQuotation $rfq) use ($item) {
                             $rfq->load([
                                 'items' => function ($query) use ($item) {

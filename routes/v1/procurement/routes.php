@@ -146,15 +146,15 @@ Route::middleware('auth:sanctum')->group(function() {
         Route::put('/{obligationRequest}', [ProcurementControllers\ObligationRequestStatusController::class, 'update'])
             ->middleware('ability:super:*,budget:*,obr:*,obr:update')
             ->name('update');
-        Route::put('/{obligationRequest}/submit', [ProcurementControllers\ObligationRequestStatusController::class, 'submit'])
-            ->middleware('ability:super:*,budget:*,obr:*,obr:submit')
-            ->name('submit');
+        Route::put('/{obligationRequest}/pending', [ProcurementControllers\ObligationRequestStatusController::class, 'pending'])
+            ->middleware(middleware: 'ability:super:*,budget:*,obr:*,obr:pending')
+            ->name('pending');
         Route::put('/{obligationRequest}/disapprove', [ProcurementControllers\ObligationRequestStatusController::class, 'disapprove'])
             ->middleware('ability:super:*,budget:*,obr:*,obr:disapprove')
             ->name('disapprove');
-        Route::put('/{obligationRequest}/approve', [ProcurementControllers\ObligationRequestStatusController::class, 'approve'])
-            ->middleware('ability:super:*,budget:*,obr:*,obr:approve')
-            ->name('approve');
+        Route::put('/{obligationRequest}/obligate', [ProcurementControllers\ObligationRequestStatusController::class, 'obligate'])
+            ->middleware('ability:super:*,budget:*,obr:*,obr:obligate')
+            ->name('obligate');
     });
 
     Route::name('disbursement_vouchers.')->prefix('/disbursement-vouchers')->group(function () {
@@ -167,14 +167,17 @@ Route::middleware('auth:sanctum')->group(function() {
         Route::put('/{disbursementVoucher}', [ProcurementControllers\DisbursementVoucherController::class, 'update'])
             ->middleware('ability:super:*,accountant:*,dv:*,dv:update')
             ->name('update');
-        Route::put('/{disbursementVoucher}/submit', [ProcurementControllers\DisbursementVoucherController::class, 'submit'])
-            ->middleware('ability:super:*,accountant:*,dv:*,dv:submit')
-            ->name('submit');
+        Route::put('/{disbursementVoucher}/pending', [ProcurementControllers\DisbursementVoucherController::class, 'pending'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:pending')
+            ->name('pending');
         Route::put('/{disbursementVoucher}/disapprove', [ProcurementControllers\DisbursementVoucherController::class, 'disapprove'])
             ->middleware('ability:super:*,accountant:*,dv:*,dv:disapprove')
             ->name('disapprove');
-        Route::put('/{disbursementVoucher}/approve', [ProcurementControllers\DisbursementVoucherController::class, 'approve'])
-            ->middleware('ability:super:*,accountant:*,dv:*,dv:approve')
-            ->name('approve');
+        Route::put('/{disbursementVoucher}/disburse', [ProcurementControllers\DisbursementVoucherController::class, 'disburse'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:disburse')
+            ->name('disburse');
+        Route::put('/{disbursementVoucher}/paid', [ProcurementControllers\DisbursementVoucherController::class, 'paid'])
+            ->middleware('ability:super:*,accountant:*,dv:*,dv:paid')
+            ->name('paid');
     });
 });

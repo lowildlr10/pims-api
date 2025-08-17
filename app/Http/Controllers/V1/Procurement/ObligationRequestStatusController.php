@@ -2,16 +2,37 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
+use App\Enums\ObligationRequestStatus;
+use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\ObligationRequest;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
+use App\Repositories\DisbursementVoucherRepository;
+use App\Repositories\LogRepository;
+use App\Repositories\ObligationRequestRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class ObligationRequestStatusController extends Controller
 {
+    private LogRepository $logRepository;
+
+    private ObligationRequestRepository $obligationRequestRepository;
+
+    private DisbursementVoucherRepository $disbursementVoucherRepository;
+    
+    public function __construct(
+        LogRepository $logRepository,
+        ObligationRequestRepository $obligationRequestRepository,
+        DisbursementVoucherRepository $disbursementVoucherRepository
+    ) {
+        $this->logRepository = $logRepository;
+        $this->obligationRequestRepository = $obligationRequestRepository;
+        $this->disbursementVoucherRepository = $disbursementVoucherRepository;
+    }
+
     /**
      * Display a listing of the resource.
      */
@@ -119,20 +140,13 @@ class ObligationRequestStatusController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
      * Display the specified resource.
      */
     public function show(ObligationRequest $obligationRequest): JsonResponse
     {
         $obligationRequest->load([
             'payee:id,supplier_name',
+            'responsibility_center:id,code',
             'purchase_order:id,po_no,total_amount',
             'signatory_budget:id,user_id',
             'signatory_budget.user:id,firstname,middlename,lastname,allow_signature,signature',
@@ -160,16 +174,290 @@ class ObligationRequestStatusController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, ObligationRequest $obligationRequest): JsonResponse
     {
-        //
+        $validated = $request->validate([
+            'funding' => 'nullable|array',
+            'office' => 'nullable|string',
+            'address' => 'nullable|string',
+            'responsibility_center_id' => 'required',
+            'particulars' => 'required',
+            'total_amount' => 'required',
+            'compliance_status' => 'nullable|array',
+            'sig_head_id' => 'required',
+            'head_signed_date' => 'nullable',
+            'sig_budget_id' => 'required',
+            'budget_signed_date' => 'nullable',
+            'fpps' => 'nullable|array',
+            'accounts' => 'nullable|array',
+        ]);
+
+        try {
+            $currentStatus = ObligationRequestStatus::from($obligationRequest->status);
+            $status = $currentStatus;
+
+            if ($currentStatus === ObligationRequestStatus::DRAFT
+                || $currentStatus === ObligationRequestStatus::DISAPPROVED) {
+                $status = ObligationRequestStatus::DRAFT;
+            }
+
+            $this->obligationRequestRepository->storeUpdate(
+                array_merge($validated, [
+                    'status' => $status,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'draft_at', null
+                    ),
+                ]), 
+                $obligationRequest
+            );
+
+            $obligationRequest->load(['fpps', 'accounts']);
+
+            $message = 'Obligation request updated successfully';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ]);
+
+            return response()->json([
+                'data' => [
+                    'data' => $obligationRequest,
+                    'message' => $message,
+                ],
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Obligation request update failed.';
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $validated,
+            ], isError: true);
+
+            return response()->json([
+                'message' => "$message Please try again.",
+            ], 422);
+        }
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Update the status of the specified resource in storage.
      */
-    public function destroy(string $id)
+    public function pending(ObligationRequest $obligationRequest): JsonResponse
     {
-        //
+        try {
+            $currentStatus = ObligationRequestStatus::from($obligationRequest->status);
+
+            if ($currentStatus !== ObligationRequestStatus::DRAFT) {
+                $message =
+                    'Failed to set the obligation request to pending for obligation. '.
+                    'It may already be set to pending or processing status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $obligationRequest->id,
+                    'log_module' => 'obr',
+                    'data' => $obligationRequest,
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message,
+                ], 422);
+            }
+
+            $obligationRequest->update([
+                'disapproved_reason' => null,
+                'status' => ObligationRequestStatus::PENDING,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'pending_at', $obligationRequest->status_timestamps
+                ),
+            ]);
+
+            $message = 'Obligation request successfully marked as pending for obligation.';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ]);
+
+            $obligationRequest->load(['fpps', 'accounts']);
+
+            return response()->json([
+                'data' => [
+                    'data' => $obligationRequest,
+                    'message' => $message,
+                ],
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Obligation request failed to marked as pending for obligation.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again.",
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function disapprove(Request $request, ObligationRequest $obligationRequest): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'disapproved_reason' => 'nullable|string',
+            ]);
+
+            $currentStatus = ObligationRequestStatus::from($obligationRequest->status);
+
+            if ($currentStatus !== ObligationRequestStatus::PENDING) {
+                $message =
+                    'Failed to set the Obligation Request to "Disapproved". '.
+                    'It may already be obligated or still in draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $obligationRequest->id,
+                    'log_module' => 'obr',
+                    'data' => $obligationRequest,
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message,
+                ], 422);
+            }
+
+            $obligationRequest->update([
+                'disapproved_reason' => $validated['disapproved_reason'] ?? null,
+                'status' => ObligationRequestStatus::DISAPPROVED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'disapproved_at', $obligationRequest->status_timestamps
+                ),
+            ]);
+
+            $message = 'Obligation request successfully marked as "Disapproved".';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ]);
+
+            $obligationRequest->load(['fpps', 'accounts']);
+
+            return response()->json([
+                'data' => [
+                    'data' => $obligationRequest,
+                    'message' => $message,
+                ],
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Obligation request disapproval failed.';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again.",
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the status of the specified resource in storage.
+     */
+    public function obligate(ObligationRequest $obligationRequest): JsonResponse
+    {
+        try {
+            $currentStatus = ObligationRequestStatus::from($obligationRequest->status);
+
+            if ($currentStatus !== ObligationRequestStatus::PENDING) {
+                $message =
+                    'Failed to set the Obligation Request to "Obligated". '.
+                    'It may already be obligated or still in draft status.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $obligationRequest->id,
+                    'log_module' => 'obr',
+                    'data' => $obligationRequest,
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message,
+                ], 422);
+            }
+
+            // Create an disbursement voucher
+            $disbursementVoucher = $this->disbursementVoucherRepository->storeUpdate([
+                'purchase_request_id'      => $obligationRequest->purchase_request_id,
+                'purchase_order_id'        => $obligationRequest->purchase_order_id,
+                'obligation_request_id'    => $obligationRequest->id,
+                'payee_id'                 => $obligationRequest->payee_id,
+                'office'                   => $obligationRequest->office,
+                'address'                  => $obligationRequest->address ?? null,
+                'responsibility_center_id' => $obligationRequest->responsibility_center_id,
+                'total_amount'             => $obligationRequest->total_amount ?? 0.00,
+            ]);
+
+            $message = 'Disbursement voucher successfully created.';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $disbursementVoucher->id,
+                'log_module' => 'dv',
+                'data' => $disbursementVoucher,
+            ]);
+
+            $obligationRequest->update([
+                'status' => ObligationRequestStatus::OBLIGATED,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'obligated_at', $obligationRequest->status_timestamps
+                ),
+            ]);
+
+            $message = 'Obligation request successfully marked as "Obligated".';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ]);
+
+            $obligationRequest->load(['fpps', 'accounts']);
+
+            return response()->json([
+                'data' => [
+                    'data' => $obligationRequest,
+                    'message' => $message,
+                ],
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Obligation request failed to marked as "Obligated".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $obligationRequest->id,
+                'log_module' => 'obr',
+                'data' => $obligationRequest,
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again.",
+            ], 422);
+        }
     }
 }

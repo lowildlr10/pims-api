@@ -43,6 +43,7 @@ class DisbursementVoucher extends Model
         'or_other_document',
         'jev_no',
         'jev_date',
+        'disapproved_reason',
         'status',
         'status_timestamps'
     ];
@@ -65,7 +66,7 @@ class DisbursementVoucher extends Model
      */
     public function payee(): HasOne
     {
-        return $this->hasOne(Supplier::class, 'id', 'supplier_id');
+        return $this->hasOne(Supplier::class, 'id', 'payee_id');
     }
 
     /**
@@ -98,6 +99,14 @@ class DisbursementVoucher extends Model
     public function signatory_head(): HasOne
     {
         return $this->hasOne(Signatory::class, 'id', 'sig_head_id');
+    }
+
+    /**
+     * The disbursement voucher that belongs to purchase order.
+     */
+    public function obligation_request(): BelongsTo
+    {
+        return $this->belongsTo(ObligationRequest::class);
     }
 
     /**

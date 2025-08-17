@@ -2,21 +2,18 @@
 
 namespace App\Repositories;
 
-use App\Enums\ObligationRequestStatus;
+use App\Enums\DisbursementVoucherStatus;
 use App\Helpers\FileHelper;
 use App\Helpers\StatusTimestampsHelper;
-use App\Interfaces\ObligationRequestInterface;
+use App\Interfaces\DisbursementVoucherInterface;
 use App\Models\Company;
+use App\Models\DisbursementVoucher;
 use App\Models\InspectionAcceptanceReport;
-use App\Models\ObligationRequest;
-use App\Models\ObligationRequestAccount;
-use App\Models\ObligationRequestFpp;
 use App\Models\PurchaseRequestItem;
-use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
-class ObligationRequestRepository implements ObligationRequestInterface
+class DisbursementVoucherRepository implements DisbursementVoucherInterface
 {
     protected string $appUrl;
 
@@ -43,17 +40,17 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function storeUpdate(array $data, ?ObligationRequest $obligationRequest = null): ObligationRequest
+    public function storeUpdate(array $data, ?DisbursementVoucher $disbursementVoucher = null): DisbursementVoucher
     {
-        if (! empty($obligationRequest)) {
-            $obligationRequest->update($data);
+        if (! empty($disbursementVoucher)) {
+            $disbursementVoucher->update($data);
         } else {
-            $obligationRequest = ObligationRequest::create(
+            $disbursementVoucher = DisbursementVoucher::create(
                 array_merge(
                     $data,
                     [
-                        'obr_no' => $this->generateNewObrNumber(),
-                        'status' => ObligationRequestStatus::DRAFT,
+                        'dv_no' => $this->generateNewDvNumber(),
+                        'status' => DisbursementVoucherStatus::DRAFT,
                         'status_timestamps' => StatusTimestampsHelper::generate(
                             'draft_at', null
                         ),
@@ -62,50 +59,14 @@ class ObligationRequestRepository implements ObligationRequestInterface
             );
         }
 
-        $this->storeUpdateFpps(
-            collect(isset($data['fpps']) && ! empty($data['fpps']) ? $data['fpps'] : []),
-            $obligationRequest
-        );
-
-        $this->storeUpdateAccounts(
-            collect(isset($data['accounts']) && ! empty($data['accounts']) ? $data['accounts'] : []),
-            $obligationRequest
-        );
-
-        return $obligationRequest;
+        return $disbursementVoucher;
     }
 
-    private function storeUpdateFpps(Collection $fpps, ObligationRequest $obligationRequest): void
-    {
-        ObligationRequestFpp::where('obligation_request_id', $obligationRequest->id)->delete();
-        
-        foreach ($fpps as $fppId) {
-            ObligationRequestFpp::create([
-                'obligation_request_id' => $obligationRequest->id,
-                'fpp_id' => $fppId
-            ]);
-        }
-    }
-
-    private function storeUpdateAccounts(Collection $accounts, ObligationRequest $obligationRequest): void
-    {
-        ObligationRequestAccount::where('obligation_request_id', $obligationRequest->id)->delete();
-
-        foreach ($accounts as $key => $account) {
-            ObligationRequestAccount::create([
-                'item_sequence' => $key,
-                'obligation_request_id' => $obligationRequest->id,
-                'account_id' => $account['account_id'],
-                'amount' => $account['amount'],
-            ]);
-        }
-    }
-
-    private function generateNewObrNumber(): string
+    private function generateNewDvNumber(): string
     {
         $month = date('m');
         $year = date('Y');
-        $sequence = ObligationRequest::whereMonth('created_at', $month)
+        $sequence = DisbursementVoucher::whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
             ->count() + 1;
 

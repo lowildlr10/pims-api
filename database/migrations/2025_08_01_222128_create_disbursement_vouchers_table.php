@@ -68,6 +68,7 @@ return new class extends Migration
             $table->string('or_other_document')->nullable();
             $table->string('jev_no')->nullable();
             $table->date('jev_date')->nullable();
+            $table->text('disapproved_reason')->nullable();
             $table->string('status');
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();

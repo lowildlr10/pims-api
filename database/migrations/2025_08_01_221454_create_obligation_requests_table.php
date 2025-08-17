@@ -58,6 +58,7 @@ return new class extends Migration
                 ->references('id')
                 ->on('signatories');
             $table->date('budget_signed_date')->nullable();
+            $table->text('disapproved_reason')->nullable();
             $table->string('status');
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();

@@ -23,6 +23,7 @@ class ObligationRequestAccount extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'item_sequence',
         'obligation_request_id',
         'account_id',
         'amount'

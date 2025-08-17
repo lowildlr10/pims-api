@@ -33,6 +33,7 @@ class ObligationRequest extends Model
         'head_signed_date',
         'sig_budget_id',
         'budget_signed_date',
+        'disapproved_reason',
         'status',
         'status_timestamps'
     ];

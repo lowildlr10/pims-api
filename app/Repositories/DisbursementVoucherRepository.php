@@ -2,19 +2,18 @@
 
 namespace App\Repositories;
 
-use App\Enums\InspectionAcceptanceReportStatus;
+use App\Enums\DisbursementVoucherStatus;
 use App\Helpers\FileHelper;
 use App\Helpers\StatusTimestampsHelper;
-use App\Interfaces\InspectionAcceptanceReportInterface;
+use App\Interfaces\DisbursementVoucherInterface;
 use App\Models\Company;
+use App\Models\DisbursementVoucher;
 use App\Models\InspectionAcceptanceReport;
-use App\Models\InspectionAcceptanceReportItem;
 use App\Models\PurchaseRequestItem;
-use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
 
-class InspectionAcceptanceReportRepository implements InspectionAcceptanceReportInterface
+class DisbursementVoucherRepository implements DisbursementVoucherInterface
 {
     protected string $appUrl;
 
@@ -41,53 +40,33 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function storeUpdate(array $data, ?InspectionAcceptanceReport $inspectionAcceptanceReport = null): InspectionAcceptanceReport
+    public function storeUpdate(array $data, ?DisbursementVoucher $disbursementVoucher = null): DisbursementVoucher
     {
-        if (! empty($inspectionAcceptanceReport)) {
-            $inspectionAcceptanceReport->update($data);
+        if (! empty($disbursementVoucher)) {
+            $disbursementVoucher->update($data);
         } else {
-            $inspectionAcceptanceReport = InspectionAcceptanceReport::create(
+            $disbursementVoucher = DisbursementVoucher::create(
                 array_merge(
                     $data,
                     [
-                        'iar_no' => $this->generateNewIarNumber(),
-                        'status' => InspectionAcceptanceReportStatus::DRAFT,
+                        'dv_no' => $this->generateNewDvNumber(),
+                        'status' => DisbursementVoucherStatus::DRAFT,
                         'status_timestamps' => StatusTimestampsHelper::generate(
                             'draft_at', null
                         ),
                     ]
                 )
             );
-
-            $this->storeUpdateItems(
-                collect(isset($data['items']) && ! empty($data['items']) ? $data['items'] : []),
-                $inspectionAcceptanceReport
-            );
         }
 
-        return $inspectionAcceptanceReport;
+        return $disbursementVoucher;
     }
 
-    private function storeUpdateItems(Collection $items, InspectionAcceptanceReport $inspectionAcceptanceReport): void
-    {
-        foreach ($items as $item) {
-            InspectionAcceptanceReportItem::where('inspection_acceptance_report_id', $inspectionAcceptanceReport->id)
-                ->where('po_item_id', $item['po_item_id'])
-                ->delete();
-
-            InspectionAcceptanceReportItem::create([
-                'inspection_acceptance_report_id' => $inspectionAcceptanceReport->id,
-                'pr_item_id' => $item['pr_item_id'],
-                'po_item_id' => $item['po_item_id'],
-            ]);
-        }
-    }
-
-    private function generateNewIarNumber(): string
+    private function generateNewDvNumber(): string
     {
         $month = date('m');
         $year = date('Y');
-        $sequence = InspectionAcceptanceReport::whereMonth('created_at', $month)
+        $sequence = DisbursementVoucher::whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
             ->count() + 1;
 

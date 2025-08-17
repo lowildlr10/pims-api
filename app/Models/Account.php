@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-class UacsCode extends Model
+class Account extends Model
 {
     use HasUuids;
 
@@ -25,6 +25,6 @@ class UacsCode extends Model
 
     public function classification(): HasOne
     {
-        return $this->hasOne(UacsCodeClassification::class, 'id', 'classification_id');
+        return $this->hasOne(AccountClassification::class, 'id', 'classification_id');
     }
 }

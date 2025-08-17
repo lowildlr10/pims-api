@@ -36,6 +36,19 @@ class PurchaseOrder extends Model
     ];
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status_timestamps' => 'array',
+            'total_amount' => 'float'
+        ];
+    }
+
+    /**
      * The purchase order that has one supplier.
      */
     public function supplier(): HasOne

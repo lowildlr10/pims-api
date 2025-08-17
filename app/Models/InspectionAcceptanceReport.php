@@ -36,6 +36,18 @@ class InspectionAcceptanceReport extends Model
     ];
 
     /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status_timestamps' => 'array',
+        ];
+    }
+
+    /**
      * The inspection acceptance report that has one supplier.
      */
     public function supplier(): HasOne

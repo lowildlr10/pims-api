@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\UacsCodeClassification;
+use App\Models\AccountClassification;
 use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class UacsCodeClassificationController extends Controller
+class AccountClassificationController extends Controller
 {
     private LogRepository $logRepository;
 
@@ -31,10 +31,10 @@ class UacsCodeClassificationController extends Controller
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
-        $uacsCodeClassifications = UacsCodeClassification::query();
+        $accountClassifications = AccountClassification::query();
 
         if (! empty($search)) {
-            $uacsCodeClassifications = $uacsCodeClassifications->where(function ($query) use ($search) {
+            $accountClassifications = $accountClassifications->where(function ($query) use ($search) {
                 $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
                     ->orWhere('classification_name', 'ILIKE', "%{$search}%");
             });
@@ -49,22 +49,22 @@ class UacsCodeClassificationController extends Controller
                     break;
             }
 
-            $uacsCodeClassifications = $uacsCodeClassifications->orderBy($columnSort, $sortDirection);
+            $accountClassifications = $accountClassifications->orderBy($columnSort, $sortDirection);
         }
 
         if ($paginated) {
-            return $uacsCodeClassifications->paginate($perPage);
+            return $accountClassifications->paginate($perPage);
         } else {
             if (! $showInactive) {
-                $uacsCodeClassifications = $uacsCodeClassifications->where('active', true);
+                $accountClassifications = $accountClassifications->where('active', true);
             }
 
-            $uacsCodeClassifications = $showAll
-                ? $uacsCodeClassifications->get()
-                : $uacsCodeClassifications = $uacsCodeClassifications->limit($perPage)->get();
+            $accountClassifications = $showAll
+                ? $accountClassifications->get()
+                : $accountClassifications = $accountClassifications->limit($perPage)->get();
 
             return response()->json([
-                'data' => $uacsCodeClassifications,
+                'data' => $accountClassifications,
             ]);
         }
     }
@@ -75,38 +75,38 @@ class UacsCodeClassificationController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'classification_name' => 'required|unique:uacs_code_classifications,classification_name',
+            'classification_name' => 'required|unique:account_classifications,classification_name',
             'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCodeClassification = UacsCodeClassification::create($validated);
+            $accountClassification = AccountClassification::create($validated);
 
             $this->logRepository->create([
-                'message' => 'UACS code classification created successfully.',
-                'log_id' => $uacsCodeClassification->id,
-                'log_module' => 'lib-uacs-class',
-                'data' => $uacsCodeClassification,
+                'message' => 'Account classification created successfully.',
+                'log_id' => $accountClassification->id,
+                'log_module' => 'lib-account-class',
+                'data' => $accountClassification,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
-                'message' => 'UACS code classification creation failed. Please try again.',
+                'message' => 'Account classification creation failed. Please try again.',
                 'details' => $th->getMessage(),
-                'log_module' => 'lib-uacs-class',
+                'log_module' => 'lib-account-class',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code classification creation failed. Please try again.',
+                'message' => 'Account classification creation failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCodeClassification,
-                'message' => 'UACS code classification created successfully.',
+                'data' => $accountClassification,
+                'message' => 'Account classification created successfully.',
             ],
         ]);
     }
@@ -114,11 +114,11 @@ class UacsCodeClassificationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(UacsCodeClassification $uacsCodeClassification)
+    public function show(AccountClassification $accountClassification)
     {
         return response()->json([
             'data' => [
-                'data' => $uacsCodeClassification,
+                'data' => $accountClassification,
             ],
         ]);
     }
@@ -126,42 +126,42 @@ class UacsCodeClassificationController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, UacsCodeClassification $uacsCodeClassification)
+    public function update(Request $request, AccountClassification $accountClassification)
     {
         $validated = $request->validate([
-            'classification_name' => 'required|unique:uacs_code_classifications,classification_name,'.$uacsCodeClassification->id,
+            'classification_name' => 'required|unique:account_classifications,classification_name,'.$accountClassification->id,
             'active' => 'required|boolean',
         ]);
 
         $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $uacsCodeClassification->update($validated);
+            $accountClassification->update($validated);
 
             $this->logRepository->create([
                 'message' => 'Section updated successfully.',
-                'log_id' => $uacsCodeClassification->id,
-                'log_module' => 'lib-uacs-class',
-                'data' => $uacsCodeClassification,
+                'log_id' => $accountClassification->id,
+                'log_module' => 'lib-account-class',
+                'data' => $accountClassification,
             ]);
         } catch (\Throwable $th) {
             $this->logRepository->create([
                 'message' => 'Section update failed.',
                 'details' => $th->getMessage(),
-                'log_id' => $uacsCodeClassification->id,
-                'log_module' => 'lib-uacs-class',
+                'log_id' => $accountClassification->id,
+                'log_module' => 'lib-account-class',
                 'data' => $validated,
             ], isError: true);
 
             return response()->json([
-                'message' => 'UACS code classification update failed. Please try again.',
+                'message' => 'Account classification update failed. Please try again.',
             ], 422);
         }
 
         return response()->json([
             'data' => [
-                'data' => $uacsCodeClassification,
-                'message' => 'UACS code classification updated successfully.',
+                'data' => $accountClassification,
+                'message' => 'Account classification updated successfully.',
             ],
         ]);
     }

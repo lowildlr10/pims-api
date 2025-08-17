@@ -9,7 +9,7 @@ enum DocumentPrintType: string
     case AOQ = 'aoq';
     case PO = 'po';
     case IAR = 'iar';
-    case ORS = 'ors';
+    case OBR = 'obr';
     case DV = 'dv';
     case RIS = 'ris';
     case ICS = 'ics';

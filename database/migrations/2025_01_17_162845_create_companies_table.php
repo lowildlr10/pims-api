@@ -25,6 +25,7 @@ return new class extends Migration
                 ->on('users');
             $table->text('favicon')->nullable();
             $table->text('company_logo')->nullable();
+            $table->text('bagong_pilipinas_logo')->nullable();
             $table->text('login_background')->nullable();
             $table->json('theme_colors');
             $table->timestamps();

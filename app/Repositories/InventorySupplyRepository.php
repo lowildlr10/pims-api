@@ -12,7 +12,13 @@ class InventorySupplyRepository implements InventorySupplyInterface
         if (! empty($inventorySupply)) {
             $inventorySupply->update($data);
         } else {
-            $inventorySupply = InventorySupply::create($data);
+            $inventorySupply = InventorySupply::updateOrCreate(
+                [
+                    'purchase_order_id' => $data['purchase_order_id'],
+                    'po_item_id'        => $data['po_item_id'],
+                ],
+                $data
+            );
         }
 
         return $inventorySupply;

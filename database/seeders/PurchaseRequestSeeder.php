@@ -14,7 +14,7 @@ class PurchaseRequestSeeder extends Seeder
     public function run(): void
     {
         PurchaseRequest::factory()
-            ->count(1000)
+            ->count(10)
             ->create();
     }
 }

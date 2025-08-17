@@ -2,17 +2,17 @@
 
 namespace Database\Seeders;
 
-use App\Models\UacsCodeClassification;
+use App\Models\AccountClassification;
 use Illuminate\Database\Seeder;
 
-class UacsCodeClassificationSeeder extends Seeder
+class AccountClassificationSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
-        UacsCodeClassification::create([
+        AccountClassification::create([
             'classification_name' => 'Awards/Rewards, Prizes and Indemnities',
         ]);
     }

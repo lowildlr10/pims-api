@@ -95,6 +95,6 @@ class SignatorySeeder extends Seeder
         //     }
         // }
 
-        Signatory::factory()->count(10)->create();
+        Signatory::factory()->count(50)->create();
     }
 }

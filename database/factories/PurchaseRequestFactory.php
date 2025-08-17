@@ -7,10 +7,8 @@ use App\Models\{
     Section,
     FundingSource,
     User,
-    Signatory,
     SignatoryDetail,
     UnitIssue,
-    Supplier,
     PurchaseRequest,
     PurchaseRequestItem
 };
@@ -65,7 +63,7 @@ class PurchaseRequestFactory extends Factory
         $pr_no = "{$year}-{$sequence}-{$month}";
         $prDate = now()->setDate($year, $month, $day);
 
-        return [
+        $data = [
             'id' => Str::uuid(),
             'department_id' => $department->id,
             'section_id' => $section?->id,
@@ -83,16 +81,18 @@ class PurchaseRequestFactory extends Factory
             'rfq_batch' => 1,
             'total_estimated_cost' => 0,
             'status' => 'draft',
-            'status_timestamps' => json_encode([
+            'status_timestamps' => [
                 'draft' => $now->toDateTimeString(),
-            ]),
+            ],
         ];
+
+        return $data;
     }
 
     public function configure(): static
     {
         return $this->afterCreating(function (PurchaseRequest $pr) {
-            $itemCount = rand(2, 100);
+            $itemCount = rand(2, 10);
             $totalCost = 0;
 
             for ($i = 0; $i < $itemCount; $i++) {

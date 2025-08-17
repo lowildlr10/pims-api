@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('uacs_codes', function (Blueprint $table) {
+        Schema::create('accounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->uuid('classification_id');
             $table->foreign('classification_id')
                 ->references('id')
-                ->on('uacs_code_classifications');
+                ->on('account_classifications');
             $table->string('account_title');
             $table->string('code');
             $table->text('description')->nullable();
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('uacs_codes');
+        Schema::dropIfExists('accounts');
     }
 };

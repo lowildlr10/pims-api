@@ -161,7 +161,9 @@ class ObligationRequestStatusController extends Controller
                     ->where('signatory_type', 'head');
             },
             'fpps',
-            'accounts'
+            'fpps.fpp',
+            'accounts',
+            'accounts.account'
         ]);
 
         return response()->json([

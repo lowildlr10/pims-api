@@ -324,22 +324,24 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             }
         } catch (\Throwable $th) {}
 
-        try {
-            if ($company->company_logo) {
-                $imagePath = 'images/bagong-ph-logo.png';
-                $pdf->Image(
-                    $imagePath,
-                    $x + ($x * 1.4),
-                    $y + ($y * 0.2),
-                    w: $pageConfig['orientation'] === 'P'
-                        ? $x - ($x * 0.1)
-                        : $y + ($y * 0.4),
-                    type: 'PNG',
-                    resize: true,
-                    dpi: 500,
-                );
-            }
-        } catch (\Throwable $th) {}
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 1.4),
+                        $y + ($y * 0.2),
+                        w: $pageConfig['orientation'] === 'P'
+                            ? $x - ($x * 0.1)
+                            : $y + ($y * 0.4),
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
 
         $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
         $pdf->SetFont($this->fontArialItalic, 'I', 8);
@@ -630,12 +632,33 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
     private function generateInventoryCustodianSlipDoc(
         string $filename, array $pageConfig, InventoryIssuance $data, Company $company
     ): string {
+        $municipality = $company->municipality ?? '';
+        $province = $company->province ?? '';
+        $inventoryNumber = $data->inventory_no;
+        $inventoryDate = $data->inventory_date
+            ? date_format(date_create($data->inventory_date), 'F j, Y') 
+            : '';
+        $items = !empty($data->items) ? $data->items : [];
+        $purpose = $data?->purchase_order?->purchase_request?->purpose ?? '';
+        $purpose = trim(str_replace("\r", '<br />', $purpose));
+        $purpose = str_replace("\n", '<br />', $purpose);
+        $receivedByName = $data->recipient?->fullname ?? '';
+        $receivedByPosition = $data->recipient?->position?->position_name ?? '';
+        $receivedBySignedDate = $data->received_date 
+            ? date_format(date_create($data->received_date), 'M j, Y') 
+            : '';
+        $receivedFromName = $data->signatory_issuer?->user?->fullname ?? '';
+        $receivedFromPosition = $data->signatory_issuer?->detail?->position ?? '-';
+        $receivedFromSignedDate = $data->issued_date 
+            ? date_format(date_create($data->issued_date), 'M j, Y') 
+            : '';
+
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor(env('APP_NAME'));
         $pdf->SetTitle($filename);
-        $pdf->SetSubject('Inventory Custodian Slip');
+        $pdf->SetSubject('Acknowledgment Receipt for Equipment');
         $pdf->SetMargins(
             $pdf->getPageWidth() * 0.07,
             $pdf->getPageHeight() * 0.05,
@@ -660,7 +683,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                 $pdf->Image(
                     $imagePath,
                     $x + ($x * 0.15),
-                    $y + ($y * 0.09),
+                    $y + ($y * 0.2),
                     w: $pageConfig['orientation'] === 'P'
                         ? $x - ($x * 0.1)
                         : $y + ($y * 0.4),
@@ -671,7 +694,336 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             }
         } catch (\Throwable $th) {}
 
-       
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 1.4),
+                        $y + ($y * 0.2),
+                        w: $pageConfig['orientation'] === 'P'
+                            ? $x - ($x * 0.1)
+                            : $y + ($y * 0.4),
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
+
+        $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
+        $pdf->SetFont('Times', '', 10);
+        $pdf->Cell(0, 0, '', 'LTR', 1);
+
+        $pdf->Cell(0, 0, "Province of {$province}", 'LR', 1, 'C');
+
+        $pdf->SetFont('Times', 'B', 14);
+        $pdf->Cell(0, 0, $municipality, 'LR', 1, 'C');
+
+        $pdf->SetFont($this->fontArialBold, 'B', 24);
+        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
+
+        $pdf->SetFont('Times', 'B', 16);
+        $pdf->Cell(0, 0, 'INVENTORY CUSTODIAN SLIP', 'LR', 1, 'C');
+
+        $htmlTable = '
+            <table 
+                style="border-bottom: 1px solid #3333FF; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="2"
+            ><tbody>
+                <tr>
+                    <td
+                        width="71%"
+                    ></td>
+                    <td
+                        width="11%"
+                         align="right"
+                    >ICS No.:</td>
+                    <td
+                        style="border-right: 1px solid #3333FF; border-bottom: 1px solid #000; font-size: 12px; color: #3333FF;"
+                        width="18%"
+                    >'. $inventoryNumber .'</td>
+                </tr>
+                <tr>
+                    <td
+                        width="71%"
+                    ></td>
+                    <td
+                        width="11%"
+                        align="right"
+                    >Date:</td>
+                    <td
+                        style="border-right: 1px solid #3333FF; border-bottom: 1px solid #000; color: #3333FF;"
+                        width="18%"
+                    >'. $inventoryDate .'</td>
+                </tr>
+            </tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(0.8);
+        $pdf->SetFont('Times', 'B', 10);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border: 1px solid #3333FF; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="2"
+            ><thead><tr>
+                <th
+                    style="border-right: 1px solid #3333FF;"
+                    width="9%"
+                    align="center"
+                >Quantity</th>
+                <th
+                    style="border-right: 1px solid #3333FF;"
+                    width="8%"
+                    align="center"
+                >Unit</th>
+                <th
+                    style="border-right: 1px solid #3333FF;"
+                    width="38%"
+                    align="center"
+                >Description</th>
+                <th
+                    style="border-right: 1px solid #3333FF;"
+                    width="10%"
+                    align="center"
+                >Inventory<br />Item No.</th>
+                <th
+                    style="border-right: 1px solid #3333FF;"
+                    width="11%"
+                    align="center"
+                >Estimated<br />Useful Life</th>
+                <th
+                    style="border-right: 1px solid #3333FF;"
+                    width="10%"
+                    align="center"
+                >Date<br />Acquired</th>
+                <th
+                    width="14%"
+                    align="center"
+                >Amount</th>
+            </tr></thead></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1px solid #3333FF; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="2"
+            ><tbody>
+        ';
+
+        foreach ($items as $item) {
+            $quantity = $item->quantity ?? 0;
+            $unit = $item?->supply?->unit_issue?->unit_name ?? '';
+            $description = trim(str_replace("\r", '<br />', $item->description));
+            $description = str_replace("\n", '<br />', $description);
+            $inventoryItemNo = $item->inventory_item_no ?? '';
+            $estimatedUsefulLife = $item->estimated_useful_life ?? '';
+            $acquiredDate = $item->acquired_date
+                ? date_format(date_create($item->acquired_date), 'm/d/Y') 
+                : '';
+            $amount = number_format($item->total_cost, 2);
+
+            $htmlTable .= '
+                <tr>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="9%"
+                        align="center"
+                    >'. $quantity .'</td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="8%"
+                        align="center"
+                    >'. $unit .'</td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="38%"
+                    >'. $description .'</td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                    >'. $inventoryItemNo .'</td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="11%"
+                    >'. $estimatedUsefulLife .'</td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                        align="center"
+                    >'. $acquiredDate .'</td>
+                    <td
+                        width="14%"
+                        align="center"
+                    >'. $amount .'</td>
+                </tr>
+            ';
+        }
+
+        $htmlTable .= '</tbody></table>';
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-bottom: 1px solid #3333FF; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="2"
+            ><tbody>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="9%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="8%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="38%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="11%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                    ></td>
+                    <td
+                        width="14%"
+                        align="right"
+                    ></td>
+                </tr>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="9%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="8%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF; color: #0000CC;"
+                        width="38%"
+                    >'. $purpose .'</td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="11%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                    ></td>
+                    <td
+                        width="14%"
+                        align="right"
+                    ></td>
+                </tr>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="9%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="8%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="38%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="11%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #3333FF;"
+                        width="10%"
+                    ></td>
+                    <td
+                        width="14%"
+                        align="right"
+                    ></td>
+                </tr>
+            </tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.55, 0, '', 'L');
+        $pdf->Cell(0, 0, '', 'LR', 1);
+        
+        $pdf->SetFont($this->fontArialItalic, 'I', 10);
+        $pdf->Cell($pageWidth * 0.55, 0, 'Received by:', 'L');
+        $pdf->Cell(0, 0, 'Received from:', 'LR', 1);
+
+        $pdf->Cell($pageWidth * 0.55, 0, '', 'L');
+        $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->Cell($pageWidth * 0.55, 0, $receivedByName, 'LTB', 0, 'C');
+        $pdf->Cell(0, 0, $receivedFromName, 'LTRB', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', size: 10);
+        $pdf->setTextColor(192, 0, 0);
+        $pdf->Cell($pageWidth * 0.55, 0, '(Signature Over Printed Name)', 'L', 0, 'C');
+        $pdf->Cell(0, 0, '(Signature Over Printed Name)', 'LR', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 11);
+        $pdf->setTextColor(0);
+        $pdf->Cell($pageWidth * 0.55, 0, $receivedByPosition, 'LB', 0, 'C');
+        $pdf->Cell(0, 0, $receivedFromPosition, 'LRB', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->setTextColor(192, 0, 0);
+        $pdf->Cell($pageWidth * 0.55, 0, '(Position/Office)', 'L', 0, 'C');
+        $pdf->Cell(0, 0, '(Position/Office)', 'LR', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 11);
+        $pdf->setTextColor(0);
+        $pdf->Cell($pageWidth * 0.55, 0, $receivedBySignedDate, 'LB', 0, 'C');
+        $pdf->Cell(0, 0, $receivedFromSignedDate, 'LRB', 1, 'C');
+
+        $pdf->setTextColor(192, 0, 0);
+        $pdf->Cell($pageWidth * 0.55, 0, '(Date)', 'LB', 0, 'C');
+        $pdf->Cell(0, 0, '(Date)', 'LRB', 1, 'C');
+
         $pdfBlob = $pdf->Output($filename, 'S');
         $pdfBase64 = base64_encode($pdfBlob);
 

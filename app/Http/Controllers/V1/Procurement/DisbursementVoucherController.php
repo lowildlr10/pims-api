@@ -15,6 +15,7 @@ use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class DisbursementVoucherController extends Controller
 {
@@ -35,6 +36,8 @@ class DisbursementVoucherController extends Controller
      */
     public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
+        $user = Auth::user();
+        
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -55,6 +58,19 @@ class DisbursementVoucherController extends Controller
                 'purchase_order:id,po_no',
                 'payee:id,supplier_name'
             ]);
+
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
+        ) {
+        } else {
+            $disbursementVouchers = $disbursementVouchers
+                ->whereRelation('purchase_request', function ($query) use ($user) {
+                $query->where('requested_by_id', $user->id);
+            });
+        }
         
         if (! empty($search)) {
             $disbursementVouchers->where(function ($query) use ($search) {

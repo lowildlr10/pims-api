@@ -42,6 +42,8 @@ class InspectionAcceptanceReportController extends Controller
      */
     public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
+        $user = Auth::user();
+
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -68,6 +70,19 @@ class InspectionAcceptanceReportController extends Controller
                         ->where('signatory_type', '	inspection');
                 },
             ]);
+
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
+        ) {
+        } else {
+            $inspectionAcceptanceReport = $inspectionAcceptanceReport
+                ->whereRelation('purchase_request', function ($query) use ($user) {
+                $query->where('requested_by_id', $user->id);
+            });
+        }
 
         if (! empty($search)) {
             $inspectionAcceptanceReport->where(function ($query) use ($search) {

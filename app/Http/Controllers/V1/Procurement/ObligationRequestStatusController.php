@@ -14,6 +14,7 @@ use App\Repositories\ObligationRequestRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class ObligationRequestStatusController extends Controller
 {
@@ -38,6 +39,8 @@ class ObligationRequestStatusController extends Controller
      */
     public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
+        $user = Auth::user();
+        
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
@@ -58,6 +61,19 @@ class ObligationRequestStatusController extends Controller
                 'purchase_order:id,po_no',
                 'payee:id,supplier_name'
             ]);
+
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
+        ) {
+        } else {
+            $obligationRequests = $obligationRequests
+                ->whereRelation('purchase_request', function ($query) use ($user) {
+                $query->where('requested_by_id', $user->id);
+            });
+        }
 
         if (! empty($search)) {
             $obligationRequests->where(function ($query) use ($search) {
@@ -161,7 +177,9 @@ class ObligationRequestStatusController extends Controller
                     ->where('signatory_type', 'head');
             },
             'fpps',
-            'accounts'
+            'fpps.fpp',
+            'accounts',
+            'accounts.account'
         ]);
 
         return response()->json([

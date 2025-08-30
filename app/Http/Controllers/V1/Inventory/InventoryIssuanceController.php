@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1\Inventory;
 
+use App\Enums\DocumentPrintType;
 use App\Enums\InventoryIssuanceStatus;
 use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
@@ -196,7 +197,7 @@ class InventoryIssuanceController extends Controller
             'signatory_issuer.user:id,firstname,middlename,lastname,allow_signature,signature',
             'signatory_issuer.detail' => function ($query) use ($inventoryIssuance) {
                 $query->where('document', $inventoryIssuance->document_type)
-                    ->where('signatory_type', '	issued_by');
+                    ->where('signatory_type', $inventoryIssuance->document_type === DocumentPrintType::RIS ? 'issued_by' : 'received_from');
             },
             'recipient',
 
@@ -215,6 +216,8 @@ class InventoryIssuanceController extends Controller
             'responsibility_center',
             'purchase_order',
             'purchase_order.purchase_request',
+            'purchase_order.obligation_request',
+            'purchase_order.disbursement_voucher',
         ]);
 
         return response()->json([

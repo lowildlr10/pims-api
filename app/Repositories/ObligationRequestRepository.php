@@ -7,11 +7,9 @@ use App\Helpers\FileHelper;
 use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\ObligationRequestInterface;
 use App\Models\Company;
-use App\Models\InspectionAcceptanceReport;
 use App\Models\ObligationRequest;
 use App\Models\ObligationRequestAccount;
 use App\Models\ObligationRequestFpp;
-use App\Models\PurchaseRequestItem;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
@@ -112,44 +110,34 @@ class ObligationRequestRepository implements ObligationRequestInterface
         return "{$year}-{$sequence}-{$month}";
     }
 
-    public function print(array $pageConfig, string $iarId): array
+    public function print(array $pageConfig, string $obrId): array
     {
         try {
             $company = Company::first();
-            $iar = InspectionAcceptanceReport::with([
-                'supplier:id,supplier_name',
-
-                'items' => function ($query) {
-                    $query->orderBy(
-                        PurchaseRequestItem::select('item_sequence')
-                            ->whereColumn(
-                                'inspection_acceptance_report_items.pr_item_id', 'purchase_request_items.id'
-                            ),
-                        'asc'
-                    );
+            $obr = ObligationRequest::with([
+                'payee:id,supplier_name',
+                'responsibility_center:id,code',
+                'purchase_order:id,po_no,total_amount',
+                'signatory_budget:id,user_id',
+                'signatory_budget.user:id,firstname,middlename,lastname,allow_signature,signature',
+                'signatory_budget.detail' => function ($query) {
+                    $query->where('document', 'obr')
+                        ->where('signatory_type', 'budget');
                 },
-                'items.pr_item:id,unit_issue_id,item_sequence,quantity,stock_no',
-                'items.pr_item.unit_issue:id,unit_name',
-                'items.po_item:id,description,brand_model,unit_cost,total_cost',
-
-                'signatory_inspection:id,user_id',
-                'signatory_inspection.user:id,firstname,middlename,lastname,allow_signature,signature',
-                'signatory_inspection.detail' => function ($query) {
-                    $query->where('document', 'iar')
-                        ->where('signatory_type', 'inspection');
+                'signatory_head:id,user_id',
+                'signatory_head.user:id,firstname,middlename,lastname,allow_signature,signature',
+                'signatory_head.detail' => function ($query) {
+                    $query->where('document', 'obr')
+                        ->where('signatory_type', 'head');
                 },
+                'fpps',
+                'fpps.fpp',
+                'accounts',
+                'accounts.account'
+            ])->find($obrId);
 
-                'acceptance:id,firstname,middlename,lastname,allow_signature,signature,position_id,designation_id',
-                'acceptance.position:id,position_name',
-                'acceptance.designation:id,designation_name',
-
-                'purchase_request:id,section_id',
-                'purchase_request.section:id,section_name',
-                'purchase_order:id,po_no,po_date',
-            ])->find($iarId);
-
-            $filename = "IAR-{$iar->iar_no}.pdf";
-            $blob = $this->generateInspectionAccepantceReportDoc($filename, $pageConfig, $iar, $company);
+            $filename = "OBR-{$obr->obr_no}.pdf";
+            $blob = $this->generateObligationRequestDoc($filename, $pageConfig, $obr, $company);
 
             return [
                 'success' => true,
@@ -166,29 +154,54 @@ class ObligationRequestRepository implements ObligationRequestInterface
         }
     }
 
-    private function generateInspectionAccepantceReportDoc(
-        string $filename, array $pageConfig, InspectionAcceptanceReport $data, Company $company
+    private function generateObligationRequestDoc(
+        string $filename, array $pageConfig, ObligationRequest $data, Company $company
     ): string {
-        $supplier = $data->supplier;
-        $purchaseOrder = $data->purchase_order;
-        $purchaseRequest = $data->purchase_request;
-        $department = $purchaseRequest->department;
-        $section = $purchaseRequest->section;
-        $officeName = $section->section_name ?? $department->department_name;
-        $items = $data->items;
-        $signatoryInspection = $data->signatory_inspection;
-        $acceptance = $data->acceptance;
+        $province = strtoupper($company?->province) ?? '';
+        $municipality = strtoupper($company?->municipality) ?? '';
+        $funding = $data?->funding ?? [];
+        $isFundingGeneral = $funding['general'] ?? false;
+        $isFundingMdf20 = $funding['mdf_20'] ?? false;
+        $isFundingGfMdrRmf5 = $funding['gf_mdrrmf_5'] ?? false;
+        $isFundingSef = $funding['sef'] ?? false;
+        $obrNo = $data->obr_no;
+        $payee = $data->payee->supplier_name;
+        $office = $data->office;
+        $address = $data->address;
+        $responsibilityCenter = $data->responsibility_center->code;
+        $particulars = trim(str_replace("\r", '<br />', $data->particulars));
+        $particulars = str_replace("\n", '<br />', $particulars);
+        $fpps = implode(
+            '<br />', 
+            $data->fpps->map(fn($fpp) => $fpp->fpp->code)
+                ->toArray() 
+                ?? []
+        );
+        $accounts = implode(
+            '<br />', 
+            $data->accounts->map(fn($account) => $account->account->code)
+                ->toArray() 
+                ?? []
+        );
+        $amount = number_format($data->total_amount, 2);
+        $complianceStatus = $data->compliance_status;
+        $headName = $data->signatory_head?->user?->fullname ?? '';
+        $headPosition = $data->signatory_head?->detail?->position ?? '';
+        $headSignedDate = date_format(date_create($data->head_signed_date), 'F j, Y');
+        $budgetName = $data->signatory_budget?->user?->fullname ?? '';
+        $budgetPosition = $data->signatory_budget?->detail?->position ?? '';
+        $budgetSignedDate = date_format(date_create($data->budget_signed_date), 'F j, Y');
 
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
         $pdf->SetCreator(PDF_CREATOR);
         $pdf->SetAuthor(env('APP_NAME'));
         $pdf->SetTitle($filename);
-        $pdf->SetSubject('Purchase Order');
+        $pdf->SetSubject('Obligation Request');
         $pdf->SetMargins(
-            $pdf->getPageWidth() * 0.08,
+            $pdf->getPageWidth() * 0.04,
             $pdf->getPageHeight() * 0.05,
-            $pdf->getPageWidth() * 0.08
+            $pdf->getPageWidth() * 0.04
         );
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
@@ -196,7 +209,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
 
         $pdf->AddPage();
 
-        $pageWidth = $pdf->getPageWidth() * 0.86;
+        $pageWidth = $pdf->getPageWidth() * 0.92;
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -208,196 +221,440 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 );
                 $pdf->Image(
                     $imagePath,
-                    $x + ($x * 0.15),
-                    $y + ($y * 0.09),
+                    $x + ($x * 0.3),
+                    $y + ($y * 0.2),
                     w: $pageConfig['orientation'] === 'P'
-                        ? $x - ($x * 0.04)
-                        : $y + ($y * 0.4),
+                        ? $x + ($x * 1.5)
+                        : $y + ($y * 1.5),
                     type: 'PNG',
                     resize: true,
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {
-        }
+        } catch (\Throwable $th) {}
 
-        // $pdf->setCellHeightRatio(1.6);
-        $pdf->Cell(0, 0, '', 'LTR', 1, 'C');
-        $pdf->SetFont($this->fontArialBold, 'B', 11);
-        $pdf->Cell(0, 0, 'INSPECTION AND ACCEPTANCE REPORT', 'LR', 1, 'C');
-        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
-        $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell(0, 0, strtoupper("{$company->municipality}, {$company->province}"), 'LR', 1, 'C');
-        $pdf->Cell(0, 0, $company->company_type, 'LR', 1, 'C');
-        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
+        try {
+            if ($company->company_logo) {
+                $imagePath = 'images/bagong-ph-logo.png';
+                $pdf->Image(
+                    $imagePath,
+                    $x + ($x * 3.2),
+                    $y + ($y * 0.2),
+                    w: $pageConfig['orientation'] === 'P'
+                        ? $x + ($x * 1.5)
+                        : $y + ($y * 1.5),
+                    type: 'PNG',
+                    resize: true,
+                    dpi: 500,
+                );
+            }
+        } catch (\Throwable $th) {}
 
-        $pdf->setCellHeightRatio(1.5);
-        $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.1, 0, 'Supplier:', 'L', 0, 'L');
-        $pdf->Cell($pageWidth * 0.36, 0, $supplier->supplier_name, 'B', 0, 'L');
-        $pdf->Cell($pageWidth * 0.13, 0, 'IAR No.', '', 0, 'R');
-        $pdf->Cell($pageWidth * 0.17, 0, $data->iar_no, 'B', 0, 'L');
-        $pdf->Cell($pageWidth * 0.08, 0, 'Date:', '', 0, 'R');
-        $pdf->Cell(0, 0, date_format(date_create($data->iar_date), 'm/d/Y'), 'BR', 1, 'L');
+        $pdf->setXY($x + ($x * 15.4), $y + ($y * 0.1));
 
-        $pdf->Cell($pageWidth * 0.1, 0, 'PO No.', 'L', 0, 'L');
-        $pdf->Cell($pageWidth * 0.24, 0, $purchaseOrder->po_no, 'B', 0, 'L');
-        $pdf->Cell($pageWidth * 0.12, 0, 'Date:', '', 0, 'L');
-        $pdf->Cell($pageWidth * 0.13, 0, date_format(date_create($data->purchase_order->po_date), 'm/d/Y'), 'B', 0, 'L');
-        $pdf->Cell($pageWidth * 0.11, 0, 'Invoice No.', '', 0, 'R');
-        $pdf->Cell($pageWidth * 0.06, 0, $data->invoice_no, 'B', 0, 'L');
-        $pdf->Cell($pageWidth * 0.08, 0, 'Date:', '', 0, 'R');
-        $pdf->Cell(0, 0, $data->invoice_date ?? '', 'BR', 1, 'L');
+        $pdf->setCellHeightRatio(2.3);
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.01, 0, '', 'LT', 0);
+        $pdf->Cell($pageWidth * 0.31, 0, 'FUNDING:', 'TR', 1);
+        $pdf->setX($x + ($x * 15.4));
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->Cell($pageWidth * 0.015, 0, '', 'L', 0);
+        $pdf->SetFont('zapfdingbats', 'B', 10);
+        $pdf->Cell($pageWidth * 0.03, 0, $isFundingGeneral ? '3' : '', 1, 0, 'C');
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.1, 0, 'GENERAL', 0, 0);
+        $pdf->SetFont('zapfdingbats', 'B', 10);
+        $pdf->Cell($pageWidth * 0.03, 0, $isFundingGfMdrRmf5 ? '3' : '', 1, 0, 'C');
+        $pdf->SetFont($this->fontArialBold, 'B', 9);
+        $pdf->setCellHeightRatio(1.8);
+        $pdf->Cell($pageWidth * 0.145, 0, 'GF - 5% MDRRMF', 'R', 1);
+        $pdf->setX($x + ($x * 15.4));
+        $pdf->Cell($pageWidth * 0.32, 0, '', 'LR', 1);
+        $pdf->setX($x + ($x * 15.4));
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.015, 0, '', 'L', 0);
+        $pdf->SetFont('zapfdingbats', 'B', 10);
+        $pdf->Cell($pageWidth * 0.03, 0, $isFundingMdf20 ? '3' : '', 1, 0, 'C');
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.1, 0, '20% MDF', 0, 0);
+        $pdf->SetFont('zapfdingbats', 'B', 10);
+        $pdf->Cell($pageWidth * 0.03, 0, $isFundingSef ? '3' : '', 1, 0, 'C');
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->Cell($pageWidth * 0.145, 0, 'SEF', 'R', 1);
+        $pdf->setX($x + ($x * 15.4));
+        $pdf->Cell($pageWidth * 0.32, 0, '', 'LRB', 1);
 
-        $pdf->Cell($pageWidth * 0.31, 0, 'Requesting Office/Dept.', 'L', 0, 'L');
-        $pdf->Cell($pageWidth * 0.5, 0, $officeName, 'B', 0, 'L');
-        $pdf->Cell(0, 0, '', 'R', 1, 'L');
+        $pdf->setXY($x, $y);
 
         $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont('Times', '', 12);
+        $pdf->Cell(0, 0, 'Republic of the Philippines', 'LTR', 1, 'C');
+        $pdf->SetFont('Times', '', 10);
         $pdf->Cell(0, 0, '', 'LR', 1, 'C');
+        $pdf->SetFont('Times', 'B', 14);
+        $pdf->Cell(0, 0, "PROVINCE OF $province", 'LR', 1, 'C');
+        $pdf->SetFont('Times', '', 10);
+        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
+        $pdf->SetFont('Times', 'B', 18);
+        $pdf->setFontSpacing(2);
+        $pdf->Cell(0, 0, $municipality, 'LR', 1, 'C');
+        $pdf->setFontSpacing(0);
+        $pdf->SetFont('Times', '', 8);
+        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
+        $pdf->Cell(0, 0, '', 'LRB', 1, 'C');
+        $pdf->setCellHeightRatio(0.2);
+        $pdf->Cell(0, 0, '', 'LRB', 1, 'C');
+        
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->SetFont('Times', '', 10);
+        $pdf->SetFont('Times', 'B', 20);
+        $pdf->Cell($pageWidth * 0.55, 0, 'OBLIGATION REQUEST', 'L', 0, 'C');
+        $pdf->SetFont($this->fontArialBold, 'B', 20);
+        $pdf->Cell(0, 0, "No. $obrNo", 'R', 1, 'R');
+
+        $pdf->setCellHeightRatio(2.5);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.13, 0, 'Payee/Office:', 'LT', 0);
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->SetFont($this->fontArialBold, 'B', 16);
+        $pdf->Cell(0, 0, $payee, 'LTR', 1);
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell($pageWidth * 0.13, 0, 'Office:', 'LT', 0);
+        $pdf->Cell(0, 0, $office, 'LTR', 1);
+        $pdf->Cell($pageWidth * 0.13, 0, 'Address:', 'LT', 0);
+        $pdf->Cell(0, 0, $address, 'LTR', 1);
+        $pdf->setCellHeightRatio(0.2);
+        $pdf->Cell(0, 0, '', 1, 1, 'C');
 
         $htmlTable = '
             <table border="1" cellpadding="2"><thead><tr>
                 <th
-                    width="10%"
+                    width="13%"
                     align="center"
-                >Item No.</th>
+                >Responsibility Center</th>
                 <th
-                    width="9%"
+                    width="40.72%"
                     align="center"
-                >Unit</th>
+                >Particulars</th>
                 <th
-                    width="53%"
+                    width="12.975%"
                     align="center"
-                >Description</th>
+                >F.P.P</th>
                 <th
-                    width="28%"
+                    width="14.785%"
                     align="center"
-                >Quantity</th>
+                >Account Code</th>
+                <th
+                    width="18.52%"
+                    align="center"
+                >Amount</th>
             </tr></thead></table>
         ';
 
+        $pdf->setCellHeightRatio(1.25);
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->writeHTML($htmlTable, ln: false);
         $pdf->Ln(0);
 
-        $htmlTable = '<table border="1" cellpadding="2"><tbody>';
+        $htmlTable = '
+            <table 
+                style="border-left: 1px solid black; border-right: 1px solid black;"
+                cellpadding="2"
+            ><tbody><tr>
+                <td
+                    style="border-right: 1px solid black"
+                    width="13%"
+                    align="center"
+                >'. $responsibilityCenter .'</td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="40.72%"
+                >'. $particulars .'</td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="12.975%"
+                    align="center"
+                >'. $fpps .'</td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="14.785%"
+                    align="center"
+                >'. $accounts .'</td>
+                <td
+                    width="18.52%"
+                    align="center"
+                >'. $amount .'</td>
+            </tr>
+            <tr>
+                <td
+                    style="border-right: 1px solid black"
+                    width="13%"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="40.72%"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="12.975%"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="14.785%"
+                ></td>
+                <td
+                    width="18.52%"
+                ></td>
+            </tr></tbody></table>
+        ';
 
-        foreach ($items ?? [] as $item) {
-            $prItem = $item->pr_item;
-            $poItem = $item->po_item;
-            $description = trim(str_replace("\r", '<br />', $poItem->description));
-            $description = str_replace("\n", '<br />', $description);
-
-            $htmlTable .= '
-                <tr>
-                    <td
-                        width="10%"
-                        align="center"
-                    >'.$prItem->stock_no.'</td>
-                    <td
-                        width="9%"
-                        align="center"
-                    >'.$prItem->unit_issue->unit_name.'</td>
-                    <td
-                        width="53%"
-                        align="left"
-                    >'.$description.'</td>
-                    <td
-                        width="28%"
-                        align="center"
-                    >'.$prItem->quantity.'</td>
-                </tr>
-            ';
-        }
-
-        $htmlTable .= '</tbody></table>';
-        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->SetFont($this->fontArial, '', 12);
         $pdf->writeHTML($htmlTable, ln: false);
         $pdf->Ln(0);
 
-        $pdf->SetFont($this->fontArial, '', 2);
-        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
+        $htmlTable = '
+            <table 
+                style="border-left: 1px solid black; border-right: 1px solid black;"
+                cellpadding="2"
+            ><tbody><tr>
+                <td
+                    style="border-right: 1px solid black"
+                    width="13%"
+                    align="center"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="40.72%"
+                    align="center"
+                >TOTAL</td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="12.975%"
+                    align="center"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="14.785%"
+                    align="center"
+                ></td>
+                <td
+                    style="border-top: 2px solid black; border-bottom: 2px solid black;"
+                    width="18.52%"
+                    align="center"
+                >P'. $amount .'</td>
+            </tr></tbody></table>
+        ';
 
-        $pdf->SetFont($this->fontArialBold, 'B', 11);
-        $pdf->Cell($pageWidth * 0.1, 0, '', 'LT', 0, 'L');
-        $pdf->Cell(0, 0, 'INSPECTION', 'TR', 1, 'L');
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black;"
+                cellpadding="2"
+            ><tbody><tr>
+                <td
+                    style="border-right: 1px solid black"
+                    width="13%"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="40.72%"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="12.975%"
+                ></td>
+                <td
+                    style="border-right: 1px solid black"
+                    width="14.785%"
+                ></td>
+                <td
+                    width="18.52%"
+                ></td>
+            </tr></tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialBold, 'B', 12);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
 
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.19, 0, 'Date Inspected:', 'L', 0, 'C');
-        $pdf->Cell($pageWidth * 0.38, 0, $data->inspected_date ? date_format(date_create($data->inspected_date), 'm/d/Y') : '', 'B', 0, 'L');
-        $pdf->Cell(0, 0, '', 'R', 1, 'C');
+        $pdf->Cell($pageWidth * 0.025, 0, 'A', 'LRB', 0, 'C');
+        $pdf->Cell($pageWidth * 0.5122, 0, " Certified:", 'L', 0);
+        $pdf->Cell($pageWidth * 0.025, 0, 'B', 'LRB', 0, 'C');
+        $pdf->Cell(0, 0, ' Certified:', 'LR', 1);
 
-        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
-
-        $pdf->Cell($pageWidth * 0.58, 0, '', 'L', 0, 'L');
-        $pdf->Cell($pageWidth * 0.09, 0, '', '', 0, 'L');
-        $pdf->SetFont($this->fontArialBold, 'BU', 11);
-        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($signatoryInspection?->user->fullname), '', 0, 'C');
-        $pdf->Cell(0, 0, '', 'R', 1, 'L');
-
-        $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
-        $pdf->SetFont($this->fontArial, '', 16);
-        $pdf->Cell($pageWidth * 0.04, 0, $data->inspected ? 'x' : '', 'LTRB', 0, 'C');
+        $pdf->Cell($pageWidth * 0.105, 0, '', 'L', 0, 'C');
+        $pdf->setCellHeightRatio(1.4);
+        $pdf->SetFont('zapfdingbats', 'B', 9);
+        $pdf->Cell($pageWidth * 0.025, 0, $complianceStatus['allotment_necessary'] ? '3' : '', 1, 0, 'C');
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArial, '', 9);
+        $pdf->Cell($pageWidth * 0.4072, 0, ' Charges to appropriation / allotment necessary,', 0, 0);
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.44, 0, 'Inspected, verified and found OK', 0, 0, 'L');
-        $pdf->Cell($pageWidth * 0.09, 0, '', '', 0, 'L');
-        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($signatoryInspection?->detail?->position), '', 0, 'C');
-        $pdf->Cell(0, 0, '', 'R', 1, 'L');
+        $pdf->Cell($pageWidth * 0.085, 0, '', 'L', 0, 'C');
+        $pdf->Cell(0, 0, 'Existence of available appropriation', 'R', 1);
 
-        $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
-        $pdf->Cell($pageWidth * 0.04, 0, '', 0, 0, 'L');
+        $pdf->Cell($pageWidth * 0.105, 0, '', 'L', 0, 'C');
+        $pdf->Cell($pageWidth * 0.025, 0, '', 0, 0);
+        $pdf->SetFont($this->fontArial, '', 9);
+        $pdf->Cell($pageWidth * 0.4072, 0, ' lawful and under my direct supervision', 0, 0);
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.44, 0, 'as to quantity and specifications', 0, 0, 'L');
-        $pdf->Cell($pageWidth * 0.09, 0, '', '', 0, 'L');
-        $pdf->Cell($pageWidth * 0.23, 0, 'Inspection Officer', 'T', 0, 'C');
-        $pdf->Cell(0, 0, '', 'R', 1, 'L');
+        $pdf->Cell(0, 0, '', 'LR', 1);
 
-        $pdf->Cell(0, 0, '', 'LR', 1, 'L');
+        $pdf->setCellHeightRatio(1.4);
+        $pdf->Cell($pageWidth * 0.105, 0, '', 'L', 0, 'C');
+        $pdf->SetFont('zapfdingbats', 'B', 9);
+        $pdf->Cell($pageWidth * 0.025, 0, $complianceStatus['document_valid'] ? '3' : '', 1, 0, 'C');
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArial, '', 9);
+        $pdf->Cell($pageWidth * 0.4072, 0, ' Supporting documents valid, proper and legal', 0, 0);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->setCellHeightRatio(1.4);
+        $pdf->Cell(0, 0, '', 'LR', 1);
 
-        $pdf->SetFont($this->fontArial, '', 2);
-        $pdf->Cell(0, 0, '', 'LTR', 1, 'C');
+        $pdf->setCellHeightRatio(0.2);
+        $pdf->Cell($pageWidth * 0.5372, 0, '', 'LRB', 0);
+        $pdf->Cell(0, 0, '', 'LRB', 1);
+        $pdf->setCellHeightRatio(1.25);
 
-        $pdf->SetFont($this->fontArialBold, 'B', 11);
-        $pdf->Cell($pageWidth * 0.1, 0, '', 'LT', 0, 'L');
-        $pdf->Cell(0, 0, 'ACCEPTANCE', 'TR', 1, 'L');
+        $pdf->Cell($pageWidth * 0.13, 0, 'Signature:', 'LB', 0);
+        $pdf->Cell($pageWidth * 0.4072, 0, '', 'LB', 0);
+        $pdf->Cell($pageWidth * 0.12975, 0, 'Signature:', 'LB', 0);
+        $pdf->Cell(0, 0, '', 'LRB', 1);
 
-        $pdf->Cell(0, 0, '', 'LR', 1, 'C');
+         // Measure max height needed for signatory name
+        $pdf->SetFont($this->fontArialBold, 'B', 14);
+        $deptHeight = max(
+            $pdf->getStringHeight($pageWidth * 0.4072, $headName),
+            $pdf->getStringHeight($pageWidth * 0.33305, $budgetName),
+        );
 
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.19, 0, 'Date Received:', 'L', 0, 'C');
-        $pdf->Cell($pageWidth * 0.38, 0, $data->received_date ? date_format(date_create($data->received_date), 'm/d/Y') : '', 'B', 0, 'L');
-        $pdf->Cell(0, 0, '', 'R', 1, 'C');
-
-        $pdf->Cell(0, 0, '', 'LR', 1, 'L');
-
-        $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
-        $pdf->SetFont($this->fontArial, '', 16);
-        $pdf->Cell($pageWidth * 0.04, 0, ! is_null($data->acceptance_completed) && $data->acceptance_completed ? 'x' : '', 'LTRB', 0, 'C');
+        $pdf->setCellHeightRatio(1.75);
+        $pdf->MultiCell($pageWidth * 0.13, $deptHeight, 'Printed Name:', 'LB', 'L', 0, 0);
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialBold, 'B', 14);
+        $pdf->MultiCell($pageWidth * 0.4072, $deptHeight, $headName, 'LB', 'C', 0, 0);
+        $pdf->setCellHeightRatio(1.75);
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.73, 0, '   Complete', 0, 0, 'L');
-        $pdf->Cell(0, 0, '', 'R', 1, 'L');
+        $pdf->MultiCell($pageWidth * 0.13, $deptHeight, 'Printed Name:', 'LB', 'L', 0, 0);
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialBold, 'B', 14);
+        $pdf->MultiCell(0, $deptHeight, $budgetName, 'LRB', 'C', 0, 1);
 
-        $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
+        $pdf->setCellHeightRatio(1.25);
         $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.04, 0, '', 0, 0, 'C');
-        $pdf->Cell($pageWidth * 0.53, 0, '', 0, 0, 'L');
-        $pdf->SetFont($this->fontArialBold, 'BU', 11);
-        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($acceptance?->fullname), '', 0, 'C');
-        $pdf->Cell(0, 0, '', 'R', 1, 'L');
 
-        $pdf->Cell($pageWidth * 0.1, 0, '', 'L', 0, 'L');
-        $pdf->SetFont($this->fontArial, '', 16);
-        $pdf->Cell($pageWidth * 0.04, 0, ! is_null($data->acceptance_completed) && ! $data->acceptance_completed ? 'x' : '', 'LTRB', 0, 'C');
-        $pdf->SetFont($this->fontArial, '', 10);
-        $pdf->Cell($pageWidth * 0.44, 0, '   Partial', 0, 0, 'L');
-        $pdf->Cell($pageWidth * 0.09, 0, '', '', 0, 'L');
-        $pdf->SetFont($this->fontArial, 'U', 10);
-        $pdf->Cell($pageWidth * 0.23, 0, strtoupper($acceptance?->position->position_name), '', 0, 'C');
-        $pdf->Cell(0, 0, '', 'R', 1, 'L');
+        // ---------------- Position with multi rowspan ----------------
+        // Define column widths
+        $w1 = 0.13 * $pageWidth;
+        $w2 = 0.4072 * $pageWidth;
+        $w3 = 0.13 * $pageWidth;
+        $w4 = 0.3328 * $pageWidth;
 
-        $pdf->SetFont($this->fontArial, '', 30);
-        $pdf->Cell(0, 0, '', 'LRB', 1, 'L');
+        $headTitle = 'Head, Requesting Office/Authorized Representative';
+        $budgetTitle = 'Head, Budget Unit/Authorized Representative';
+
+        $deptSignatoryPositionHeight = max(
+            $pdf->getStringHeight($w2, $headPosition),
+            $pdf->getStringHeight($w4, $budgetPosition),
+        );
+        $deptSignatoryTitleHeight = max(
+            $pdf->getStringHeight($w2, $headTitle),
+            $pdf->getStringHeight($w4, $budgetTitle),
+        );
+        $positionCellDepthHeight = $deptSignatoryPositionHeight + $deptSignatoryTitleHeight;
+
+        // -------- First row --------
+        $y = $pdf->GetY();
+        $x = $pdf->GetX();
+
+        // rowspan=2
+        $pdf->MultiCell(
+            $w1,
+            $positionCellDepthHeight,
+            "Position:",
+            1,
+            'L',
+            0,
+            0,
+            x: $x,
+            y: $y,
+            maxh: $positionCellDepthHeight,
+            valign: 'M'
+        );
+        $pdf->MultiCell(
+            $w2,
+            $deptSignatoryPositionHeight,
+            $headPosition,
+            'T',
+            'C',
+            0,
+            0,
+        );
+        // rowspan=2
+        $pdf->MultiCell(
+            $w3,
+            $positionCellDepthHeight,
+            "Position:",
+            1,
+            'L',
+            0,
+            0,
+            maxh: $positionCellDepthHeight,
+            valign: 'M'
+        );
+        $pdf->MultiCell(
+            $w4,
+            $deptSignatoryPositionHeight,
+            $budgetPosition,
+            'TR',
+            'C',
+            0,
+            1,
+        );
+
+        // -------- Second row --------
+        $pdf->SetFont($this->fontArial, 'I', 9);
+
+        // Cell under headPosition
+        $pdf->MultiCell(
+            $w2,
+            $deptSignatoryTitleHeight,
+            "Head, Requesting Office/Authorized Representative",
+            'T',
+            'C',
+            0,
+            0,
+            x: $x + $w1,
+            y: $y + $deptSignatoryPositionHeight
+        );
+
+        // Cell under budgetPosition
+        $pdf->MultiCell(
+            $w4,
+            $deptSignatoryTitleHeight,
+            "Head, Budget Unit/Authorized Representative",
+            'TR',
+            'C',
+            0,
+            1,
+            x: $x + $w1 + $w2 + $w3,
+            y: $y + $deptSignatoryPositionHeight
+        );
+
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->Cell($pageWidth * 0.13, 0, 'Date:', 'LTB', 0);
+        $pdf->Cell($pageWidth * 0.4072, 0, $headSignedDate, 'LTB', 0, 'C');
+        $pdf->Cell($pageWidth * 0.12975, 0, 'Date:', 'LTB', 0);
+        $pdf->Cell(0, 0, $budgetSignedDate, 'LTRB', 1, 'C');
 
         $pdfBlob = $pdf->Output($filename, 'S');
         $pdfBase64 = base64_encode($pdfBlob);

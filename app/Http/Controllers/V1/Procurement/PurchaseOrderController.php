@@ -251,9 +251,12 @@ class PurchaseOrderController extends Controller
                 $query->where('document', 'po')
                     ->where('signatory_type', '	authorized_official');
             },
-            'purchase_request:id,section_id,requested_by_id,purpose',
+            'purchase_request:id,department_id,section_id,sai_no,sai_date,requested_by_id,purpose',
+            'purchase_request.department:id,department_name',
             'purchase_request.section:id,section_name',
             'purchase_request.requestor:id,firstname,middlename,lastname',
+            'obligation_request',
+            'disbursement_voucher'
         ]);
 
         return response()->json([

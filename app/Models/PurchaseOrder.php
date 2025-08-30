@@ -135,4 +135,20 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(InventoryIssuance::class);
     }
+
+    /**
+     * The purchase order that has one obligation request.
+     */
+    public function obligation_request(): HasOne
+    {
+        return $this->hasOne(ObligationRequest::class, 'purchase_order_id');
+    }
+
+    /**
+     * The purchase order that has one disbursement voucher.
+     */
+    public function disbursement_voucher(): HasOne
+    {
+        return $this->hasOne(ObligationRequest::class, 'purchase_order_id');
+    }
 }

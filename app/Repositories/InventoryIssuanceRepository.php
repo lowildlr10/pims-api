@@ -6,12 +6,12 @@ use App\Enums\DocumentPrintType;
 use App\Enums\InventoryIssuanceStatus;
 use App\Helpers\FileHelper;
 use App\Helpers\StatusTimestampsHelper;
+use App\Helpers\TextHelper;
 use App\Interfaces\InventoryIssuanceRepositoryInterface;
 use App\Models\Company;
 use App\Models\InventoryIssuance;
 use App\Models\InventoryIssuanceItem;
 use App\Models\InventorySupply;
-use App\Models\PurchaseRequest;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
@@ -23,6 +23,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
     protected string $fontArial;
 
     protected string $fontArialBold;
+
+    protected string $fontArialBlack;
 
     protected string $fontArialItalic;
 
@@ -37,6 +39,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
+        $this->fontArialBlack = TCPDF_FONTS::addTTFfont('fonts/arialblk.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialItalic = TCPDF_FONTS::addTTFfont('fonts/ariali.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBoldItalic = TCPDF_FONTS::addTTFfont('fonts/arialbi.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialNarrow = TCPDF_FONTS::addTTFfont('fonts/arialn.ttf', 'TrueTypeUnicode', '', 96);
@@ -152,6 +155,9 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                 'responsibility_center',
                 'purchase_order',
                 'purchase_order.purchase_request',
+                'purchase_order.supplier',
+                'purchase_order.obligation_request',
+                'purchase_order.disbursement_voucher',
             ])->find($invId);
 
             if (empty($inv)) {
@@ -206,6 +212,58 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
     private function generateRequisitionIssueSlipDoc(
         string $filename, array $pageConfig, InventoryIssuance $data, Company $company
     ): string {
+        $municipality = strtoupper($company->municipality) ?? '';
+        $companyType = strtoupper($company->company_type) ?? '';
+        $division = strtoupper(
+            $data->purchase_order?->purchase_request?->department?->department_name
+        ) ?? '';
+        $office = strtoupper(
+            $data->purchase_order?->purchase_request?->section?->section_name
+        ) ?? '';
+        $responsibilityCenter = $data->responsibility_center->code
+            ?? $data->purchase_order?->obligation_request?->responsibility_center?->code
+            ?? $data->purchase_order?->disbursement_voucher?->responsibility_center?->code
+            ?? '';
+        $poNo = $data?->purchase_order?->po_no ?? '';
+        $inventoryNumber = $data->inventory_no;
+        $inventoryDate = $data->inventory_date
+            ? date_format(date_create($data->inventory_date), 'F j, Y') 
+            : '';
+        $saiNo = $data->sai_no
+            ?? $data->purchase_order?->purchase_request?->sai_no
+            ?? '';
+        $saiDate = $data->sai_date
+            ? date_format(date_create($data->sai_date), 'F j, Y')
+            : ($data->purchase_order?->purchase_request?->sai_date
+                ? date_format(date_create($data->sai_date), 'F j, Y')
+                : '');
+        $items = !empty($data->items) ? $data->items : [];
+        $supplier = strtoupper($data?->purchase_order?->supplier?->supplier_name ?? '');
+        $purpose = $data?->purchase_order?->purchase_request?->purpose ?? '';
+        $purpose = trim(str_replace("\r", '<br />', $purpose));
+        $purpose = str_replace("\n", '<br />', $purpose);
+        $purpose = $purpose . "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc id neque at turpis venenatis fringilla. Sed pharetra justo vitae lectus cursus, ut dignissim urna luctus. Vivamus eleifend lacinia tellus, ut faucibus nunc feugiat egestas. Nam quam est, dapibus id eros a, porta tempus nulla. Proin elementum et metus et finibus. Etiam eu sollicitudin eros. Phasellus felis purus, efficitur eget ipsum quis, laoreet mattis arcu.";
+        $requestedByName = $data->requestor?->fullname ?? '';
+        $requestedByPosition = $data->requestor?->position?->position_name ?? '';
+        $requestedBySignedDate = $data->requested_date 
+            ? date_format(date_create($data->requested_date), 'M j, Y') 
+            : '';
+        $approvedByName = $data->signatory_approval?->user?->fullname ?? '';
+        $approvedByPosition = $data->signatory_approval?->detail?->position ?? '-';
+        $approvedBySignedDate = $data->approved_date 
+            ? date_format(date_create($data->approved_date), 'M j, Y') 
+            : '';
+        $issuedByName = $data->signatory_issuer?->user?->fullname ?? '';
+        $issuedByPosition = $data->signatory_issuer?->detail?->position ?? '-';
+        $issuedBySignedDate = $data->issued_date 
+            ? date_format(date_create($data->issued_date), 'M j, Y') 
+            : '';
+        $receivedByName = $data->recipient?->fullname ?? '';
+        $receivedByPosition = $data->recipient?->position?->position_name ?? '';
+        $receivedBySignedDate = $data->received_date 
+            ? date_format(date_create($data->received_date), 'M j, Y') 
+            : '';
+
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
         $pdf->SetCreator(PDF_CREATOR);
@@ -213,9 +271,9 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $pdf->SetTitle($filename);
         $pdf->SetSubject('Requisition and Issue Slip');
         $pdf->SetMargins(
-            $pdf->getPageWidth() * 0.07,
+            $pdf->getPageWidth() * 0.04,
             $pdf->getPageHeight() * 0.05,
-            $pdf->getPageWidth() * 0.07
+            $pdf->getPageWidth() * 0.04
         );
         $pdf->setPrintHeader(false);
         $pdf->setPrintFooter(false);
@@ -223,7 +281,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
 
         $pdf->AddPage();
 
-        $pageWidth = $pdf->getPageWidth() * 0.86;
+        $pageWidth = $pdf->getPageWidth() * 0.92;
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
@@ -235,11 +293,11 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                 );
                 $pdf->Image(
                     $imagePath,
-                    $x + ($x * 0.15),
-                    $y + ($y * 0.09),
+                    $x + ($x * 0.4),
+                    $y + ($y * 0.5),
                     w: $pageConfig['orientation'] === 'P'
-                        ? $x - ($x * 0.1)
-                        : $y + ($y * 0.4),
+                        ? $x + ($x * 0.8)
+                        : $y + ($y * 0.6),
                     type: 'PNG',
                     resize: true,
                     dpi: 500,
@@ -247,6 +305,594 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             }
         } catch (\Throwable $th) {}
 
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 2.5),
+                        $y + ($y * 0.5),
+                        w: $pageConfig['orientation'] === 'P'
+                            ? $x + ($x * 0.8)
+                            : $y + ($y * 0.6),
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
+
+        $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
+        $pdf->SetFont($this->fontArial, '', 10);
+
+        $pdf->Cell($pageWidth * 0.74, 0, '');
+        $pdf->Cell($pageWidth * 0.103, 0, 'Annex 33', 0, 0, 'C');
+        $pdf->Cell(0, 0, '', 0, 1);
+
+        $pdf->SetFont($this->fontArial, '', 5);
+        $pdf->Cell(0, 0, '', 'LTR', 1);
+
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->SetFont($this->fontArialBlack, 'B', 18);
+        $pdf->Cell(0, 0, 'REQUISITION AND ISSUE SLIP', 'LR', 1, 'C');
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialBold, 'B', 14);
+        $pdf->Cell(0, 0, $municipality, 'LR', 1, 'C');
+
+        $pdf->SetFont($this->fontArialItalic, 'I', 11);
+        $pdf->Cell(0, 0, $companyType, 'LR', 1, 'C');
+
+        $pdf->SetFont($this->fontArial, '', 5);
+        $pdf->Cell(0, 0, '', 'LR', 1);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1px solid #000; border-bottom: 1px solid #000; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="-6"
+                align="center"
+            ><tbody>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="25.3%"
+                    >
+                        <div>
+                            <table cellpadding="2" align="left" width="96%">
+                                <tr>
+                                    <td
+                                        width="31%"
+                                    >Division:</td>
+                                    <td
+                                        style="text-decoration: underline;"
+                                        width="69%"
+                                    >'. $division .'</td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        width="31%"
+                                    >Office:</td>
+                                    <td
+                                        style="text-decoration: underline;"
+                                        width="69%"
+                                    >'. $office .'</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="32%"
+                    >
+                        <div>
+                            <table cellpadding="2" align="left" width="96.5%">
+                                <tr>
+                                    <td
+                                        width="58%"
+                                    >Responsibility Center:</td>
+                                    <td
+                                        width="42%"
+                                    >'. $responsibilityCenter .'</td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        width="58%"
+                                    >PO No.:</td>
+                                    <td
+                                        style="font-weight: bold; color: #FF0066; font-size: 12px;"
+                                        width="42%"
+                                    >'. $poNo .'</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                    <td
+                        width="42.7%"
+                    >
+                        <div>
+                            <table cellpadding="2" align="left" width="97.3%">
+                                <tr>
+                                    <td
+                                        width="18%"
+                                    >RIS No.:</td>
+                                    <td
+                                        style="text-decoration: underline;"
+                                        width="32%"
+                                    >'. $inventoryNumber .'</td>
+                                    <td
+                                        width="12%"
+                                    >Date:</td>
+                                    <td
+                                        style="text-decoration: underline;"
+                                        width="38%"
+                                    >'. $inventoryDate .'</td>
+                                </tr>
+                                <tr>
+                                    <td
+                                        width="18%"
+                                    >SAI No.:</td>
+                                    <td
+                                        style="text-decoration: underline;"
+                                        width="32%"
+                                    >'. $saiNo .'</td>
+                                    <td
+                                        width="12%"
+                                    >Date:</td>
+                                    <td
+                                        style="text-decoration: underline;"
+                                        width="38%"
+                                    >'. $saiDate .'</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont('Helvetica', '', 10);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1px solid #000; border-bottom: 1px solid #000; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="2"
+                align="center"
+            ><tbody><tr>
+                <td
+                    width="57.3%"
+                >
+                    R e q u i s i t i o  n
+                </td>
+                <td
+                    width="42.7%"
+                >
+                    I s s u a n  c e
+                </td>
+            </tr></tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->SetFont($this->fontArialBoldItalic, 'BI', 11);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1px solid #000; border-bottom: 1px solid #000; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="2"
+                align="center"
+            ><tbody><tr>
+                <td
+                    style="border-right: 1px solid #000;"
+                    width="6.6%"
+                    align="center"
+                >
+                    Stock No.
+                </td>
+                <td
+                    style="border-right: 1px solid #000;"
+                    width="5.7%"
+                    align="center"
+                >
+                    Unit
+                </td>
+                <td
+                    style="border-right: 1px solid #000;"
+                    width="45%"
+                    align="center"
+                >
+                    Description
+                </td>
+                <td
+                    style="border-right: 1px solid #000;"
+                    width="16.7%"
+                    align="center"
+                >
+                    Quantity
+                </td>
+                <td
+                    style="border-right: 1px solid #000; font-size: 10px;"
+                    width="10.3%"
+                    align="center"
+                >
+                    Unit Price
+                </td>
+                <td
+                    width="15.7%"
+                >
+                    Total Cost
+                </td>
+             </tr></tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont('Times', 'B', 11);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1px solid #3333FF; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
+                cellpadding="2"
+            ><tbody>
+        ';
+
+        foreach ($items as $item) {
+            $stockNo = $item->stock_no ?? 0;
+            $unit = $item?->supply?->unit_issue?->unit_name ?? '';
+            $description = trim(str_replace("\r", '<br />', $item->description));
+            $description = str_replace("\n", '<br />', $description);
+            $quantity = $item->quantity ?? 0;
+            $unitPrice = number_format($item->unit_cost, 2);
+            $totalCost = number_format($item->total_cost, 2);
+
+            $htmlTable .= '
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="6.6%"
+                        align="center"
+                    >'. $stockNo .'</td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="5.7%"
+                        align="center"
+                    >'. $unit .'</td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="45%"
+                    >'. $description .'</td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="16.7%"
+                        align="center"
+                    >'. $quantity .'</td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="10.3%"
+                        align="center"
+                    >'. $unitPrice .'</td>
+                    <td
+                        width="15.7%"
+                        align="right"
+                    >'. $totalCost .'</td>
+                </tr>
+            ';
+        }
+
+        $htmlTable .= '</tbody></table>';
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArial, '', 12);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF; border-bottom: 1.5px solid #000;"
+                cellpadding="2"
+            ><tbody>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="6.6%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="5.7%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="45%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="16.7%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="10.3%"
+                        align="center"
+                    ></td>
+                    <td
+                        width="15.7%"
+                        align="right"
+                    ></td>
+                </tr>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="6.6%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="5.7%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000; color: #FF0066;"
+                        width="45%"
+                        align="center"
+                    >SUPPLIER: '. $supplier .'</td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="16.7%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="10.3%"
+                        align="center"
+                    ></td>
+                    <td
+                        width="15.7%"
+                        align="right"
+                    ></td>
+                </tr>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="6.6%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="5.7%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="45%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="16.7%"
+                        align="center"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="10.3%"
+                        align="center"
+                    ></td>
+                    <td
+                        width="15.7%"
+                        align="right"
+                    ></td>
+                </tr>
+            </tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont($this->fontArialNarrowBold, 'B', 12);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $pdf->SetFont($this->fontArialBoldItalic, 'B', 12);
+        $basePurposeHeight = $pdf->getStringHeight($pageWidth * 0.877, 'Purpose');
+        $totalPurposeHeight = $pdf->getStringHeight($pageWidth * 0.877, $purpose);
+        $linesPurpose = TextHelper::splitTextToLines($pdf, $purpose, $pageWidth * 0.877);
+
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->MultiCell(
+            $pageWidth * 0.123, 
+            $totalPurposeHeight, 
+            'Purpose:',
+            'L',
+            'L',
+            ln: 0,
+            maxh: $totalPurposeHeight,
+            valign: 'T'
+        );
+        $x = $pdf->GetX();
+
+        $pdf->SetFont($this->fontArialBoldItalic, 'B', 12);
+
+        foreach ($linesPurpose as $line) {
+            $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
+            $pdf->MultiCell(
+                $pageWidth * 0.877, 
+                $basePurposeHeight, 
+                $line, 
+                'R',
+                'L',
+                x: $x
+            );
+
+            $yAfter = $pdf->GetY();
+            $pdf->SetDrawColor(0, 0, 0);
+            $pdf->Line($x, $yAfter, $x + $pageWidth * 0.877, $yAfter);
+        }
+
+        $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->Cell(0, 0, '', 'LR', ln: 1);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1.5px solid #000; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF; "
+                cellpadding="2"
+            ><tbody>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="13%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="21.75%"
+                    >Requested by:</td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="21.75%"
+                    >Approved by:</td>
+                    <td
+                        style="border-right: 1px solid #000; font-weight: bold;"
+                        width="21.75%"
+                    >Issued by:</td>
+                    <td
+                        width="21.75%"
+                    >Received by:</td>
+                </tr>
+            </tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.6);
+        $pdf->SetFont('Helvetica', '', 10);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1.5px solid #000; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF; "
+                cellpadding="2"
+            ><tbody>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="13%"
+                    >Signature:</td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="21.75%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="21.75%"
+                    ></td>
+                    <td
+                        style="border-right: 1px solid #000; font-weight: bold;"
+                        width="21.75%"
+                    ></td>
+                    <td
+                        width="21.75%"
+                    ></td>
+                </tr>
+            </tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(2);
+        $pdf->SetFont($this->fontArial, '', 10);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table 
+                style="border-top: 1.5px solid #000; border-bottom: 1.5px solid #3333FF; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF; "
+                cellpadding="2"
+            ><tbody>
+                <tr>
+                    <td
+                        style="border-right: 1px solid #000;"
+                        width="13%"
+                    >Printed Name:</td>
+                    <td
+                        style="border-right: 1px solid #000; font-weight: bold; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $requestedByName .'</td>
+                    <td
+                        style="border-right: 1px solid #000; font-weight: bold; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $approvedByName .'</td>
+                    <td
+                        style="border-right: 1px solid #000; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $issuedByName .'</td>
+                    <td
+                        style="font-weight: bold; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $receivedByName .'</td>
+                </tr>
+                <tr>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000;"
+                        width="13%"
+                    >Designation:</td>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $requestedByPosition .'</td>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $approvedByPosition .'</td>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $issuedByPosition .'</td>
+                    <td
+                        style="border-top: 1px solid #000; font-size: 12px;"
+                        width="21.75%"
+                        align="center"
+                    >'. $receivedByPosition .'</td>
+                </tr>
+                <tr>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000;"
+                        width="13%"
+                    >D a t e:</td>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000;"
+                        width="21.75%"
+                        align="center"
+                    >'. $requestedBySignedDate .'</td>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000;"
+                        width="21.75%"
+                        align="center"
+                    >'. $approvedBySignedDate .'</td>
+                    <td
+                        style="border-top: 1px solid #000; border-right: 1px solid #000;"
+                        width="21.75%"
+                        align="center"
+                    >'. $issuedBySignedDate .'</td>
+                    <td
+                        style="border-top: 1px solid #000;"
+                        width="21.75%"
+                        align="center"
+                    >'. $receivedBySignedDate .'</td>
+                </tr>
+            </tbody></table>
+        ';
+
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->SetFont('Helvetica', '', 10);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
        
         $pdfBlob = $pdf->Output($filename, 'S');
         $pdfBase64 = base64_encode($pdfBlob);
@@ -376,7 +1022,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell(0, 0, '', 'LR', 1);
 
-         $htmlTable = '
+        $htmlTable = '
             <table 
                 style="border: 1px solid #3333FF; border-left: 1.5px solid #3333FF; border-right: 1.5px solid #3333FF;"
                 cellpadding="2"

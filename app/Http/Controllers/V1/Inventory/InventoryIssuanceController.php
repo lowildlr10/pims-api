@@ -216,6 +216,8 @@ class InventoryIssuanceController extends Controller
             'responsibility_center',
             'purchase_order',
             'purchase_order.purchase_request',
+            'purchase_order.obligation_request',
+            'purchase_order.disbursement_voucher',
         ]);
 
         return response()->json([

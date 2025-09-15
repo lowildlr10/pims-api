@@ -263,22 +263,24 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             }
         } catch (\Throwable $th) {}
 
-        try {
-            if ($company->company_logo) {
-                $imagePath = 'images/bagong-ph-logo.png';
-                $pdf->Image(
-                    $imagePath,
-                    $x + ($x * 1.8),
-                    $y - ($y * 0.04),
-                    w: $pageConfig['orientation'] === 'P'
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 1.8),
+                        $y - ($y * 0.04),
+                        w: $pageConfig['orientation'] === 'P'
                         ? $x - ($x * 0.04)
                         : $y + ($y * 0.4),
-                    type: 'PNG',
-                    resize: true,
-                    dpi: 500,
-                );
-            }
-        } catch (\Throwable $th) {}
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell(0, 0, 'Republic of the Philippines', 0, 1, 'C');

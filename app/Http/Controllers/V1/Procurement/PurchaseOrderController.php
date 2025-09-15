@@ -52,6 +52,8 @@ class PurchaseOrderController extends Controller
         $columnSort = $request->get('column_sort', 'pr_no');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $status = $request->get('status', '');
+        $statusFilters = !empty($status) ? explode(',', $status) : [];
 
         if (! $grouped) {
             $purchaseOrders = PurchaseOrder::query()
@@ -169,6 +171,12 @@ class PurchaseOrderController extends Controller
                         $query->where('firstname', 'ILIKE', "%{$search}%")
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     });
+            });
+        }
+
+         if (count($statusFilters) > 0) {
+            $purchaseRequests = $purchaseRequests->whereRelation('pos', function ($query) use ($statusFilters) {
+                $query->whereIn('status', $statusFilters);
             });
         }
 

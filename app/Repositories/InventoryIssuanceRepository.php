@@ -125,12 +125,12 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         try {            
             $company = Company::first();
             $inv = InventoryIssuance::with([
-               'requestor',
+                'requestor',
                 'signatory_approval:id,user_id',
                 'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
                 'signatory_approval.detail' => function ($query) use ($documentType) {
                     $query->where('document', $documentType)
-                        ->where('signatory_type', '	approved_by');
+                        ->where('signatory_type', 'approved_by');
                 },
                 'signatory_issuer:id,user_id',
                 'signatory_issuer.user:id,firstname,middlename,lastname,allow_signature,signature',
@@ -242,7 +242,6 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $purpose = $data?->purchase_order?->purchase_request?->purpose ?? '';
         $purpose = trim(str_replace("\r", '<br />', $purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
-        $purpose = $purpose . "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc id neque at turpis venenatis fringilla. Sed pharetra justo vitae lectus cursus, ut dignissim urna luctus. Vivamus eleifend lacinia tellus, ut faucibus nunc feugiat egestas. Nam quam est, dapibus id eros a, porta tempus nulla. Proin elementum et metus et finibus. Etiam eu sollicitudin eros. Phasellus felis purus, efficitur eget ipsum quis, laoreet mattis arcu.";
         $requestedByName = $data->requestor?->fullname ?? '';
         $requestedByPosition = $data->requestor?->position?->position_name ?? '';
         $requestedBySignedDate = $data->requested_date 
@@ -255,7 +254,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             : '';
         $issuedByName = $data->signatory_issuer?->user?->fullname ?? '';
         $issuedByPosition = $data->signatory_issuer?->detail?->position ?? '-';
-        $issuedBySignedDate = $data->issued_date 
+        $issuedBySignedDate = $data->issued_date
             ? date_format(date_create($data->issued_date), 'M j, Y') 
             : '';
         $receivedByName = $data->recipient?->fullname ?? '';

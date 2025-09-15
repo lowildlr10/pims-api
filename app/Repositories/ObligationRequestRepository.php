@@ -94,7 +94,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 'item_sequence' => $key,
                 'obligation_request_id' => $obligationRequest->id,
                 'account_id' => $account['account_id'],
-                'amount' => $account['amount'],
+                'amount' => !empty($account['amount']) ? $account['amount'] : 0,
             ]);
         }
     }
@@ -168,7 +168,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $payee = $data->payee->supplier_name;
         $office = $data->office;
         $address = $data->address;
-        $responsibilityCenter = $data->responsibility_center->code;
+        $responsibilityCenter = $data?->responsibility_center?->code;
         $particulars = trim(str_replace("\r", '<br />', $data->particulars));
         $particulars = str_replace("\n", '<br />', $particulars);
         $fpps = implode(
@@ -233,22 +233,24 @@ class ObligationRequestRepository implements ObligationRequestInterface
             }
         } catch (\Throwable $th) {}
 
-        try {
-            if ($company->company_logo) {
-                $imagePath = 'images/bagong-ph-logo.png';
-                $pdf->Image(
-                    $imagePath,
-                    $x + ($x * 3.2),
-                    $y + ($y * 0.2),
-                    w: $pageConfig['orientation'] === 'P'
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 3.2),
+                        $y + ($y * 0.2),
+                        w: $pageConfig['orientation'] === 'P'
                         ? $x + ($x * 1.5)
                         : $y + ($y * 1.5),
-                    type: 'PNG',
-                    resize: true,
-                    dpi: 500,
-                );
-            }
-        } catch (\Throwable $th) {}
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
 
         $pdf->setXY($x + ($x * 15.4), $y + ($y * 0.1));
 

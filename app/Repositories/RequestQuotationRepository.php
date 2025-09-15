@@ -142,22 +142,24 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
             }
         } catch (\Throwable $th) {}
 
-        try {
-            if ($company->company_logo) {
-                $imagePath = 'images/bagong-ph-logo.png';
-                $pdf->Image(
-                    $imagePath,
-                    $x + ($x * 1.4),
-                    $y - ($y * 0.04),
-                    w: $pageConfig['orientation'] === 'P'
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 1.4),
+                        $y - ($y * 0.04),
+                        w: $pageConfig['orientation'] === 'P'
                         ? $x - ($x * 0.15)
                         : $y + ($y * 0.1),
-                    type: 'PNG',
-                    resize: true,
-                    dpi: 500,
-                );
-            }
-        } catch (\Throwable $th) {}
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
 
         if ($data->signed_type === 'lce') {
             $pdf->setTextColor(0, 0, 0);

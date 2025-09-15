@@ -142,22 +142,24 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
             }
         } catch (\Throwable $th) {}
 
-        try {
-            if ($company->company_logo) {
-                $imagePath = 'images/bagong-ph-logo.png';
-                $pdf->Image(
-                    $imagePath,
-                    $x + ($x * 1.4),
-                    $y + ($y * 0.09),
-                    w: $pageConfig['orientation'] === 'P'
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 1.4),
+                        $y + ($y * 0.09),
+                        w: $pageConfig['orientation'] === 'P'
                         ? $x - ($x * 0.04)
                         : $y + ($y * 0.4),
-                    type: 'PNG',
-                    resize: true,
-                    dpi: 500,
-                );
-            }
-        } catch (\Throwable $th) {}
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
 
         $pdf->setCellHeightRatio(0.5);
         $pdf->SetLineStyle(['width' => $pdf->getPageWidth() * 0.002]);

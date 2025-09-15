@@ -251,22 +251,24 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
             }
         } catch (\Throwable $th) {}
 
-        try {
-            if ($company->company_logo) {
-                $imagePath = 'images/bagong-ph-logo.png';
-                $pdf->Image(
-                    $imagePath,
-                    $x + ($x * 2.4),
-                    $y + ($y * 0.09),
-                    w: $pageConfig['orientation'] === 'P'
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 2.4),
+                        $y + ($y * 0.09),
+                        w: $pageConfig['orientation'] === 'P'
                         ? $x + ($x * 0.6)
                         : $y + ($y * 0.4),
-                    type: 'PNG',
-                    resize: true,
-                    dpi: 500,
-                );
-            }
-        } catch (\Throwable $th) {}
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell(0, 0, "Province of {$company->province}", 0, 1, 'C');

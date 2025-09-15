@@ -90,7 +90,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr) {
-            $user->notify(new PurchaseRequestPendingNotification($pr));
+            $user->notify((
+                new PurchaseRequestPendingNotification($pr)
+            )->onQueue('notification'));
         });
     }
 
@@ -115,7 +117,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr) {
-            $user->notify(new PurchaseRequestApprovedCashAvailableNotifcation($pr));
+            $user->notify((
+                new PurchaseRequestApprovedCashAvailableNotifcation($pr)
+            )->onQueue('notification'));
         });
     }
 
@@ -134,7 +138,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr) {
-            $user->notify(new PurchaseRequestApprovedNotifcation($pr));
+            $user->notify((
+                new PurchaseRequestApprovedNotifcation($pr)
+            )->onQueue('notification'));
         });
     }
 
@@ -153,7 +159,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr) {
-            $user->notify(new PurchaseRequestDisapprovedNotification($pr));
+            $user->notify((
+                new PurchaseRequestDisapprovedNotification($pr)
+            )->onQueue('notification'));
         });
     }
 
@@ -172,7 +180,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr) {
-            $user->notify(new PurchaseRequestCancelledNotification($pr));
+            $user->notify((
+                new PurchaseRequestCancelledNotification($pr)
+            )->onQueue('notification'));
         });
     }
 
@@ -191,7 +201,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr, $rfq) {
-            $user->notify(new CanvassingNotification($pr, $rfq));
+            $user->notify((
+                new CanvassingNotification($pr, $rfq)
+            )->onQueue('notification'));
         });
     }
 
@@ -210,7 +222,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr, $rfq) {
-            $user->notify(new ForAbstractNotification($pr, $rfq));
+            $user->notify((
+                new ForAbstractNotification($pr, $rfq)
+            )->onQueue('notification'));
         });
     }
 
@@ -229,7 +243,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr, $aoq) {
-            $user->notify(new AwardedNotification($pr, $aoq));
+            $user->notify((
+                new AwardedNotification($pr, $aoq)
+            )->onQueue('notification'));
         });
     }
 
@@ -248,7 +264,9 @@ class NotificationRepository implements NotificationRepositoryInterface
         $users = User::whereIn('id', $userIds)->get();
 
         $users->each(function ($user) use ($pr, $aoq) {
-            $user->notify(new AwardedNotification($pr, $aoq));
+            $user->notify((
+                new AwardedNotification($pr, $aoq)
+            )->onQueue('notification'));
         });
     }
 }

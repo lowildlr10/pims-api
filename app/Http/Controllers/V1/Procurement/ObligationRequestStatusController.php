@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1\Procurement;
 
 use App\Enums\ObligationRequestStatus;
+use App\Enums\PurchaseOrderStatus;
 use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\ObligationRequest;
@@ -47,6 +48,8 @@ class ObligationRequestStatusController extends Controller
         $columnSort = $request->get('column_sort', 'obr_no');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $status = $request->get('status', '');
+        $statusFilters = !empty($status) ? explode(',', $status) : [];
 
         $obligationRequests = ObligationRequest::query()
             ->select([
@@ -106,6 +109,10 @@ class ObligationRequestStatusController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     });
             });
+        }
+
+        if (count($statusFilters) > 0) {
+            $obligationRequests = $obligationRequests->whereIn('status', $statusFilters);
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
@@ -285,6 +292,25 @@ class ObligationRequestStatusController extends Controller
                 ], 422);
             }
 
+            $purchaseOrder = PurchaseOrder::find($obligationRequest->purchase_order_id);
+
+            if ($purchaseOrder) {
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::FOR_OBLIGATION,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'for_obligation_at', $purchaseOrder->status_timestamps
+                    ),
+                ]);
+
+                $this->logRepository->create([
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
+                        ' order successfully marked as for obligation.',
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder,
+                ]);
+            }
+
             $obligationRequest->update([
                 'disapproved_reason' => null,
                 'status' => ObligationRequestStatus::PENDING,
@@ -438,6 +464,25 @@ class ObligationRequestStatusController extends Controller
                 'log_module' => 'dv',
                 'data' => $disbursementVoucher,
             ]);
+
+            $purchaseOrder = PurchaseOrder::find($obligationRequest->purchase_order_id);
+
+            if ($purchaseOrder) {
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::OBLIGATED,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'obligated_at', $purchaseOrder->status_timestamps
+                    ),
+                ]);
+
+                $this->logRepository->create([
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
+                        ' order successfully marked as "Obligated".',
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder,
+                ]);
+            }
 
             $obligationRequest->update([
                 'status' => ObligationRequestStatus::OBLIGATED,

@@ -8,8 +8,6 @@ use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\DisbursementVoucherInterface;
 use App\Models\Company;
 use App\Models\DisbursementVoucher;
-use App\Models\InspectionAcceptanceReport;
-use App\Models\PurchaseRequestItem;
 use TCPDF;
 use TCPDF_FONTS;
 
@@ -208,22 +206,24 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
             }
         } catch (\Throwable $th) {}
 
-        try {
-            if ($company->company_logo) {
-                $imagePath = 'images/bagong-ph-logo.png';
-                $pdf->Image(
-                    $imagePath,
-                    $x + ($x * 2.5),
-                    $y + ($y * 0.2),
-                    w: $pageConfig['orientation'] === 'P'
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 2.5),
+                        $y + ($y * 0.2),
+                        w: $pageConfig['orientation'] === 'P'
                         ? $x + ($x * 0.8)
                         : $y + ($y * 0.8),
-                    type: 'PNG',
-                    resize: true,
-                    dpi: 500,
-                );
-            }
-        } catch (\Throwable $th) {}
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
+        }
 
         $pdf->setCellHeightRatio(1.6);
         $pdf->SetFont('Times', '', 9);

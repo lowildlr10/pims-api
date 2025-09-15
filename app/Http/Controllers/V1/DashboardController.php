@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DisbursementVoucher;
 use App\Models\ObligationRequest;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -87,8 +88,11 @@ class DashboardController extends Controller
             ? [
                 'draft' => $prRawCounts[PurchaseRequestStatus::DRAFT->value] ?? 0,
                 'pending' => $prRawCounts[PurchaseRequestStatus::PENDING->value] ?? 0,
+                'approved_cash_available' => $prRawCounts[PurchaseRequestStatus::APPROVED_CASH_AVAILABLE->value] ?? 0,
+                'disapproved' => $prRawCounts[PurchaseRequestStatus::DISAPPROVED->value] ?? 0,
                 'approved' => $prRawCounts[PurchaseRequestStatus::APPROVED->value] ?? 0,
                 'for_canvassing' => $prRawCounts[PurchaseRequestStatus::FOR_CANVASSING->value] ?? 0,
+                'for_abstract' => $prRawCounts[PurchaseRequestStatus::FOR_ABSTRACT->value] ?? 0,
                 'completed' => $prRawCounts[PurchaseRequestStatus::COMPLETED->value] ?? 0,
             ]
             : [];
@@ -113,9 +117,13 @@ class DashboardController extends Controller
         $poWorkflowCounts = $showP0Workflow 
             ? [
                 'draft' => $poRawCounts[PurchaseOrderStatus::DRAFT->value] ?? 0,
+                'pending' => $poRawCounts[PurchaseOrderStatus::PENDING->value] ?? 0,
+                'approved' => $poRawCounts[PurchaseOrderStatus::APPROVED->value] ?? 0,
                 'issued' => $poRawCounts[PurchaseOrderStatus::ISSUED->value] ?? 0,
                 'for_delivery' => $poRawCounts[PurchaseOrderStatus::FOR_DELIVERY->value] ?? 0,
+                'delivered' => $poRawCounts[PurchaseOrderStatus::DELIVERED->value] ?? 0,
                 'for_inspection' => $poRawCounts[PurchaseOrderStatus::FOR_INSPECTION->value] ?? 0,
+                'inspected' => $poRawCounts[PurchaseOrderStatus::INSPECTED->value] ?? 0,
                 'completed' => $poRawCounts[PurchaseOrderStatus::COMPLETED->value] ?? 0,
             ]
             : [];

@@ -53,13 +53,14 @@ class DashboardController extends Controller
         $prRawCounts = DB::table('purchase_requests')
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (!(
+        if (
             $user->tokenCan('super:*') ||
             $user->tokenCan('head:*') ||
             $user->tokenCan('supply:*') ||
             $user->tokenCan('budget:*') ||
             $user->tokenCan('accountant:*')
-        )) {
+        ) {}
+        else {
             $prRawCounts = $prRawCounts->where('requested_by_id', $user->id);
         }
 
@@ -101,13 +102,14 @@ class DashboardController extends Controller
         $poRawCounts = PurchaseOrder::query()
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (!(
+        if (
             $user->tokenCan('super:*') ||
             $user->tokenCan('head:*') ||
             $user->tokenCan('supply:*') ||
             $user->tokenCan('budget:*') ||
             $user->tokenCan('accountant:*')
-        )) {
+        ) {}
+        else {
             $poRawCounts = $poRawCounts->whereRelation('purchase_request', 'requested_by_id', $user->id);
         }
 
@@ -132,11 +134,14 @@ class DashboardController extends Controller
         $orRawCounts = ObligationRequest::query()
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (!(
+        if (
             $user->tokenCan('super:*') ||
             $user->tokenCan('head:*') ||
-            $user->tokenCan('budget:*') 
-        )) {
+            $user->tokenCan('supply:*') ||
+            $user->tokenCan('budget:*') ||
+            $user->tokenCan('accountant:*')
+        ) {}
+        else {
             $orRawCounts = $orRawCounts->whereRelation('purchase_request', 'requested_by_id', $user->id);
         }
 
@@ -147,12 +152,15 @@ class DashboardController extends Controller
         $dvRawCounts = DisbursementVoucher::query()
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (!(
+        if (
             $user->tokenCan('super:*') ||
             $user->tokenCan('head:*') ||
+            $user->tokenCan('supply:*') ||
+            $user->tokenCan('budget:*') ||
             $user->tokenCan('accountant:*')
-        )) {
-            $dvRawCounts = $dvRawCounts->where('requested_by_id', $user->id);
+        ) {}
+        else {
+            $dvRawCounts = $dvRawCounts->whereRelation('purchase_request', 'requested_by_id', $user->id);
         }
 
         $dvRawCounts = $dvRawCounts->groupBy('status')

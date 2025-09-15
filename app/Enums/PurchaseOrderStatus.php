@@ -15,7 +15,6 @@ enum PurchaseOrderStatus: string
     case FOR_OBLIGATION = 'for_obligation';
     case OBLIGATED = 'obligated';
     case FOR_DISBURSEMENT = 'for_disbursement';
-    case DISBURSED = 'disbursed';
     case FOR_PAYMENT = 'for_payment';
     case COMPLETED = 'completed';
 }

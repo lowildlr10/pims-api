@@ -2,6 +2,7 @@
 
 namespace App\Interfaces;
 
+use App\Enums\DocumentPrintType;
 use App\Models\InventoryIssuance;
 
 interface InventoryIssuanceRepositoryInterface
@@ -10,5 +11,5 @@ interface InventoryIssuanceRepositoryInterface
 
     public function generateNewInventoryNumber(string $documentType): string;
 
-    public function print(array $pageConfig, string $prId);
+    public function print(array $pageConfig, string $invId, DocumentPrintType $documentType);
 }

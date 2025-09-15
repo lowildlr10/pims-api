@@ -65,6 +65,8 @@ class PurchaseRequestController extends Controller
         $columnSort = $request->get('column_sort', 'pr_no');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $status = $request->get('status', '');
+        $statusFilters = !empty($status) ? explode(',', $status) : [];
 
         $purchaseRequests = PurchaseRequest::query()
             ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
@@ -109,6 +111,10 @@ class PurchaseRequestController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     });
             });
+        }
+        
+        if (count($statusFilters) > 0) {
+            $purchaseRequests = $purchaseRequests->whereIn('status', $statusFilters);
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {

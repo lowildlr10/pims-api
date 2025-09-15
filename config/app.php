@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'enable_print_bagong_pilipinas_logo' => env('APP_ENABLE_PRINT_BAGONG_PILIPINAS_LOGO', false),
+
 ];

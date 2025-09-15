@@ -140,7 +140,25 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {
+        } catch (\Throwable $th) {}
+
+        if (config('app.enable_print_bagong_pilipinas_logo')) {
+            try {
+                if ($company->company_logo) {
+                    $imagePath = 'images/bagong-ph-logo.png';
+                    $pdf->Image(
+                        $imagePath,
+                        $x + ($x * 1.4),
+                        $y + ($y * 0.09),
+                        w: $pageConfig['orientation'] === 'P'
+                        ? $x - ($x * 0.04)
+                        : $y + ($y * 0.4),
+                        type: 'PNG',
+                        resize: true,
+                        dpi: 500,
+                    );
+                }
+            } catch (\Throwable $th) {}
         }
 
         $pdf->setCellHeightRatio(0.5);
@@ -488,18 +506,58 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         } catch (\Throwable $th) {
         }
 
-        $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.19, 0, 'Printed Name:', 'LT', 0);
-        $pdf->SetFont($this->fontArialBold, 'B', 9);
-        $pdf->Cell($pageWidth * 0.27, 0, strtoupper($data->requestor->fullname), 'LT', 0, 'C');
-        $pdf->Cell($pageWidth * 0.27, 0, strtoupper($data->signatory_cash_available->user->fullname), 'LT', 0, 'C');
-        $pdf->Cell(0, 0, strtoupper($data->signatory_approval->user->fullname), 'LTR', 1, 'C');
+        $htmlTable = '
+            <table border="1" cellpadding="2"><tbody><tr>
+                <td
+                    width="19%"
+                >Printed Name:</td>
+                <td
+                    style="font-size: 9px;"
+                    width="27%"
+                    align="center"
+                >'. strtoupper($data->requestor->fullname) .'</td>
+                <td
+                    style="font-size: 9px;"
+                    width="27%"
+                    align="center"
+                >'. strtoupper($data->signatory_cash_available->user->fullname) .'</td>
+                <td
+                    style="font-size: 9px;"
+                    width="27%"
+                    align="center"
+                >'. strtoupper($data->signatory_approval->user->fullname) .'</td>
+            </tr></tbody></table>
+        ';
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
-        $pdf->Cell($pageWidth * 0.19, 0, 'Designation:', 'LTB', 0);
-        $pdf->Cell($pageWidth * 0.27, 0, $data->requestor->position->position_name, 'LTB', 0, 'C');
-        $pdf->Cell($pageWidth * 0.27, 0, $data->signatory_cash_available->detail->position, 'LTB', 0, 'C');
-        $pdf->Cell(0, 0, $data->signatory_approval->detail->position, 'LTRB', 1, 'C');
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
+
+        $htmlTable = '
+            <table border="1" cellpadding="2"><tbody><tr>
+                <td
+                    width="19%"
+                >Designation:</td>
+                <td
+                    width="27%"
+                    align="center"
+                >'. $data->requestor->position->position_name .'</td>
+                <td
+                    width="27%"
+                    align="center"
+                >'. $data->signatory_cash_available->detail->position .'</td>
+                <td
+                    width="27%"
+                    align="center"
+                >'. $data->signatory_approval->detail->position .'</td>
+            </tr></tbody></table>
+        ';
+
+        $pdf->SetFont($this->fontArialBold, 'B', 10);
+        $pdf->setCellHeightRatio(1.25);
+        $pdf->writeHTML($htmlTable, ln: false);
+        $pdf->Ln(0);
 
         $pdfBlob = $pdf->Output($filename, 'S');
         $pdfBase64 = base64_encode($pdfBlob);

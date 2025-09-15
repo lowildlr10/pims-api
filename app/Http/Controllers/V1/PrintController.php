@@ -6,8 +6,11 @@ use App\Enums\DocumentPrintType;
 use App\Http\Controllers\Controller;
 use App\Models\PaperSize;
 use App\Repositories\AbstractQuotationRepository;
+use App\Repositories\DisbursementVoucherRepository;
 use App\Repositories\InspectionAcceptanceReportRepository;
+use App\Repositories\InventoryIssuanceRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\ObligationRequestRepository;
 use App\Repositories\PurchaseOrderRepository;
 use App\Repositories\PurchaseRequestRepository;
 use App\Repositories\RequestQuotationRepository;
@@ -29,13 +32,22 @@ class PrintController extends Controller
 
     private InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository;
 
+    private ObligationRequestRepository $obligationRequestRepository;
+
+    private DisbursementVoucherRepository $disbursementVoucherRepository;
+
+    private InventoryIssuanceRepository $inventoryIssuanceRepository;
+
     public function __construct(
         LogRepository $logRepository,
         PurchaseRequestRepository $purchaseRequestRepository,
         RequestQuotationRepository $requestQuotationRepository,
         AbstractQuotationRepository $abstractQuotationRepository,
         PurchaseOrderRepository $purchaseOrderRepository,
-        InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository
+        InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository,
+        ObligationRequestRepository $obligationRequestRepository,
+        DisbursementVoucherRepository $disbursementVoucherRepository,
+        InventoryIssuanceRepository $inventoryIssuanceRepository
     ) {
         $this->logRepository = $logRepository;
         $this->purchaseRequestRepository = $purchaseRequestRepository;
@@ -43,6 +55,9 @@ class PrintController extends Controller
         $this->abstractQuotationRepository = $abstractQuotationRepository;
         $this->purchaseOrderRepository = $purchaseOrderRepository;
         $this->inspectionAcceptanceReportRepository = $inspectionAcceptanceReportRepository;
+        $this->obligationRequestRepository = $obligationRequestRepository;
+        $this->disbursementVoucherRepository = $disbursementVoucherRepository;
+        $this->inventoryIssuanceRepository = $inventoryIssuanceRepository;
     }
 
     /**
@@ -108,60 +123,29 @@ class PrintController extends Controller
                 break;
 
             case DocumentPrintType::OBR:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf',
-                    ],
-                ]);
+                $data = $this->obligationRequestRepository->print($pageConfig, $documentId);
+                $logModule = 'obr';
+                break;
 
             case DocumentPrintType::DV:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf',
-                    ],
-                ]);
+                $data = $this->disbursementVoucherRepository->print($pageConfig, $documentId);
+                $logModule = 'dv';
+                break;
 
             case DocumentPrintType::RIS:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf',
-                    ],
-                ]);
+                $data = $this->inventoryIssuanceRepository->print($pageConfig, $documentId, DocumentPrintType::RIS);
+                $logModule = 'inv-issuance';
+                break;
 
             case DocumentPrintType::ARE:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf',
-                    ],
-                ]);
+                $data = $this->inventoryIssuanceRepository->print($pageConfig, $documentId, DocumentPrintType::ARE);
+                $logModule = 'inv-issuance';
+                break;
 
             case DocumentPrintType::ICS:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf',
-                    ],
-                ]);
-
-            case DocumentPrintType::SUMMARY:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf',
-                    ],
-                ]);
-
-            case DocumentPrintType::PAYMENT:
-                return response()->json([
-                    'data' => [
-                        'blob' => 'test',
-                        'filename' => 'test.pdf',
-                    ],
-                ]);
+                $data = $this->inventoryIssuanceRepository->print($pageConfig, $documentId, DocumentPrintType::ICS);
+                $logModule = 'inv-issuance';
+                break;
 
             default:
                 return response()->json([

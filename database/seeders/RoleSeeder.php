@@ -44,7 +44,9 @@ class RoleSeeder extends Seeder
             'permissions' => [
                 'user:*',
                 'comapny:view',
+                'account-department:view',
                 'account-section:view',
+                'account-user:view',
                 'pr:view,create,update,submit,cancel,print',
                 'rfq:view,receive,submit,print',
                 'aoq:view,print',

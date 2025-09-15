@@ -52,6 +52,8 @@ class PurchaseOrderController extends Controller
         $columnSort = $request->get('column_sort', 'pr_no');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $status = $request->get('status', '');
+        $statusFilters = !empty($status) ? explode(',', $status) : [];
 
         if (! $grouped) {
             $purchaseOrders = PurchaseOrder::query()
@@ -172,6 +174,12 @@ class PurchaseOrderController extends Controller
             });
         }
 
+         if (count($statusFilters) > 0) {
+            $purchaseRequests = $purchaseRequests->whereRelation('pos', function ($query) use ($statusFilters) {
+                $query->whereIn('status', $statusFilters);
+            });
+        }
+
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'pr_no':
@@ -251,9 +259,12 @@ class PurchaseOrderController extends Controller
                 $query->where('document', 'po')
                     ->where('signatory_type', '	authorized_official');
             },
-            'purchase_request:id,section_id,requested_by_id,purpose',
+            'purchase_request:id,department_id,section_id,sai_no,sai_date,requested_by_id,purpose',
+            'purchase_request.department:id,department_name',
             'purchase_request.section:id,section_name',
             'purchase_request.requestor:id,firstname,middlename,lastname',
+            'obligation_request',
+            'disbursement_voucher'
         ]);
 
         return response()->json([

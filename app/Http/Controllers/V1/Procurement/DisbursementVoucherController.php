@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1\Procurement;
 
 use App\Enums\DisbursementVoucherStatus;
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
@@ -15,6 +16,7 @@ use App\Repositories\LogRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Auth;
 
 class DisbursementVoucherController extends Controller
 {
@@ -35,12 +37,16 @@ class DisbursementVoucherController extends Controller
      */
     public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
+        $user = Auth::user();
+        
         $search = trim($request->get('search', ''));
         $perPage = $request->get('per_page', 50);
         $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
         $columnSort = $request->get('column_sort', 'dv_no');
         $sortDirection = $request->get('sort_direction', 'desc');
         $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $status = $request->get('status', '');
+        $statusFilters = !empty($status) ? explode(',', $status) : [];
 
         $disbursementVouchers = DisbursementVoucher::query()
             ->select([
@@ -55,6 +61,19 @@ class DisbursementVoucherController extends Controller
                 'purchase_order:id,po_no',
                 'payee:id,supplier_name'
             ]);
+
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
+        ) {
+        } else {
+            $disbursementVouchers = $disbursementVouchers
+                ->whereRelation('purchase_request', function ($query) use ($user) {
+                $query->where('requested_by_id', $user->id);
+            });
+        }
         
         if (! empty($search)) {
             $disbursementVouchers->where(function ($query) use ($search) {
@@ -91,6 +110,10 @@ class DisbursementVoucherController extends Controller
                             ->orWhere('lastname', 'ILIKE', "%{$search}%");
                     });
             });
+        }
+
+        if (count($statusFilters) > 0) {
+            $disbursementVouchers = $disbursementVouchers->whereIn('status', $statusFilters);
         }
 
         if (in_array($sortDirection, ['asc', 'desc'])) {
@@ -281,6 +304,25 @@ class DisbursementVoucherController extends Controller
                 ], 422);
             }
 
+            $purchaseOrder = PurchaseOrder::find($disbursementVoucher->purchase_order_id);
+
+            if ($purchaseOrder) {
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::FOR_DISBURSEMENT,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'inspected_at', $purchaseOrder->status_timestamps
+                    ),
+                ]);
+
+                $this->logRepository->create([
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
+                        ' order successfully marked as for disbursement.',
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder,
+                ]);
+            }
+
             $disbursementVoucher->update([
                 'disapproved_reason' => null,
                 'status' => DisbursementVoucherStatus::PENDING,
@@ -411,6 +453,25 @@ class DisbursementVoucherController extends Controller
                 ], 422);
             }
 
+            $purchaseOrder = PurchaseOrder::find($disbursementVoucher->purchase_order_id);
+
+            if ($purchaseOrder) {
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::FOR_PAYMENT,
+                    'status_timestamps' => StatusTimestampsHelper::generate(
+                        'for_payment_at', $purchaseOrder->status_timestamps
+                    ),
+                ]);
+
+                $this->logRepository->create([
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
+                        ' order successfully marked as "For Payment".',
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder,
+                ]);
+            }
+
             $disbursementVoucher->update([
                 'status' => DisbursementVoucherStatus::FOR_PAYMENT,
                 'status_timestamps' => StatusTimestampsHelper::generate(
@@ -488,21 +549,49 @@ class DisbursementVoucherController extends Controller
                 'data' => $disbursementVoucher,
             ]);
 
-            $purchaseRequest = PurchaseRequest::find($disbursementVoucher->purchase_request_id);
+            $purchaseOrder = PurchaseOrder::find($disbursementVoucher->purchase_order_id);
 
-            if (!empty($purchaseRequest)) {
-                $purchaseRequest->update([
-                    'status' => PurchaseRequestStatus::COMPLETED,
+            if ($purchaseOrder) {
+                $purchaseOrder->update([
+                    'status' => PurchaseOrderStatus::COMPLETED,
                     'status_timestamps' => StatusTimestampsHelper::generate(
-                        'completed_at', $purchaseRequest->status_timestamps
+                        'completed_at', $purchaseOrder->status_timestamps
                     ),
                 ]);
+
                 $this->logRepository->create([
-                    'message' => 'Purchase request successfully marked as "Completed"',
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest,
+                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
+                        ' order successfully marked as "Completed".',
+                    'log_id' => $purchaseOrder->id,
+                    'log_module' => 'po',
+                    'data' => $purchaseOrder,
                 ]);
+            }
+
+            $po = PurchaseOrder::selectRaw('
+                COUNT(*) as po_total_count,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as po_completed_count
+            ', [PurchaseOrderStatus::COMPLETED])
+            ->where('purchase_request_id', $disbursementVoucher->purchase_request_id)
+            ->first();
+
+            if ($po->po_total_count === $po->po_completed_count) {
+                $purchaseRequest = PurchaseRequest::find($disbursementVoucher->purchase_request_id);
+
+                if (!empty($purchaseRequest)) {
+                    $purchaseRequest->update([
+                        'status' => PurchaseRequestStatus::COMPLETED,
+                        'status_timestamps' => StatusTimestampsHelper::generate(
+                            'completed_at', $purchaseRequest->status_timestamps
+                        ),
+                    ]);
+                    $this->logRepository->create([
+                        'message' => 'Purchase request successfully marked as "Completed"',
+                        'log_id' => $purchaseRequest->id,
+                        'log_module' => 'pr',
+                        'data' => $purchaseRequest,
+                    ]);
+                }
             }
 
             return response()->json([

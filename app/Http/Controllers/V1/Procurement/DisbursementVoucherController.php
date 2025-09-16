@@ -67,6 +67,7 @@ class DisbursementVoucherController extends Controller
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
             || $user->tokenCan('accountant:*')
+            || $user->tokenCan('cashier:*')
         ) {
         } else {
             $disbursementVouchers = $disbursementVouchers

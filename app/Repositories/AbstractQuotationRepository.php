@@ -480,7 +480,11 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             if ($index === 0) {
                 $pdf->Cell(
                     $pageWidth * (0.38 * (($supplierHeadersCount > 3 ? 0.71 : 0.66) / $supplierHeadersCount)),
-                    0, 'P'.number_format($supplierHeader->total_cost, 2), 1, 0, 'L'
+                    0, 
+                    'P'.number_format($supplierHeader->total_cost, 2),
+                    1, 
+                    count($supplierHeaders) === 1 ? 1 : 0, 
+                    'L'
                 );
 
                 continue;

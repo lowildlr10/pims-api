@@ -70,6 +70,7 @@ class ObligationRequestStatusController extends Controller
             || $user->tokenCan('supply:*')
             || $user->tokenCan('budget:*')
             || $user->tokenCan('accountant:*')
+            || $user->tokenCan('cashier:*')
         ) {
         } else {
             $obligationRequests = $obligationRequests

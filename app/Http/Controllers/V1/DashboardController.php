@@ -10,7 +10,6 @@ use App\Http\Controllers\Controller;
 use App\Models\DisbursementVoucher;
 use App\Models\ObligationRequest;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -53,12 +52,11 @@ class DashboardController extends Controller
         $prRawCounts = DB::table('purchase_requests')
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (
-            $user->tokenCan('super:*') ||
-            $user->tokenCan('head:*') ||
-            $user->tokenCan('supply:*') ||
-            $user->tokenCan('budget:*') ||
-            $user->tokenCan('accountant:*')
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
         ) {}
         else {
             $prRawCounts = $prRawCounts->where('requested_by_id', $user->id);
@@ -102,12 +100,11 @@ class DashboardController extends Controller
         $poRawCounts = PurchaseOrder::query()
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (
-            $user->tokenCan('super:*') ||
-            $user->tokenCan('head:*') ||
-            $user->tokenCan('supply:*') ||
-            $user->tokenCan('budget:*') ||
-            $user->tokenCan('accountant:*')
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
         ) {}
         else {
             $poRawCounts = $poRawCounts->whereRelation('purchase_request', 'requested_by_id', $user->id);
@@ -134,12 +131,12 @@ class DashboardController extends Controller
         $orRawCounts = ObligationRequest::query()
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (
-            $user->tokenCan('super:*') ||
-            $user->tokenCan('head:*') ||
-            $user->tokenCan('supply:*') ||
-            $user->tokenCan('budget:*') ||
-            $user->tokenCan('accountant:*')
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
+            || $user->tokenCan('cashier:*')
         ) {}
         else {
             $orRawCounts = $orRawCounts->whereRelation('purchase_request', 'requested_by_id', $user->id);
@@ -152,12 +149,12 @@ class DashboardController extends Controller
         $dvRawCounts = DisbursementVoucher::query()
             ->select('status', DB::raw('COUNT(*) as total'));
 
-        if (
-            $user->tokenCan('super:*') ||
-            $user->tokenCan('head:*') ||
-            $user->tokenCan('supply:*') ||
-            $user->tokenCan('budget:*') ||
-            $user->tokenCan('accountant:*')
+        if ($user->tokenCan('super:*')
+            || $user->tokenCan('head:*')
+            || $user->tokenCan('supply:*')
+            || $user->tokenCan('budget:*')
+            || $user->tokenCan('accountant:*')
+            || $user->tokenCan('cashier:*')
         ) {}
         else {
             $dvRawCounts = $dvRawCounts->whereRelation('purchase_request', 'requested_by_id', $user->id);

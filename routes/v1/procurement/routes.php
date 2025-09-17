@@ -19,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function() {
             ->middleware('ability:super:*,supply:*,pr:*,pr:update')
             ->name('update');
         Route::put('/{purchaseRequest}/submit-approval', [ProcurementControllers\PurchaseRequestController::class, 'submitForApproval'])
+            ->middleware('ability:super:*,supply:*,pr:*,pr:submit')
             ->name('submit');
         Route::put('/{purchaseRequest}/approve-cash-availability', [ProcurementControllers\PurchaseRequestController::class, 'approveForCashAvailability'])
             ->middleware('ability:super:*,supply:*,cashier:*,budget:*,accountant:*,pr:*,pr:approve-cash-available')

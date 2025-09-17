@@ -1,6 +1,6 @@
 <?php
 
-namespace Database\Seeders;
+namespace Database\Seeders\Production;
 
 use App\Models\ItemClassification;
 use Illuminate\Database\Seeder;

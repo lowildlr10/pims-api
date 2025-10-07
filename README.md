@@ -31,3 +31,13 @@ php artisan key:generate
 ```
 ./vendor/bin/sail artisan config:cache
 ```
+
+### 7. Install and Configure Supervisor for Required Queue Workers
+Supervisor keeps your Laravel queue for `default` and `notification` workers running automatically.
+
+...or simply run these commands in a separate terminal
+
+```
+./vendor/bin/sail artisan queue:work --tries=3
+./vendor/bin/sail artisan queue:work --queue=notification --tries=3
+```

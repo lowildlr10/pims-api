@@ -8,17 +8,17 @@ use Illuminate\Database\Seeder;
 class ProcurementModeSeeder extends Seeder
 {
     private $modes = [
-        'Electronic Procurement (e-Procurement)',
-        'Framework Agreement',
-        'Community Participation',
-        'Agency-to-Agency Procurement',
-        'Negotiated Procurement (Expanded)',
+        'Competitive Bidding',
+        'Limited Source Bidding',
         'Competitive Dialogue',
-        'Two-Stage Bidding',
-        'Most Economically Advantageous Responsive Bid (MEARB)',
-        'Public-Private Partnership (PPP) Procurement',
-        'Procurement through Leasing',
-        'Procurement by Consignment'
+        'Unsolicited Offer with Bid Matching',
+        'Direct Contracting',
+        'Direct Acquisition',
+        'Repeat Order',
+        'Small Value Procurement',
+        'Negotiated Procurement',
+        'Direct Sales',
+        'Direct Procurement for Science, Technology, and Innovation'
     ];
 
     /**

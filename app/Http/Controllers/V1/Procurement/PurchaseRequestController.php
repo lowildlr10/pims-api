@@ -870,7 +870,7 @@ class PurchaseRequestController extends Controller
             $rfqDraft = $rfqDraft->get();
 
             if ($rfqDraftCount === 0) {
-                $message = 'Nothing to issue because all RFQs have already been provided to the canvassers.';
+                $message = 'No RFQs to issue because all have been given to canvassers or none were created from this PR.';
                 $this->logRepository->create([
                     'message' => $message,
                     'log_id' => $purchaseRequest->id,
@@ -1000,6 +1000,24 @@ class PurchaseRequestController extends Controller
 
                 return response()->json([
                     'message' => $message,
+                ], 422);
+            }
+
+            $rfqNumbers = $rfqCompleted->pluck('rfq_no')->unique();
+
+            if ($rfqNumbers->count() > 1) {
+                $message = 'Cannot mark as "For Abstract" because RFQs have different RFQ numbers.';
+                
+                $this->logRepository->create([
+                    'message' => $message,
+                    'details' => $rfqNumbers->implode(', '),
+                    'log_id' => $purchaseRequest->id,
+                    'log_module' => 'pr',
+                    'data' => $rfqCompleted,
+                ], isError: true);
+
+                return response()->json([
+                    'message' =>  $message,
                 ], 422);
             }
 

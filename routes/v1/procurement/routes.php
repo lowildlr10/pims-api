@@ -81,6 +81,9 @@ Route::middleware('auth:sanctum')->group(function() {
         Route::put('/{abstractQuotation}', [ProcurementControllers\AbstractQuotationController::class, 'update'])
             ->middleware('ability:super:*,supply:*,aoq:*,aoq:update')
             ->name('update');
+        Route::put('/{abstractQuotation}/revert', [ProcurementControllers\AbstractQuotationController::class, 'revert'])
+            ->middleware('ability:super:*,supply:*,aoq:*,aoq:revert')
+            ->name('revert');
         Route::put('/{abstractQuotation}/pending', [ProcurementControllers\AbstractQuotationController::class, 'pending'])
             ->middleware('ability:super:*,supply:*,aoq:*,aoq:pending')
             ->name('pending');

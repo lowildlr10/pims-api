@@ -4,15 +4,18 @@ namespace App\Http\Controllers\V1\Procurement;
 
 use App\Enums\AbstractQuotationStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Enums\RequestQuotationStatus;
 use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
 use App\Models\AbstractQuotation;
 use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
+use App\Models\RequestQuotation;
 use App\Models\User;
 use App\Repositories\AbstractQuotationRepository;
 use App\Repositories\LogRepository;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -466,6 +469,114 @@ class AbstractQuotationController extends Controller
             ]);
         } catch (\Throwable $th) {
             $message = 'Abstract of bids and quotation failed to marked as "Approved".';
+
+            $this->logRepository->create([
+                'message' => $message,
+                'details' => $th->getMessage(),
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $abstractQuotation,
+            ], isError: true);
+
+            return response()->json([
+                'message' => "{$message} Please try again.",
+            ], 422);
+        }
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function revert(AbstractQuotation $abstractQuotation): JsonResponse
+    {
+        try {
+            $message = 'Changes for this abstract of bids and quotation successfully reverted.';
+
+            $currentStatus = AbstractQuotationStatus::from($abstractQuotation->status);
+
+            if ($currentStatus === AbstractQuotationStatus::APPROVED || $currentStatus === AbstractQuotationStatus::AWARDED) {
+                $message =
+                    'Failed to revert changes from this abstract of bids and quotation.
+                    It may already be approved or awarded.';
+                $this->logRepository->create([
+                    'message' => $message,
+                    'log_id' => $abstractQuotation->id,
+                    'log_module' => 'aoq',
+                    'data' => $abstractQuotation,
+                ], isError: true);
+
+                return response()->json([
+                    'message' => $message,
+                ], 422);
+            }
+
+            $purchaseRequest = PurchaseRequest::with('items')->find($abstractQuotation->purchase_request_id);
+            $rfqCompleted = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
+                ->where('status', RequestQuotationStatus::COMPLETED)
+                ->where('batch', $purchaseRequest->rfq_batch - 1)
+                ->get();
+
+            $updatedAoq = $this->abstractQuotationRepository->storeUpdate([
+                'bids_awards_committee_id' => null,
+                'mode_procurement_id' => null,
+                'opened_on' => null,
+                'bac_action' => null,
+                'sig_twg_chairperson_id' => null,
+                'sig_twg_member_1_id' => null,
+                'sig_twg_member_2_id' => null,
+                'sig_chairman_id' => null,
+                'sig_vice_chairman_id' => null,
+                'sig_member_1_id' => null,
+                'sig_member_2_id' => null,
+                'sig_member_3_id' => null,
+                'status' => AbstractQuotationStatus::DRAFT,
+                'status_timestamps' => StatusTimestampsHelper::generate(
+                    'draft_at', $abstractQuotation->status_timestamps
+                ),
+                'solicitation_no' => isset($rfqCompleted[0]->rfq_no)
+                    ? $rfqCompleted[0]->rfq_no : '',
+                'solicitation_date' => Carbon::now()->toDateString(),
+                'items' => $purchaseRequest->items->map(function (PurchaseRequestItem $item) use ($rfqCompleted) {
+                    return [
+                        'pr_item_id' => $item->id,
+                        'included' => empty($item->awarded_to) ? true : false,
+                        'document_type' => 'po',
+                        'details' => $rfqCompleted->map(function (RequestQuotation $rfq) use ($item) {
+                            $rfq->load([
+                                'items' => function ($query) use ($item) {
+                                    $query->where('pr_item_id', $item->id);
+                                },
+                            ]);
+                            $rfqItem = $rfq->items[0];
+
+                            return [
+                                'quantity' => $item->quantity,
+                                'supplier_id' => $rfqItem->supplier_id,
+                                'brand_model' => $rfqItem->brand_model,
+                                'unit_cost' => $rfqItem->unit_cost,
+                            ];
+                        }),
+                    ];
+                }),
+            ], $abstractQuotation);
+
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => $updatedAoq,
+            ]);
+
+            $updatedAoq->load('items');
+
+            return response()->json([
+                'data' => [
+                    'data' => $updatedAoq,
+                    'message' => $message,
+                ],
+            ]);
+        } catch (\Throwable $th) {
+            $message = 'Changes for this abstract of bids and quotation failed to revert.';
 
             $this->logRepository->create([
                 'message' => $message,

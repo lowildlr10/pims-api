@@ -93,7 +93,7 @@ class SectionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'department' => 'required',
+            'department_id' => 'required',
             'section_name' => 'required|string',
             'section_head_id' => 'nullable',
             'active' => 'required|boolean',
@@ -103,7 +103,7 @@ class SectionController extends Controller
 
         try {
             $section = Section::create($validated);
-            $department = Department::find($validated['department']);
+            $department = Department::find($validated['department_id']);
 
             if (! $department->active) {
                 Section::where('department_id', $department->id)

@@ -290,9 +290,16 @@ class RequestQuotationController extends Controller
                 ]);
             }
 
+            $purchaseRequest->load([
+                'rfqs' => function ($query) use ($purchaseRequest) {
+                    $query->where('batch', $purchaseRequest->rfq_batch);
+                },
+                'rfqs.items'
+            ]);
+
             return response()->json([
                 'data' => [
-                    'data' => $requestQuotation,
+                    'data' => $purchaseRequest,
                     'message' => $message,
                 ],
             ]);

@@ -72,13 +72,5 @@ class UserSeeder extends Seeder
 
             $user->roles()->attach($role->id);
         }
-
-        $roles = Role::all();
-
-        // Generate 20 users (adjust number as needed)
-        User::factory(10)->create()->each(function (User $user) use ($roles) {
-            // Attach a random role to each user
-            $user->roles()->attach($roles->random()->id);
-        });
     }
 }

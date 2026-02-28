@@ -1,0 +1,223 @@
+name: 'Media Management'
+description: 'APIs for managing file uploads and media'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/media
+    metadata:
+      custom: []
+      groupName: 'Media Management'
+      groupDescription: 'APIs for managing file uploads and media'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Media File'
+      description: 'Retrieve a file by parent ID and type.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      type:
+        custom: []
+        name: type
+        description: 'The file upload type.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      parent_id:
+        custom: []
+        name: parent_id
+        description: 'The parent entity ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      disk:
+        custom: []
+        name: disk
+        description: 'nullable The storage disk. Default: public.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      type: architecto
+      parent_id: architecto
+      disk: architecto
+    bodyParameters:
+      type:
+        custom: []
+        name: type
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      parent_id:
+        custom: []
+        name: parent_id
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      disk:
+        custom: []
+        name: disk
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      type: architecto
+      parent_id: architecto
+      disk: architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "OK"
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Invalid file upload type."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/media
+    metadata:
+      custom: []
+      groupName: 'Media Management'
+      groupDescription: 'APIs for managing file uploads and media'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Upload Media File'
+      description: 'Store a new file upload.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      file:
+        custom: []
+        name: file
+        description: 'nullable The base64 encoded file content.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      type:
+        custom: []
+        name: type
+        description: 'The file upload type.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      parent_id:
+        custom: []
+        name: parent_id
+        description: 'The parent entity ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      disk:
+        custom: []
+        name: disk
+        description: 'nullable The storage disk. Default: public.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      file: architecto
+      type: architecto
+      parent_id: architecto
+      disk: architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Successfully uploaded file"
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Invalid file upload type."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

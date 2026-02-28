@@ -48,7 +48,7 @@ class PartiallyAwardedNotification extends Notification implements ShouldQueue
             'title' => 'Partially Awarded',
             'message' => "<q>Purchase Request - {$this->pr->pr_no}</q> with ".
                 "<q>Abstract - {$this->aoq->abstract_no}</q> has been partially ".
-                "awarded. Remaining items are pending further action.",
+                'awarded. Remaining items are pending further action.',
         ];
     }
 

@@ -1,0 +1,92 @@
+name: 'Account - Positions'
+description: 'APIs for managing positions'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/accounts/positions
+    metadata:
+      custom: []
+      groupName: 'Account - Positions'
+      groupDescription: 'APIs for managing positions'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Positions'
+      description: 'Retrieve a paginated list of positions.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by position name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Number of items per page. Default 50.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      column_sort:
+        custom: []
+        name: column_sort
+        description: 'Sort field. Default position_name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      sort_direction:
+        custom: []
+        name: sort_direction
+        description: 'Sort direction (asc/desc). Default desc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      per_page: 16
+      column_sort: architecto
+      sort_direction: architecto
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [...],
+            "meta": {...}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

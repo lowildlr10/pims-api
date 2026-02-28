@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PurchaseRequest extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     /**
      * The attributes that are mass assignable.
@@ -47,10 +47,11 @@ class PurchaseRequest extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\PurchaseRequestStatus::class,
             'status_timestamps' => 'array',
         ];
     }
-    
+
     protected $appends = [
         'total_estimated_cost_formatted',
     ];

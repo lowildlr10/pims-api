@@ -5,7 +5,12 @@ namespace App\Repositories;
 use App\Helpers\FileHelper;
 use App\Interfaces\PurchaseRequestRepositoryInterface;
 use App\Models\Company;
+use App\Models\FundingSource;
 use App\Models\PurchaseRequest;
+use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use TCPDF;
 use TCPDF_FONTS;
 
@@ -25,8 +30,9 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
     protected string $fontArialNarrowBold;
 
-    public function __construct()
-    {
+    public function __construct(
+        protected PurchaseRequest $model
+    ) {
         $this->appUrl = env('APP_URL') ?? 'http://localhost';
         $this->fontArial = TCPDF_FONTS::addTTFfont('fonts/arial.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialBold = TCPDF_FONTS::addTTFfont('fonts/arialbd.ttf', 'TrueTypeUnicode', '', 96);
@@ -34,6 +40,145 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $this->fontArialBoldItalic = TCPDF_FONTS::addTTFfont('fonts/arialbi.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialNarrow = TCPDF_FONTS::addTTFfont('fonts/arialn.ttf', 'TrueTypeUnicode', '', 96);
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
+    }
+
+    public function getAll(array $filters, ?string $userId): LengthAwarePaginator|Collection
+    {
+        $query = $this->model->query()
+            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
+            ->with([
+                'funding_source:id,title',
+                'requestor:id,firstname,lastname',
+            ]);
+
+        $search = trim($filters['search'] ?? '');
+        $perPage = $filters['per_page'] ?? 50;
+        $showAll = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $columnSort = $filters['column_sort'] ?? 'pr_no';
+        $sortDirection = $filters['sort_direction'] ?? 'desc';
+        $paginated = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $statusFilters = ! empty($filters['status'])
+            ? explode(',', $filters['status'])
+            : [];
+
+        if ($userId) {
+            $query->where('requested_by_id', $userId);
+        }
+
+        if (! empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                    ->orWhere('pr_no', 'ILIKE', "%{$search}%")
+                    ->orWhere('pr_date', 'ILIKE', "%{$search}%")
+                    ->orWhere('sai_no', 'ILIKE', "%{$search}%")
+                    ->orWhere('sai_date', 'ILIKE', "%{$search}%")
+                    ->orWhere('alobs_no', 'ILIKE', "%{$search}%")
+                    ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
+                    ->orWhere('purpose', 'ILIKE', "%{$search}%")
+                    ->orWhere('status', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('funding_source', 'title', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('requestor', function ($q) use ($search) {
+                        $q->where('firstname', 'ILIKE', "%{$search}%")
+                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
+                    })
+                    ->orWhereRelation('signatory_cash_available.user', function ($q) use ($search) {
+                        $q->where('firstname', 'ILIKE', "%{$search}%")
+                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
+                    })
+                    ->orWhereRelation('signatory_approval.user', function ($q) use ($search) {
+                        $q->where('firstname', 'ILIKE', "%{$search}%")
+                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
+                    });
+            });
+        }
+
+        if (count($statusFilters) > 0) {
+            $query->whereIn('status', $statusFilters);
+        }
+
+        if (in_array($sortDirection, ['asc', 'desc'])) {
+            switch ($columnSort) {
+                case 'pr_no':
+                    $query->orderByRaw("CAST(REPLACE(pr_no, '-', '') AS INTEGER) {$sortDirection}");
+                    break;
+                case 'pr_date_formatted':
+                    $query->orderBy('pr_date', $sortDirection);
+                    break;
+                case 'funding_source_title':
+                    $query->orderBy(
+                        FundingSource::select('title')->whereColumn('funding_sources.id', 'purchase_requests.funding_source_id'),
+                        $sortDirection
+                    );
+                    break;
+                case 'purpose_formatted':
+                    $query->orderBy('purpose', $sortDirection);
+                    break;
+                case 'requestor_fullname':
+                    $query->orderBy(
+                        User::select('firstname')->whereColumn('users.id', 'purchase_requests.requested_by_id'),
+                        $sortDirection
+                    );
+                    break;
+                case 'status_formatted':
+                    $query->orderBy('status', $sortDirection);
+                    break;
+                default:
+                    $query->orderBy($columnSort, $sortDirection);
+                    break;
+            }
+        }
+
+        if ($paginated) {
+            return $query->paginate($perPage);
+        }
+
+        return $showAll ? $query->get() : $query->limit($perPage)->get();
+    }
+
+    public function getById(string $id): ?Model
+    {
+        return $this->model->with([
+            'funding_source:id,title,location_id',
+            'funding_source.location:id,location_name',
+            'department:id,department_name',
+            'section:id,section_name',
+
+            'items' => function ($query) {
+                $query->orderBy('item_sequence');
+            },
+            'items.unit_issue:id,unit_name',
+
+            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
+            'requestor.position:id,position_name',
+
+            'signatory_cash_available:id,user_id',
+            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_cash_available.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'cash_availability');
+            },
+
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail' => function ($query) {
+                $query->where('document', 'pr')
+                    ->where('signatory_type', 'approved_by');
+            },
+        ])->find($id);
+    }
+
+    public function create(array $data): Model
+    {
+        return $this->model->create($data);
+    }
+
+    public function update(string $id, array $data): Model
+    {
+        $model = $this->model->findOrFail($id);
+        $model->update($data);
+
+        return $model;
     }
 
     public function generateNewPrNumber(): string
@@ -140,7 +285,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -158,7 +304,8 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->setCellHeightRatio(0.5);
@@ -208,7 +355,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
             ishtml: false,
             autopadding: true,
             maxh: $deptHeight,
-            valign:'T'
+            valign: 'T'
         );
         $pdf->setCellHeightRatio(1.6);
 
@@ -279,37 +426,37 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         // ===== ALOBS Row
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell(
-            $pageWidth * 0.39, 
-            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            $pageWidth * 0.39,
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)),
             '', 'L', 0, 'L', valign: 'T'
         );
 
         $pdf->Cell(
-            $pageWidth * 0.11, 
-            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            $pageWidth * 0.11,
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)),
             'ALOBS No.', 'L', 0, 'L', valign: 'T'
         );
 
         $pdf->SetFont($this->fontArial, 'U', 10);
         $pdf->Cell(
-            $pageWidth * 0.13, 
-            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
-            $data->alobs_no ?? '___________', 
+            $pageWidth * 0.13,
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)),
+            $data->alobs_no ?? '___________',
             '', 0, 'L', valign: 'T'
         );
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->Cell(
-            $pageWidth * 0.055, 
-            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
+            $pageWidth * 0.055,
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)),
             'Date:', '', 0, 'L', valign: 'T'
         );
 
         $pdf->SetFont($this->fontArial, 'U', 10);
         $pdf->Cell(
-            0, 
-            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)), 
-            $data->alobs_date ? date_format(date_create($data->alobs_date), 'F j, Y') : '______________', 
+            0,
+            $defaultCellHeight * ((($deptHeight / $defaultCellHeight) - 1) + (($secHeight / $defaultCellHeight) - 1)),
+            $data->alobs_date ? date_format(date_create($data->alobs_date), 'F j, Y') : '______________',
             'R', 1, 'L', valign: 'T'
         );
 
@@ -515,17 +662,17 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                     style="font-size: 9px;"
                     width="27%"
                     align="center"
-                >'. strtoupper($data->requestor->fullname) .'</td>
+                >'.strtoupper($data->requestor->fullname).'</td>
                 <td
                     style="font-size: 9px;"
                     width="27%"
                     align="center"
-                >'. strtoupper($data->signatory_cash_available->user->fullname) .'</td>
+                >'.strtoupper($data->signatory_cash_available->user->fullname).'</td>
                 <td
                     style="font-size: 9px;"
                     width="27%"
                     align="center"
-                >'. strtoupper($data->signatory_approval->user->fullname) .'</td>
+                >'.strtoupper($data->signatory_approval->user->fullname).'</td>
             </tr></tbody></table>
         ';
 
@@ -542,15 +689,15 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
                 <td
                     width="27%"
                     align="center"
-                >'. $data->requestor->position->position_name .'</td>
+                >'.$data->requestor->position->position_name.'</td>
                 <td
                     width="27%"
                     align="center"
-                >'. $data->signatory_cash_available->detail->position .'</td>
+                >'.$data->signatory_cash_available->detail->position.'</td>
                 <td
                     width="27%"
                     align="center"
-                >'. $data->signatory_approval->detail->position .'</td>
+                >'.$data->signatory_approval->detail->position.'</td>
             </tr></tbody></table>
         ';
 

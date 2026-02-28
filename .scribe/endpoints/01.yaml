@@ -1,0 +1,205 @@
+name: Authentication
+description: 'APIs for user authentication'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/login
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: 'APIs for user authentication'
+      subgroup: ''
+      subgroupDescription: ''
+      title: Login
+      description: 'Authenticate a user and generate an access token.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      login:
+        custom: []
+        name: login
+        description: "User's email or username."
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: "User's password."
+        required: true
+        example: '|]|{+-'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      login: architecto
+      password: '|]|{+-'
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {
+              "access_token": "token",
+              "message": "Logged in successfully."
+            }
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 401
+        content: |-
+          {
+            "message": "Invalid credentials."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/logout
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: 'APIs for user authentication'
+      subgroup: ''
+      subgroupDescription: ''
+      title: Logout
+      description: 'Logout the current user and delete the access token.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "message": "Logged out successfully."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/me
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: 'APIs for user authentication'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Current User'
+      description: "Get the authenticated user's profile."
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {
+              "user": {...},
+              "permissions": [...]
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/refresh-token
+    metadata:
+      custom: []
+      groupName: Authentication
+      groupDescription: 'APIs for user authentication'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Refresh Token'
+      description: 'Refresh the current access token.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {
+              "access_token": "new_token",
+              "message": "Token refreshed successfully."
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Designation extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     /**
      * The attributes that are mass assignable.

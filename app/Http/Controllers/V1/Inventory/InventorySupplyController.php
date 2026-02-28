@@ -3,223 +3,137 @@
 namespace App\Http\Controllers\V1\Inventory;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\InventorySupplyResource;
 use App\Models\InventorySupply;
-use App\Models\PurchaseOrder;
-use App\Models\Supplier;
-use App\Repositories\InventorySupplyRepository;
-use App\Repositories\LogRepository;
+use App\Services\InventorySupplyService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
+/**
+ * @group Inventory Supplies
+ * APIs for managing inventory supplies
+ */
 class InventorySupplyController extends Controller
 {
-    private LogRepository $logRepository;
-
-    private InventorySupplyRepository $inventorySupplyRepository;
-
-    public function __construct(LogRepository $logRepository, InventorySupplyRepository $inventorySupplyRepository)
-    {
-        $this->logRepository = $logRepository;
-        $this->inventorySupplyRepository = $inventorySupplyRepository;
-    }
+    public function __construct(
+        protected InventorySupplyService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Inventory Supplies
+     *
+     * Retrieve a paginated list of inventory supplies grouped by purchase order.
+     *
+     * @queryParam search string Search by PO number, supply name, etc.
+     * @queryParam per_page int Number of items per page. Default: 10.
+     * @queryParam grouped boolean Group results by purchase order. Default: true.
+     * @queryParam document_type string Filter by required document type.
+     * @queryParam search_by_po boolean Search by purchase order ID. Default: false.
+     * @queryParam show_all boolean Show all results without pagination. Default: false.
+     * @queryParam column_sort string Sort field. Default: pr_no.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default: desc.
+     * @queryParam paginated boolean Return paginated results. Default: true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "links": {...},
+     *   "meta": {...}
+     * }
      */
     public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 10);
-        $grouped = filter_var($request->get('grouped', true), FILTER_VALIDATE_BOOLEAN);
-        $docuementType = $request->get('document_type');
-        $searchByPo = filter_var($request->get('search_by_po', false), FILTER_VALIDATE_BOOLEAN);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'pr_no');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'grouped',
+            'document_type',
+            'search_by_po',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
 
-        if (! $grouped) {
-            $inventorySupplies = InventorySupply::with([
-                'unit_issue:id,unit_name',
-                'item_classification:id,classification_name',
-            ])
-                ->when($search, function ($query) use ($search, $searchByPo) {
-                    if ($searchByPo) {
-                        $query->where(function ($query) use ($search) {
-                            $query->whereRaw('CAST(purchase_order_id AS TEXT) = ?', [$search]);
-                        });
-                    } else {
-                        $query->where(function ($query) use ($search) {
-                            $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                                ->orWhereRaw('CAST(purchase_order_id AS TEXT) = ?', [$search])
-                                ->orWhere('name', 'like', "%{$search}%")
-                                ->orWhere('description', 'like', "%{$search}%");
-                        });
-                    }
-                })
-                ->when($docuementType, function ($query) use ($docuementType) {
-                    $query->where('required_document', $docuementType);
-                })
-                ->orderBy('item_sequence');
+        $result = $this->service->getAll($filters);
 
-            $inventorySupplies = $showAll
-                ? $inventorySupplies->get()
-                : $inventorySupplies = $inventorySupplies->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $inventorySupplies,
-            ]);
+        if ($result instanceof LengthAwarePaginator) {
+            return $result;
         }
 
-        $purchaseOrders = PurchaseOrder::query()
-            ->select('id', 'purchase_request_id', 'supplier_id', 'po_no', 'status_timestamps')
-            ->with([
-                'purchase_request:id,funding_source_id',
-                'purchase_request.funding_source:id,title',
-
-                'supplier:id,supplier_name',
-
-                'supplies' => function ($query) {
-                    $query->select(
-                        'id', 'purchase_order_id', 'created_at', 'name', 'description',
-                        'unit_issue_id', 'item_classification_id', 'quantity',
-                        'required_document', 'item_sequence'
-                    )->orderBy('item_sequence', 'asc');
-                },
-                'supplies.unit_issue:id,unit_name',
-                'supplies.item_classification:id,classification_name',
-            ])
-            ->has('supplies');
-
-        if (! empty($search)) {
-            $purchaseOrders = $purchaseOrders->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('po_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('supplies', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                            ->orWhere('sku', 'ILIKE', "%{$search}%")
-                            ->orWhere('upc', 'ILIKE', "%{$search}%")
-                            ->orWhere('name', 'ILIKE', "%{$search}%")
-                            ->orWhere('description', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('issuances', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
-                    })
-                    ->orWhereRelation('inspection_acceptance_report', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
-                    });
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'po_no':
-                    $purchaseOrders = $purchaseOrders->orderByRaw("CAST(REPLACE(po_no, '-', '') AS INTEGER) {$sortDirection}");
-                    break;
-
-                case 'funding_source_title':
-                    break;
-
-                case 'supplier_name':
-                    $purchaseOrders = $purchaseOrders->orderBy(
-                        Supplier::select('supplier_name')->whereColumn('suppliers.id', 'purchase_orders.supplier_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'delivery_date_formatted':
-                    $purchaseOrders = $purchaseOrders->orderBy('delivery_date', $sortDirection);
-                    break;
-
-                default:
-                    $purchaseOrders = $purchaseOrders->orderBy($columnSort, $sortDirection);
-                    break;
-            }
-        }
-
-        if ($paginated) {
-            return $purchaseOrders->paginate($perPage);
-        } else {
-            $purchaseOrders = $showAll
-                ? $purchaseOrders->get()
-                : $purchaseOrders = $purchaseOrders->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $purchaseOrders,
-            ]);
-        }
+        return response()->json([
+            'data' => $result,
+        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Get Inventory Supply
+     *
+     * Display the specified inventory supply.
+     *
+     * @urlParam inventorySupply string required The inventory supply UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
      */
     public function show(InventorySupply $inventorySupply): JsonResponse
     {
         $inventorySupply->load([
             'unit_issue:id,unit_name',
-
             'item_classification:id,classification_name',
-
             'issued_items:id,inventory_supply_id,inventory_issuance_id,quantity,inventory_item_no,property_no,acquired_date,estimated_useful_life',
             'issued_items.issuance',
             'issued_items.issuance.recipient:id,firstname,middlename,lastname',
         ]);
 
         return response()->json([
-            'data' => [
-                'data' => $inventorySupply,
-            ],
+            'data' => new InventorySupplyResource($inventorySupply),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Inventory Supply
+     *
+     * Update the specified inventory supply in storage.
+     *
+     * @urlParam inventorySupply string required The inventory supply UUID.
+     *
+     * @bodyParam sku string nullable The SKU.
+     * @bodyParam upc string nullable The UPC.
+     * @bodyParam name string nullable The supply name.
+     * @bodyParam description string required The supply description.
+     * @bodyParam item_classification_id string required The item classification ID.
+     * @bodyParam required_document string required The required document type.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inventory supply updated successfully."
+     * }
      */
     public function update(Request $request, InventorySupply $inventorySupply): JsonResponse
     {
         $validated = $request->validate([
-            'sku' => 'nullable:string',
-            'upc' => 'nullable:string',
-            'name' => 'nullable:string',
-            'description' => 'required:string',
+            'sku' => 'nullable|string',
+            'upc' => 'nullable|string',
+            'name' => 'nullable|string',
+            'description' => 'required|string',
             'item_classification_id' => 'required',
             'required_document' => 'required',
         ]);
 
         try {
-            $message = 'Inventory supply updated successfully.';
-
-            $this->inventorySupplyRepository->storeUpdate($validated, $inventorySupply);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inventorySupply->id,
-                'log_module' => 'inv-supply',
-                'data' => $inventorySupply,
-            ]);
+            $inventorySupply = $this->service->update($inventorySupply->id, $validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $inventorySupply,
-                    'message' => $message,
-                ],
+                'data' => new InventorySupplyResource($inventorySupply),
+                'message' => 'Inventory supply updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Inventory supply update failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $inventorySupply->id,
-                'log_module' => 'inv-supply',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Inventory supply update failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => 'Inventory supply update failed. Please try again.',
             ], 422);
         }
     }

@@ -1,0 +1,175 @@
+name: Notifications
+description: 'APIs for managing user notifications'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/notifications
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: 'APIs for managing user notifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Notifications'
+      description: 'Retrieve a paginated list of user notifications.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      limit:
+        custom: []
+        name: limit
+        description: 'Number of items per page. Default 15.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      limit: 16
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": [...], "meta": {...}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/notifications/{id}/read'
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: 'APIs for managing user notifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mark Notification as Read'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The notification UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": {"id": "uuid", "read_at": "..."}, "message": "Notification marked as read."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: api/v1/notifications/read/all
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: 'APIs for managing user notifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mark All Notifications as Read'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": {"count": 0}, "message": "All unread notifications marked as read."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: api/v1/notifications/delete/all
+    metadata:
+      custom: []
+      groupName: Notifications
+      groupDescription: 'APIs for managing user notifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Delete All Notifications'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": {"count": 0}, "message": "All notifications deleted successfully."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

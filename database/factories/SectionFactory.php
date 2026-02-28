@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class SectionFactory extends Factory
 {
     protected $model = Section::class;
-    
+
     /**
      * Define the model's default state.
      *

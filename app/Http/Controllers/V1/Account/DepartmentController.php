@@ -3,101 +3,67 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
-use App\Models\Section;
-use App\Repositories\LogRepository;
+use App\Http\Resources\DepartmentResource;
+use App\Services\DepartmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Account - Departments
+ * APIs for managing departments
+ */
 class DepartmentController extends Controller
 {
-    private LogRepository $logRepository;
-
-    public function __construct(LogRepository $logRepository)
-    {
-        $this->logRepository = $logRepository;
-    }
+    public function __construct(
+        protected DepartmentService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Departments
+     *
+     * Retrieve a paginated list of departments.
+     *
+     * @queryParam search string Search by department name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam column_sort string Sort field. Default department_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $user = Auth::user();
-        
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'department_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $departments = Department::query()->with([
-            'sections' => function ($query) {
-                $query->orderBy('section_name');
-            },
-            'sections.head:id,firstname,lastname',
-            'head:id,firstname,lastname',
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'column_sort',
+            'sort_direction',
         ]);
 
-        if (! empty($search)) {
-            $departments = $departments->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('department_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('sections', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                            ->orWhere('section_name', 'ILIKE', "%{$search}%");
-                    });
-            });
-        }
+        $departments = $this->service->getAll($filters);
 
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'headfullname':
-                    $columnSort = 'department_head_id';
-                    break;
-                case 'department_name_formatted':
-                    $columnSort = 'department_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $departments = $departments->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $departments->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $departments = $departments->where('active', true);
-            }
-
-            if ($user->tokenCan('super:*')
-                || $user->tokenCan('head:*')
-                || $user->tokenCan('supply:*')
-                || $user->tokenCan('budget:*')
-                || $user->tokenCan('accountant:*')
-            ) {
-            } else {
-                $departments = $departments->where('id', $user->department_id);
-            }
-
-            $departments = $showAll
-                ? $departments->get()
-                : $departments = $departments->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $departments,
-            ]);
-        }
+        return DepartmentResource::collection($departments);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create Department
+     *
+     * Create a new department.
+     *
+     * @bodyParam department_name string required The department name.
+     * @bodyParam department_head_id string optional The department head user ID.
+     * @bodyParam active boolean required Whether the department is active. Default true.
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "department_name": "IT Department"
+     *   },
+     *   "message": "Department created successfully."
+     * }
      */
     public function store(Request $request): JsonResponse
     {
@@ -107,98 +73,86 @@ class DepartmentController extends Controller
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $department = Department::create($validated);
+            $department = $this->service->create($validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new DepartmentResource($department),
                 'message' => 'Department created successfully.',
-                'log_id' => $department->id,
-                'log_module' => 'account-department',
-                'data' => $department,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Department creation failed.',
-                'details' => $th->getMessage(),
-                'log_module' => 'account-department',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Department creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Department creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $department,
-                'message' => 'Department created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Department
+     *
+     * Get a specific department by ID.
+     *
+     * @urlParam id string required The department UUID.
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "department_name": "IT Department"
+     *   }
+     * }
      */
-    public function show(department $department): JsonResponse
+    public function show(string $id): JsonResponse
     {
-        $department->load('head');
+        $department = $this->service->getById($id);
+
+        if (! $department) {
+            return response()->json(['message' => 'Department not found.'], 404);
+        }
 
         return response()->json([
-            'data' => [
-                'data' => $department,
-            ],
+            'data' => new DepartmentResource($department),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Department
+     *
+     * Update an existing department.
+     *
+     * @urlParam id string required The department UUID.
+     *
+     * @bodyParam department_name string required The department name.
+     * @bodyParam department_head_id string optional The department head user ID.
+     * @bodyParam active boolean required Whether the department is active.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Department updated successfully."
+     * }
      */
-    public function update(Request $request, Department $department): JsonResponse
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'department_name' => 'required|unique:departments,department_name,'.$department->id,
+            'department_name' => 'required|unique:departments,department_name,'.$id,
             'department_head_id' => 'nullable',
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            Section::where('department_id', $department->id)
-                ->update([
-                    'active' => $validated['active'],
-                ]);
+            $department = $this->service->update($id, $validated);
 
-            $department->update($validated);
-
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new DepartmentResource($department),
                 'message' => 'Department updated successfully.',
-                'log_id' => $department->id,
-                'log_module' => 'account-department',
-                'data' => $department,
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Department update failed.',
-                'details' => $th->getMessage(),
-                'log_id' => $department->id,
-                'log_module' => 'account-department',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Department update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Department update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $department,
-                'message' => 'Department updated successfully.',
-            ],
-        ]);
     }
 }

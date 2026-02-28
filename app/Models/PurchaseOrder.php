@@ -43,8 +43,9 @@ class PurchaseOrder extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\PurchaseOrderStatus::class,
             'status_timestamps' => 'array',
-            'total_amount' => 'float'
+            'total_amount' => 'float',
         ];
     }
 

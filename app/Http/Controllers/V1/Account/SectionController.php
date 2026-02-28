@@ -3,94 +3,74 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Department;
-use App\Models\Section;
-use App\Repositories\LogRepository;
+use App\Http\Resources\SectionResource;
+use App\Services\SectionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Account - Sections
+ * APIs for managing sections
+ */
 class SectionController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(
+        protected SectionService $service
+    ) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Sections
+     *
+     * Retrieve a paginated list of sections.
+     *
+     * @queryParam search string Search by section name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam column_sort string Sort field. Default section_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam filter_by_department boolean Filter by department. Default false.
+     * @queryParam department_id string Department ID to filter by.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'column_sort',
+            'sort_direction',
+            'filter_by_department',
+            'department_id',
+        ]);
+
+        $sections = $this->service->getAll($filters);
+
+        return SectionResource::collection($sections);
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Section
+     *
+     * Create a new section.
+     *
+     * @bodyParam department_id string required The department ID.
+     * @bodyParam section_name string required The section name.
+     * @bodyParam section_head_id string optional The section head user ID.
+     * @bodyParam active boolean required Whether the section is active. Default true.
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "section_name": "IT Section"
+     *   },
+     *   "message": "Section created successfully."
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $user = Auth::user();
-
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $filterByDepartment = $request->boolean('filter_by_department', false);
-        $departmentId = $request->get('department_id', '');
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'section_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $sections = Section::with('department');
-
-        if (! empty($search)) {
-            $sections = $sections->where(function ($query) use ($search) {
-                $query->where('section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('department', 'department_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            $sections = $sections->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($filterByDepartment && !empty($departmentId)) {
-            $sections = $sections->where('department_id', $departmentId);
-        } else if ($filterByDepartment && empty($departmentId)) {
-            $sections = $sections->limit(0);
-        }
-
-        if ($paginated) {
-            return $sections->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $sections = $sections->where('active', true);
-            }
-
-            if ($user->tokenCan('super:*')
-                || $user->tokenCan('head:*')
-                || $user->tokenCan('supply:*')
-                || $user->tokenCan('budget:*')
-                || $user->tokenCan('accountant:*')
-            ) {
-            } else {
-                $sections = $sections->where('id', $user->section_id);
-            }
-
-            $sections = $showAll
-                ? $sections->get()
-                : $sections = $sections->limit($perPage)->get();
-
-            foreach ($sections ?? [] as $section) {
-                $section->department_section = "{$section->section_name} ({$section->department->department_name})";
-            }
-
-            return response()->json([
-                'data' => $sections,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'department_id' => 'required',
@@ -99,64 +79,67 @@ class SectionController extends Controller
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $section = Section::create($validated);
-            $department = Department::find($validated['department_id']);
+            $section = $this->service->create($validated);
 
-            if (! $department->active) {
-                Section::where('department_id', $department->id)
-                    ->update([
-                        'active' => $department->active,
-                    ]);
-            }
-
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new SectionResource($section),
                 'message' => 'Section created successfully.',
-                'log_id' => $section->id,
-                'log_module' => 'account-section',
-                'data' => $section,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Section creation failed.',
-                'details' => $th->getMessage(),
-                'log_module' => 'account-section',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Section creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Section creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $section,
-                'message' => 'Section created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Section
+     *
+     * Get a specific section by ID.
+     *
+     * @urlParam id string required The section UUID.
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "section_name": "IT Section"
+     *   }
+     * }
      */
-    public function show(Section $section)
+    public function show(string $id): JsonResponse
     {
-        $section->load(['department', 'head']);
+        $section = $this->service->getById($id);
+
+        if (! $section) {
+            return response()->json(['message' => 'Section not found.'], 404);
+        }
 
         return response()->json([
-            'data' => [
-                'data' => $section,
-            ],
+            'data' => new SectionResource($section),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Section
+     *
+     * Update an existing section.
+     *
+     * @urlParam id string required The section UUID.
+     *
+     * @bodyParam department_id string required The department ID.
+     * @bodyParam section_name string required The section name.
+     * @bodyParam section_head_id string optional The section head user ID.
+     * @bodyParam active boolean required Whether the section is active.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Section updated successfully."
+     * }
      */
-    public function update(Request $request, Section $section)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'department_id' => 'required',
@@ -165,44 +148,19 @@ class SectionController extends Controller
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $section->update($validated);
-            $department = Department::find($validated['department_id']);
+            $section = $this->service->update($id, $validated);
 
-            if (! $department->active) {
-                Section::where('department_id', $department->id)
-                    ->update([
-                        'active' => $department->active,
-                    ]);
-            }
-
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new SectionResource($section),
                 'message' => 'Section updated successfully.',
-                'log_id' => $section->id,
-                'log_module' => 'account-section',
-                'data' => $section,
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Section update failed.',
-                'details' => $th->getMessage(),
-                'log_id' => $section->id,
-                'log_module' => 'account-section',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Section update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Section update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $section,
-                'message' => 'Section updated successfully.',
-            ],
-        ]);
     }
 }

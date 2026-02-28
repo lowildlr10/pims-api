@@ -24,7 +24,7 @@ return new class extends Migration
             $table->uuid('obligation_request_id');
             $table->foreign('obligation_request_id')
                 ->references('id')
-                ->on('obligation_requests'); 
+                ->on('obligation_requests');
             $table->string('dv_no');
             $table->enum('mode_payment', ['check', 'cash', 'other'])->nullable();
             $table->uuid('payee_id');
@@ -43,7 +43,7 @@ return new class extends Migration
                 ->nullable()
                 ->default(json_encode([
                     'allotment_obligated' => false,
-                    'document_complete' => false
+                    'document_complete' => false,
                 ]));
             $table->uuid('sig_accountant_id')->nullable();
             $table->foreign('sig_accountant_id')

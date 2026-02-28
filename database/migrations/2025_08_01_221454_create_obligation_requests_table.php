@@ -27,7 +27,7 @@ return new class extends Migration
                     'general' => false,
                     'mdf_20' => false,
                     'gf_mdrrmf_5' => false,
-                    'sef' => false
+                    'sef' => false,
                 ]));
             $table->uuid('payee_id');
             $table->foreign('payee_id')
@@ -46,7 +46,7 @@ return new class extends Migration
                 ->nullable()
                 ->default(json_encode([
                     'allotment_necessary' => false,
-                    'document_valid' => false
+                    'document_valid' => false,
                 ]));
             $table->uuid('sig_head_id')->nullable();
             $table->foreign('sig_head_id')

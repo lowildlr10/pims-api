@@ -67,7 +67,7 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
                 'signatory_approval.detail' => function ($query) use ($rfq) {
                     $query->where('document', 'rfq')
                         ->where('signatory_type', "approval_{$rfq->signed_type}");
-                }
+                },
             ]);
 
             $filename = "RFQ-{$rfq->rfq_no}.pdf";
@@ -140,7 +140,8 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -158,7 +159,8 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         if ($data->signed_type === 'lce') {
@@ -392,7 +394,9 @@ class RequestQuotationRepository implements RequestQuotationRepositoryInterface
         $htmlTable = '<table border="1" cellpadding="2"><tbody>';
 
         foreach ($data->items ?? [] as $item) {
-            if (!$item->included) continue;
+            if (! $item->included) {
+                continue;
+            }
 
             $description = trim(str_replace("\r", '<br />', $item->pr_item->description));
             $description = str_replace("\n", '<br />', $description);

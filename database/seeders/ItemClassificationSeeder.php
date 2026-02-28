@@ -12,7 +12,7 @@ class ItemClassificationSeeder extends Seeder
         'Inventory Held for Distribution',
         'Inventory Held for Sale',
         'Inventory Held for Manufacturing',
-        'Semi-Expendable Property'
+        'Semi-Expendable Property',
     ];
 
     /**

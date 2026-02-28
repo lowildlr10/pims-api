@@ -46,6 +46,115 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
+    public function getAll(array $filters): \Illuminate\Contracts\Pagination\LengthAwarePaginator|\Illuminate\Database\Eloquent\Collection
+    {
+        $search = $filters['search'] ?? '';
+        $perPage = $filters['per_page'] ?? 10;
+        $columnSort = $filters['column_sort'] ?? 'po_no';
+        $sortDirection = $filters['sort_direction'] ?? 'desc';
+        $paginated = $filters['paginated'] ?? true;
+        $showAll = $filters['show_all'] ?? false;
+
+        $query = \App\Models\PurchaseOrder::query()
+            ->select('id', 'purchase_request_id', 'supplier_id', 'po_no', 'status_timestamps')
+            ->with([
+                'purchase_request:id,funding_source_id',
+                'purchase_request.funding_source:id,title',
+                'supplier:id,supplier_name',
+                'issuances' => function ($query) {
+                    $query->select(
+                        'id', 'purchase_order_id', 'inventory_no', 'document_type',
+                        'received_by_id', 'status'
+                    )->orderByRaw("CAST(REPLACE(inventory_no, '-', '') AS INTEGER) desc");
+                },
+                'issuances.recipient:id,firstname,middlename,lastname',
+            ])
+            ->has('issuances');
+
+        if (! empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                    ->orWhere('po_date', 'ILIKE', "%{$search}%")
+                    ->orWhere('status', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('issuances', function ($query) use ($search) {
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                            ->orWhere('document_type', 'ILIKE', "%{$search}%")
+                            ->orWhere('inventory_no', 'ILIKE', "%{$search}%")
+                            ->orWhere('inventory_date', 'ILIKE', "%{$search}%")
+                            ->orWhere('status', 'ILIKE', "%{$search}%")
+                            ->orWhereRelation('recipient', function ($query) use ($search) {
+                                $query->where('firstname', 'ILIKE', "%{$search}%")
+                                    ->orWhere('middlename', 'ILIKE', "%{$search}%")
+                                    ->orWhere('lastname', 'ILIKE', "%{$search}%");
+                            });
+                    })
+                    ->orWhereRelation('supplies', function ($query) use ($search) {
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
+                    });
+            });
+        }
+
+        if (in_array($sortDirection, ['asc', 'desc'])) {
+            switch ($columnSort) {
+                case 'po_no':
+                    $query->orderByRaw("CAST(REPLACE(po_no, '-', '') AS INTEGER) {$sortDirection}");
+                    break;
+
+                case 'supplier_name':
+                    $query->orderBy(
+                        \App\Models\Supplier::select('supplier_name')->whereColumn('suppliers.id', 'purchase_orders.supplier_id'),
+                        $sortDirection
+                    );
+                    break;
+
+                case 'delivery_date_formatted':
+                    $query->orderBy('delivery_date', $sortDirection);
+                    break;
+
+                default:
+                    $query->orderBy($columnSort, $sortDirection);
+                    break;
+            }
+        }
+
+        if ($paginated) {
+            return $query->paginate($perPage);
+        }
+
+        return $showAll ? $query->get() : $query->limit($perPage)->get();
+    }
+
+    public function getById(string $id): ?InventoryIssuance
+    {
+        return InventoryIssuance::with([
+            'requestor',
+            'signatory_approval:id,user_id',
+            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_approval.detail',
+            'signatory_issuer:id,user_id',
+            'signatory_issuer.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_issuer.detail',
+            'recipient',
+            'items' => function ($query) {
+                $query->orderBy(
+                    InventorySupply::select('item_sequence')
+                        ->whereColumn(
+                            'inventory_issuance_items.inventory_supply_id', 'inventory_supplies.id'
+                        ),
+                    'asc'
+                );
+            },
+            'items.supply',
+            'items.supply.unit_issue:id,unit_name',
+            'responsibility_center',
+            'purchase_order',
+            'purchase_order.purchase_request',
+            'purchase_order.obligation_request',
+            'purchase_order.disbursement_voucher',
+        ])->find($id);
+    }
+
     public function storeUpdate(array $data, ?InventoryIssuance $inventoryIssuance): InventoryIssuance
     {
         if (! empty($inventoryIssuance)) {
@@ -122,7 +231,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
 
     public function print(array $pageConfig, string $invId, DocumentPrintType $documentType): array
     {
-        try {            
+        try {
             $company = Company::first();
             $inv = InventoryIssuance::with([
                 'requestor',
@@ -184,7 +293,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     $filename = "ICS-{$inv->inventory_no}.pdf";
                     $blob = $this->generateInventoryCustodianSlipDoc($filename, $pageConfig, $inv, $company);
                     break;
-                
+
                 default:
                     return [
                         'success' => false,
@@ -227,7 +336,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $poNo = $data?->purchase_order?->po_no ?? '';
         $inventoryNumber = $data->inventory_no;
         $inventoryDate = $data->inventory_date
-            ? date_format(date_create($data->inventory_date), 'F j, Y') 
+            ? date_format(date_create($data->inventory_date), 'F j, Y')
             : '';
         $saiNo = $data->sai_no
             ?? $data->purchase_order?->purchase_request?->sai_no
@@ -237,30 +346,30 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             : ($data->purchase_order?->purchase_request?->sai_date
                 ? date_format(date_create($data->sai_date), 'F j, Y')
                 : '');
-        $items = !empty($data->items) ? $data->items : [];
+        $items = ! empty($data->items) ? $data->items : [];
         $supplier = strtoupper($data?->purchase_order?->supplier?->supplier_name ?? '');
         $purpose = $data?->purchase_order?->purchase_request?->purpose ?? '';
         $purpose = trim(str_replace("\r", '<br />', $purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
         $requestedByName = $data->requestor?->fullname ?? '';
         $requestedByPosition = $data->requestor?->position?->position_name ?? '';
-        $requestedBySignedDate = $data->requested_date 
-            ? date_format(date_create($data->requested_date), 'M j, Y') 
+        $requestedBySignedDate = $data->requested_date
+            ? date_format(date_create($data->requested_date), 'M j, Y')
             : '';
         $approvedByName = $data->signatory_approval?->user?->fullname ?? '';
         $approvedByPosition = $data->signatory_approval?->detail?->position ?? '-';
-        $approvedBySignedDate = $data->approved_date 
-            ? date_format(date_create($data->approved_date), 'M j, Y') 
+        $approvedBySignedDate = $data->approved_date
+            ? date_format(date_create($data->approved_date), 'M j, Y')
             : '';
         $issuedByName = $data->signatory_issuer?->user?->fullname ?? '';
         $issuedByPosition = $data->signatory_issuer?->detail?->position ?? '-';
         $issuedBySignedDate = $data->issued_date
-            ? date_format(date_create($data->issued_date), 'M j, Y') 
+            ? date_format(date_create($data->issued_date), 'M j, Y')
             : '';
         $receivedByName = $data->recipient?->fullname ?? '';
         $receivedByPosition = $data->recipient?->position?->position_name ?? '';
-        $receivedBySignedDate = $data->received_date 
-            ? date_format(date_create($data->received_date), 'M j, Y') 
+        $receivedBySignedDate = $data->received_date
+            ? date_format(date_create($data->received_date), 'M j, Y')
             : '';
 
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
@@ -302,7 +411,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -320,7 +430,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
@@ -367,7 +478,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                                     <td
                                         style="text-decoration: underline;"
                                         width="69%"
-                                    >'. $division .'</td>
+                                    >'.$division.'</td>
                                 </tr>
                                 <tr>
                                     <td
@@ -376,7 +487,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                                     <td
                                         style="text-decoration: underline;"
                                         width="69%"
-                                    >'. $office .'</td>
+                                    >'.$office.'</td>
                                 </tr>
                             </table>
                         </div>
@@ -393,7 +504,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                                     >Responsibility Center:</td>
                                     <td
                                         width="42%"
-                                    >'. $responsibilityCenter .'</td>
+                                    >'.$responsibilityCenter.'</td>
                                 </tr>
                                 <tr>
                                     <td
@@ -402,7 +513,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                                     <td
                                         style="font-weight: bold; color: #FF0066; font-size: 12px;"
                                         width="42%"
-                                    >'. $poNo .'</td>
+                                    >'.$poNo.'</td>
                                 </tr>
                             </table>
                         </div>
@@ -419,14 +530,14 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                                     <td
                                         style="text-decoration: underline;"
                                         width="32%"
-                                    >'. $inventoryNumber .'</td>
+                                    >'.$inventoryNumber.'</td>
                                     <td
                                         width="12%"
                                     >Date:</td>
                                     <td
                                         style="text-decoration: underline;"
                                         width="38%"
-                                    >'. $inventoryDate .'</td>
+                                    >'.$inventoryDate.'</td>
                                 </tr>
                                 <tr>
                                     <td
@@ -435,14 +546,14 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                                     <td
                                         style="text-decoration: underline;"
                                         width="32%"
-                                    >'. $saiNo .'</td>
+                                    >'.$saiNo.'</td>
                                     <td
                                         width="12%"
                                     >Date:</td>
                                     <td
                                         style="text-decoration: underline;"
                                         width="38%"
-                                    >'. $saiDate .'</td>
+                                    >'.$saiDate.'</td>
                                 </tr>
                             </table>
                         </div>
@@ -556,30 +667,30 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         style="border-right: 1px solid #000;"
                         width="6.6%"
                         align="center"
-                    >'. $stockNo .'</td>
+                    >'.$stockNo.'</td>
                     <td
                         style="border-right: 1px solid #000;"
                         width="5.7%"
                         align="center"
-                    >'. $unit .'</td>
+                    >'.$unit.'</td>
                     <td
                         style="border-right: 1px solid #000;"
                         width="45%"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         style="border-right: 1px solid #000;"
                         width="16.7%"
                         align="center"
-                    >'. $quantity .'</td>
+                    >'.$quantity.'</td>
                     <td
                         style="border-right: 1px solid #000;"
                         width="10.3%"
                         align="center"
-                    >'. $unitPrice .'</td>
+                    >'.$unitPrice.'</td>
                     <td
                         width="15.7%"
                         align="right"
-                    >'. $totalCost .'</td>
+                    >'.$totalCost.'</td>
                 </tr>
             ';
         }
@@ -640,7 +751,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         style="border-right: 1px solid #000; color: #FF0066;"
                         width="45%"
                         align="center"
-                    >SUPPLIER: '. $supplier .'</td>
+                    >SUPPLIER: '.$supplier.'</td>
                     <td
                         style="border-right: 1px solid #000;"
                         width="16.7%"
@@ -701,8 +812,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
         $pdf->MultiCell(
-            $pageWidth * 0.123, 
-            $totalPurposeHeight, 
+            $pageWidth * 0.123,
+            $totalPurposeHeight,
             'Purpose:',
             'L',
             'L',
@@ -717,9 +828,9 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         foreach ($linesPurpose as $line) {
             $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
             $pdf->MultiCell(
-                $pageWidth * 0.877, 
-                $basePurposeHeight, 
-                $line, 
+                $pageWidth * 0.877,
+                $basePurposeHeight,
+                $line,
                 'R',
                 'L',
                 x: $x
@@ -816,22 +927,22 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         style="border-right: 1px solid #000; font-weight: bold; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $requestedByName .'</td>
+                    >'.$requestedByName.'</td>
                     <td
                         style="border-right: 1px solid #000; font-weight: bold; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $approvedByName .'</td>
+                    >'.$approvedByName.'</td>
                     <td
                         style="border-right: 1px solid #000; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $issuedByName .'</td>
+                    >'.$issuedByName.'</td>
                     <td
                         style="font-weight: bold; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $receivedByName .'</td>
+                    >'.$receivedByName.'</td>
                 </tr>
                 <tr>
                     <td
@@ -842,22 +953,22 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         style="border-top: 1px solid #000; border-right: 1px solid #000; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $requestedByPosition .'</td>
+                    >'.$requestedByPosition.'</td>
                     <td
                         style="border-top: 1px solid #000; border-right: 1px solid #000; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $approvedByPosition .'</td>
+                    >'.$approvedByPosition.'</td>
                     <td
                         style="border-top: 1px solid #000; border-right: 1px solid #000; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $issuedByPosition .'</td>
+                    >'.$issuedByPosition.'</td>
                     <td
                         style="border-top: 1px solid #000; font-size: 12px;"
                         width="21.75%"
                         align="center"
-                    >'. $receivedByPosition .'</td>
+                    >'.$receivedByPosition.'</td>
                 </tr>
                 <tr>
                     <td
@@ -868,22 +979,22 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         style="border-top: 1px solid #000; border-right: 1px solid #000;"
                         width="21.75%"
                         align="center"
-                    >'. $requestedBySignedDate .'</td>
+                    >'.$requestedBySignedDate.'</td>
                     <td
                         style="border-top: 1px solid #000; border-right: 1px solid #000;"
                         width="21.75%"
                         align="center"
-                    >'. $approvedBySignedDate .'</td>
+                    >'.$approvedBySignedDate.'</td>
                     <td
                         style="border-top: 1px solid #000; border-right: 1px solid #000;"
                         width="21.75%"
                         align="center"
-                    >'. $issuedBySignedDate .'</td>
+                    >'.$issuedBySignedDate.'</td>
                     <td
                         style="border-top: 1px solid #000;"
                         width="21.75%"
                         align="center"
-                    >'. $receivedBySignedDate .'</td>
+                    >'.$receivedBySignedDate.'</td>
                 </tr>
             </tbody></table>
         ';
@@ -892,7 +1003,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $pdf->SetFont('Helvetica', '', 10);
         $pdf->writeHTML($htmlTable, ln: false);
         $pdf->Ln(0);
-       
+
         $pdfBlob = $pdf->Output($filename, 'S');
         $pdfBase64 = base64_encode($pdfBlob);
 
@@ -907,25 +1018,25 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $companyType = strtoupper($company->company_type) ?? '';
         $inventoryNumber = $data->inventory_no;
         $inventoryDate = $data->inventory_date
-            ? date_format(date_create($data->inventory_date), 'F j, Y') 
+            ? date_format(date_create($data->inventory_date), 'F j, Y')
             : '';
-        $items = !empty($data->items) ? $data->items : [];
+        $items = ! empty($data->items) ? $data->items : [];
         $poNo = $data?->purchase_order?->po_no ?? '';
         $purpose = $data?->purchase_order?->purchase_request?->purpose ?? '';
         $purpose = trim(str_replace("\r", '<br />', $purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
-        $purpose = $purpose . "
-            <br /><span style=". '"text-align: right;"' .">under P.O. # {$poNo}</span>
+        $purpose = $purpose.'
+            <br /><span style='.'"text-align: right;"'.">under P.O. # {$poNo}</span>
         ";
         $receivedByName = $data->recipient?->fullname ?? '';
         $receivedByPosition = $data->recipient?->position?->position_name ?? '';
-        $receivedBySignedDate = $data->received_date 
-            ? date_format(date_create($data->received_date), 'M j, Y') 
+        $receivedBySignedDate = $data->received_date
+            ? date_format(date_create($data->received_date), 'M j, Y')
             : '';
         $receivedFromName = $data->signatory_issuer?->user?->fullname ?? '';
         $receivedFromPosition = $data->signatory_issuer?->detail?->position ?? '-';
-        $receivedFromSignedDate = $data->issued_date 
-            ? date_format(date_create($data->issued_date), 'M j, Y') 
+        $receivedFromSignedDate = $data->issued_date
+            ? date_format(date_create($data->issued_date), 'M j, Y')
             : '';
 
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
@@ -967,7 +1078,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -985,7 +1097,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
@@ -1076,7 +1189,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             $description = trim(str_replace("\r", '<br />', $item->description));
             $description = str_replace("\n", '<br />', $description);
             $acquiredDate = $item->acquired_date
-                ? date_format(date_create($item->acquired_date), 'm/d/Y') 
+                ? date_format(date_create($item->acquired_date), 'm/d/Y')
                 : '';
             $propertyNo = $item->property_no;
             $amount = number_format($item->total_cost, 2);
@@ -1087,29 +1200,29 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         style="border-right: 1px solid #3333FF;"
                         width="9%"
                         align="center"
-                    >'. $quantity .'</td>
+                    >'.$quantity.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="8%"
                         align="center"
-                    >'. $unit .'</td>
+                    >'.$unit.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="43%"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="15%"
-                    >'. $acquiredDate .'</td>
+                    >'.$acquiredDate.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="10%"
-                    >'. $propertyNo .'</td>
+                    >'.$propertyNo.'</td>
                     <td
                         style="font-size: 14px;"
                         width="15%"
                         align="right"
-                    >'. $amount .'</td>
+                    >'.$amount.'</td>
                 </tr>
             ';
         }
@@ -1167,7 +1280,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     <td
                         style="border-right: 1px solid #3333FF; color: #0000CC;"
                         width="43%"
-                    >'. $purpose .'</td>
+                    >'.$purpose.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="15%"
@@ -1254,7 +1367,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $pdf->SetFont('Times', '', 5);
         $pdf->Cell($pageWidth * 0.5, 0, '', 'L', 0, 'C');
         $pdf->Cell(0, 0, '', 'LR', 1, 'C');
-        
+
         $pdf->SetFont('Times', '', 11);
         $pdf->setTextColor(0);
         $pdf->Cell($pageWidth * 0.5, 0, $receivedBySignedDate, 'LB', 0, 'C');
@@ -1281,21 +1394,21 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $province = $company->province ?? '';
         $inventoryNumber = $data->inventory_no;
         $inventoryDate = $data->inventory_date
-            ? date_format(date_create($data->inventory_date), 'F j, Y') 
+            ? date_format(date_create($data->inventory_date), 'F j, Y')
             : '';
-        $items = !empty($data->items) ? $data->items : [];
+        $items = ! empty($data->items) ? $data->items : [];
         $purpose = $data?->purchase_order?->purchase_request?->purpose ?? '';
         $purpose = trim(str_replace("\r", '<br />', $purpose));
         $purpose = str_replace("\n", '<br />', $purpose);
         $receivedByName = $data->recipient?->fullname ?? '';
         $receivedByPosition = $data->recipient?->position?->position_name ?? '';
-        $receivedBySignedDate = $data->received_date 
-            ? date_format(date_create($data->received_date), 'M j, Y') 
+        $receivedBySignedDate = $data->received_date
+            ? date_format(date_create($data->received_date), 'M j, Y')
             : '';
         $receivedFromName = $data->signatory_issuer?->user?->fullname ?? '';
         $receivedFromPosition = $data->signatory_issuer?->detail?->position ?? '-';
-        $receivedFromSignedDate = $data->issued_date 
-            ? date_format(date_create($data->issued_date), 'M j, Y') 
+        $receivedFromSignedDate = $data->issued_date
+            ? date_format(date_create($data->issued_date), 'M j, Y')
             : '';
 
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
@@ -1337,7 +1450,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -1355,7 +1469,8 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->SetLineStyle(['width' => 0.5, 'color' => [51, 51, 255]]);
@@ -1389,7 +1504,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     <td
                         style="border-right: 1px solid #3333FF; border-bottom: 1px solid #000; font-size: 12px; color: #3333FF;"
                         width="18%"
-                    >'. $inventoryNumber .'</td>
+                    >'.$inventoryNumber.'</td>
                 </tr>
                 <tr>
                     <td
@@ -1402,7 +1517,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     <td
                         style="border-right: 1px solid #3333FF; border-bottom: 1px solid #000; color: #3333FF;"
                         width="18%"
-                    >'. $inventoryDate .'</td>
+                    >'.$inventoryDate.'</td>
                 </tr>
             </tbody></table>
         ';
@@ -1474,7 +1589,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
             $inventoryItemNo = $item->inventory_item_no ?? '';
             $estimatedUsefulLife = $item->estimated_useful_life ?? '';
             $acquiredDate = $item->acquired_date
-                ? date_format(date_create($item->acquired_date), 'm/d/Y') 
+                ? date_format(date_create($item->acquired_date), 'm/d/Y')
                 : '';
             $amount = number_format($item->total_cost, 2);
 
@@ -1484,33 +1599,33 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                         style="border-right: 1px solid #3333FF;"
                         width="9%"
                         align="center"
-                    >'. $quantity .'</td>
+                    >'.$quantity.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="8%"
                         align="center"
-                    >'. $unit .'</td>
+                    >'.$unit.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="38%"
-                    >'. $description .'</td>
+                    >'.$description.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="10%"
-                    >'. $inventoryItemNo .'</td>
+                    >'.$inventoryItemNo.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="11%"
-                    >'. $estimatedUsefulLife .'</td>
+                    >'.$estimatedUsefulLife.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="10%"
                         align="center"
-                    >'. $acquiredDate .'</td>
+                    >'.$acquiredDate.'</td>
                     <td
                         width="14%"
                         align="center"
-                    >'. $amount .'</td>
+                    >'.$amount.'</td>
                 </tr>
             ';
         }
@@ -1572,7 +1687,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
                     <td
                         style="border-right: 1px solid #3333FF; color: #0000CC;"
                         width="38%"
-                    >'. $purpose .'</td>
+                    >'.$purpose.'</td>
                     <td
                         style="border-right: 1px solid #3333FF;"
                         width="10%"
@@ -1633,7 +1748,7 @@ class InventoryIssuanceRepository implements InventoryIssuanceRepositoryInterfac
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.55, 0, '', 'L');
         $pdf->Cell(0, 0, '', 'LR', 1);
-        
+
         $pdf->SetFont($this->fontArialItalic, 'I', 10);
         $pdf->Cell($pageWidth * 0.55, 0, 'Received by:', 'L');
         $pdf->Cell(0, 0, 'Received from:', 'LR', 1);

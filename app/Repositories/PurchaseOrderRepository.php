@@ -249,7 +249,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -267,7 +268,8 @@ class PurchaseOrderRepository implements PurchaseOrderRepositoryInterface
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->SetFont($this->fontArial, '', 10);

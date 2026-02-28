@@ -1,0 +1,216 @@
+name: Company
+description: 'APIs for managing company settings'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/companies
+    metadata:
+      custom: []
+      groupName: Company
+      groupDescription: 'APIs for managing company settings'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Company'
+      description: 'Retrieve the company profile.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: api/v1/companies
+    metadata:
+      custom: []
+      groupName: Company
+      groupDescription: 'APIs for managing company settings'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update Company'
+      description: 'Update the company profile.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      company_name:
+        custom: []
+        name: company_name
+        description: 'The company name.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      address:
+        custom: []
+        name: address
+        description: 'optional The address.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      municipality:
+        custom: []
+        name: municipality
+        description: 'optional The municipality.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      province:
+        custom: []
+        name: province
+        description: 'optional The province.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      region:
+        custom: []
+        name: region
+        description: 'optional The region.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      company_type:
+        custom: []
+        name: company_type
+        description: 'optional The company type.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      company_head_id:
+        custom: []
+        name: company_head_id
+        description: 'optional The company head user ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      favicon:
+        custom: []
+        name: favicon
+        description: 'optional The favicon.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      company_logo:
+        custom: []
+        name: company_logo
+        description: 'optional The company logo.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      login_background:
+        custom: []
+        name: login_background
+        description: 'optional The login background.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      theme_colors:
+        custom: []
+        name: theme_colors
+        description: 'The theme colors as JSON.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      company_name: architecto
+      address: architecto
+      municipality: architecto
+      province: architecto
+      region: architecto
+      company_type: architecto
+      company_head_id: architecto
+      favicon: architecto
+      company_logo: architecto
+      login_background: architecto
+      theme_colors: architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Company profile updated successfully."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

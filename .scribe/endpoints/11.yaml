@@ -1,0 +1,316 @@
+name: 'Account - Roles'
+description: 'APIs for managing roles'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/accounts/roles
+    metadata:
+      custom: []
+      groupName: 'Account - Roles'
+      groupDescription: 'APIs for managing roles'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Roles'
+      description: 'Retrieve a paginated list of roles.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by role name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Number of items per page. Default 50.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      column_sort:
+        custom: []
+        name: column_sort
+        description: 'Sort field. Default role_name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      sort_direction:
+        custom: []
+        name: sort_direction
+        description: 'Sort direction (asc/desc). Default desc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      per_page: 16
+      column_sort: architecto
+      sort_direction: architecto
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [...],
+            "meta": {...}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/accounts/roles
+    metadata:
+      custom: []
+      groupName: 'Account - Roles'
+      groupDescription: 'APIs for managing roles'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Create Role'
+      description: 'Create a new role.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      role_name:
+        custom: []
+        name: role_name
+        description: 'The role name.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      permissions:
+        custom: []
+        name: permissions
+        description: 'JSON array of permissions.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      active:
+        custom: []
+        name: active
+        description: 'Whether the role is active. Default true.'
+        required: true
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      role_name: architecto
+      permissions: architecto
+      active: false
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: |-
+          {
+            "data": {
+              "id": "uuid",
+              "role_name": "Admin"
+            },
+            "message": "Role created successfully."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/accounts/roles/{id}'
+    metadata:
+      custom: []
+      groupName: 'Account - Roles'
+      groupDescription: 'APIs for managing roles'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Show Role'
+      description: 'Get a specific role by ID.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The role UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {
+              "id": "uuid",
+              "role_name": "Admin"
+            }
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/accounts/roles/{id}'
+    metadata:
+      custom: []
+      groupName: 'Account - Roles'
+      groupDescription: 'APIs for managing roles'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update Role'
+      description: 'Update an existing role.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The role UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      role_name:
+        custom: []
+        name: role_name
+        description: 'The role name.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      permissions:
+        custom: []
+        name: permissions
+        description: 'JSON array of permissions.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      active:
+        custom: []
+        name: active
+        description: 'Whether the role is active.'
+        required: true
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      role_name: architecto
+      permissions: architecto
+      active: false
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Role updated successfully."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

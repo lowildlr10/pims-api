@@ -3,85 +3,80 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\FundingSource;
-use App\Models\Location;
-use App\Repositories\LogRepository;
+use App\Http\Resources\FundingSourceResource;
+use App\Services\FundingSourceService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Funding Sources
+ * APIs for managing funding sources
+ */
 class FundingSourceController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(
+        protected FundingSourceService $service
+    ) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Funding Sources
+     *
+     * Retrieve a paginated list of funding sources.
+     *
+     * @queryParam search string Search by title, total cost, or location.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items without pagination. Default false.
+     * @queryParam show_inactive boolean Show inactive funding sources. Default false.
+     * @queryParam column_sort string Sort field. Default title.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'show_inactive',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
+
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        $fundingSources = $this->service->getAll($filters);
+
+        return FundingSourceResource::collection($fundingSources);
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Funding Source
+     *
+     * Create a new funding source.
+     *
+     * @bodyParam title string required The funding source title.
+     * @bodyParam location string required The location name.
+     * @bodyParam total_cost numeric required The total cost.
+     * @bodyParam active boolean required Whether the funding source is active. Default true.
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "title": "Funding Source"
+     *   },
+     *   "message": "Funding source/project created successfully."
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'title');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $fundingSources = FundingSource::query()->with('location');
-
-        if (! empty($search)) {
-            $fundingSources = $fundingSources->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('title', 'ILIKE', "%{$search}%")
-                    ->orWhere('total_cost', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('location', 'location_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'title_formatted':
-                    $columnSort = 'title';
-                    break;
-                case 'location_name':
-                    $columnSort = 'location_id';
-                    break;
-                case 'total_cost_formatted':
-                    $columnSort = 'total_cost';
-                    break;
-                default:
-                    break;
-            }
-
-            $fundingSources = $fundingSources->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $fundingSources->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $fundingSources = $fundingSources->where('active', true);
-            }
-
-            $fundingSources = $showAll
-                ? $fundingSources->get()
-                : $fundingSources = $fundingSources->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $fundingSources,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'title' => 'required|unique:funding_sources,title',
@@ -90,117 +85,88 @@ class FundingSourceController extends Controller
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $location = Location::updateOrCreate([
-                'location_name' => $validated['location'],
-            ], [
-                'location_name' => $validated['location'],
-            ]);
+            $fundingSource = $this->service->create($validated);
 
-            $fundingSource = FundingSource::create(array_merge(
-                $validated,
-                [
-                    'location_id' => $location->id,
-                ]
-            ));
-
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new FundingSourceResource($fundingSource),
                 'message' => 'Funding source/project created successfully.',
-                'log_id' => $fundingSource->id,
-                'log_module' => 'lib-fund-source',
-                'data' => $fundingSource,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Funding source/project creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-fund-source',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Funding source/project creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Funding source/project creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $fundingSource,
-                'message' => 'Funding source/project created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Funding Source
+     *
+     * Get a specific funding source by ID.
+     *
+     * @urlParam id string required The funding source UUID.
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "title": "Funding Source"
+     *   }
+     * }
      */
-    public function show(FundingSource $fundingSource)
+    public function show(string $id): JsonResponse
     {
-        $fundingSource = $fundingSource->with('location')
-            ->find($fundingSource->id);
+        $fundingSource = $this->service->getById($id);
+
+        if (! $fundingSource) {
+            return response()->json(['message' => 'Funding source not found.'], 404);
+        }
 
         return response()->json([
-            'data' => [
-                'data' => $fundingSource,
-            ],
+            'data' => new FundingSourceResource($fundingSource),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Funding Source
+     *
+     * Update an existing funding source.
+     *
+     * @urlParam id string required The funding source UUID.
+     *
+     * @bodyParam title string required The funding source title.
+     * @bodyParam location string required The location name.
+     * @bodyParam total_cost numeric required The total cost.
+     * @bodyParam active boolean required Whether the funding source is active.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Funding source/project updated successfully."
+     * }
      */
-    public function update(Request $request, FundingSource $fundingSource)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'title' => 'required|unique:funding_sources,title,'.$fundingSource->id,
+            'title' => 'required|unique:funding_sources,title,'.$id,
             'location' => 'required',
             'total_cost' => 'required|numeric',
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $location = Location::updateOrCreate([
-                'location_name' => $validated['location'],
-            ], [
-                'location_name' => $validated['location'],
-            ]);
+            $fundingSource = $this->service->update($id, $validated);
 
-            $fundingSource->update(array_merge(
-                $validated,
-                [
-                    'location_id' => $location->id,
-                ]
-            ));
-
-            $this->logRepository->create([
-                'message' => 'Funding source/project update failed. Please try again.',
-                'log_id' => $fundingSource->id,
-                'log_module' => 'lib-fund-source',
-                'data' => $fundingSource,
+            return response()->json([
+                'data' => new FundingSourceResource($fundingSource),
+                'message' => 'Funding source/project updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Funding source/project update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $fundingSource->id,
-                'log_module' => 'lib-fund-source',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Funding source/project update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Funding source/project update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $fundingSource,
-                'message' => 'Funding source/project updated successfully.',
-            ],
-        ]);
     }
 }

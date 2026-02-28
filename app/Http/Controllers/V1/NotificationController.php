@@ -3,34 +3,38 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
-use App\Repositories\LogRepository;
+use App\Http\Resources\NotificationResource;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @group Notifications
+ * APIs for managing user notifications
+ */
 class NotificationController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(protected NotificationService $service) {}
 
-    public function __construct(LogRepository $logRepository) {
-        $this->logRepository = $logRepository;
-    }
-    
     /**
-     * Display a listing of the resource.
+     * List Notifications
+     *
+     * Retrieve a paginated list of user notifications.
+     *
+     * @queryParam limit int Number of items per page. Default 15.
+     *
+     * @response 200 {"data": [...], "meta": {...}}
      */
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
+        $limit = $request->get('limit', 15);
 
-        $limit = $request->get('limit', default: 15);
-
-        $notifications = $user->notifications()
-            ->latest()
-            ->paginate($limit);
+        $notifications = $this->service->getAll($user->id, $limit);
 
         return response()->json([
-            'data' => $notifications->items(),
+            'data' => NotificationResource::collection($notifications),
             'meta' => [
                 'current_page' => $notifications->currentPage(),
                 'last_page' => $notifications->lastPage(),
@@ -40,38 +44,32 @@ class NotificationController extends Controller
         ]);
     }
 
+    /**
+     * Mark Notification as Read
+     *
+     * @urlParam id string required The notification UUID.
+     *
+     * @response 200 {"data": {"id": "uuid", "read_at": "..."}, "message": "Notification marked as read."}
+     */
     public function markAsRead(string $id): JsonResponse
     {
         try {
             $user = Auth::user();
+            $notification = $this->service->markAsRead($user->id, $id);
 
-            $notification = $user->notifications()->find($id);
-
-            if (!$notification) {
+            if (! $notification) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Notification not found or not accessible.',
                 ], 404);
             }
 
-            $notification->markAsRead();
-
             return response()->json([
-                'data' => [
-                    'data' => [
-                        'id' => $notification->id,
-                        'read_at' => $notification->read_at,
-                    ],
-                    'message' => 'Notification marked as read.',
-                ]
+                'data' => new NotificationResource($notification),
+                'message' => 'Notification marked as read.',
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Failed to mark notification as read.',
-                'details' => $th->getMessage(),
-                'log_id' => $id,
-                'log_module' => 'notification'
-            ], isError: true);
+            $this->service->logError('Failed to mark notification as read.', $th, $id);
 
             return response()->json([
                 'message' => 'An error occurred while marking the notification as read.',
@@ -79,38 +77,30 @@ class NotificationController extends Controller
         }
     }
 
+    /**
+     * Mark All Notifications as Read
+     *
+     * @response 200 {"data": {"count": 0}, "message": "All unread notifications marked as read."}
+     */
     public function markAllRead(): JsonResponse
     {
         try {
             $user = Auth::user();
-
-            $unreadNotifications = $user->unreadNotifications;
+            $unreadNotifications = $this->service->markAllRead($user->id);
 
             if ($unreadNotifications->isEmpty()) {
                 return response()->json([
-                    'data' => [
-                        'data' => [],
-                        'message' => 'No unread notifications to mark as read.',
-                    ]
+                    'data' => [],
+                    'message' => 'No unread notifications to mark as read.',
                 ]);
             }
 
-            $unreadNotifications->each->markAsRead();
-
             return response()->json([
-                'data' => [
-                    'data' => [
-                        'count' => $unreadNotifications->count(),
-                    ],
-                    'message' => 'All unread notifications marked as read.',
-                ]
+                'data' => ['count' => $unreadNotifications->count()],
+                'message' => 'All unread notifications marked as read.',
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Failed to mark all notifications as read.',
-                'details' => $th->getMessage(),
-                'log_module' => 'notification'
-            ], isError: true);
+            $this->service->logError('Failed to mark all notifications as read.', $th);
 
             return response()->json([
                 'message' => 'An error occurred while marking all notifications as read.',
@@ -118,44 +108,34 @@ class NotificationController extends Controller
         }
     }
 
+    /**
+     * Delete All Notifications
+     *
+     * @response 200 {"data": {"count": 0}, "message": "All notifications deleted successfully."}
+     */
     public function deleteAll(): JsonResponse
     {
         try {
             $user = Auth::user();
-
-            $notifications = $user->notifications;
+            $notifications = $this->service->deleteAll($user->id);
 
             if ($notifications->isEmpty()) {
                 return response()->json([
-                    'data' => [
-                        'data' => [],
-                        'message' => 'No notifications to delete.',
-                    ]
+                    'data' => [],
+                    'message' => 'No notifications to delete.',
                 ]);
             }
 
-            $deletedCount = $notifications->count();
-            $notifications->each->delete();
-
             return response()->json([
-                'data' => [
-                    'data' => [
-                        'count' => $deletedCount,
-                    ],
-                    'message' => 'All notifications deleted successfully.',
-                ]
+                'data' => ['count' => $notifications->count()],
+                'message' => 'All notifications deleted successfully.',
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Failed to delete all notifications.',
-                'details' => $th->getMessage(),
-                'log_module' => 'notification'
-            ], isError: true);
+            $this->service->logError('Failed to delete all notifications.', $th);
 
             return response()->json([
                 'message' => 'An error occurred while deleting notifications.',
             ], 422);
         }
     }
-
 }

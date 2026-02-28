@@ -3,166 +3,107 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\BidsAwardsCommittee;
-use App\Repositories\LogRepository;
+use App\Http\Resources\BidsAwardsCommitteeResource;
+use App\Services\BidsAwardsCommitteeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Bids and Awards Committees
+ * APIs for managing bids and awards committees
+ */
 class BidsAwardsCommitteeController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(protected BidsAwardsCommitteeService $service) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Bids and Awards Committees
+     *
+     * @queryParam search string Search by committee name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items. Default false.
+     * @queryParam show_inactive boolean Show inactive. Default false.
+     * @queryParam column_sort string Sort field. Default committee_name.
+     * @queryParam sort_direction string Sort direction. Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only(['search', 'per_page', 'show_all', 'show_inactive', 'column_sort', 'sort_direction', 'paginated']);
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        return BidsAwardsCommitteeResource::collection($this->service->getAll($filters));
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Bids and Awards Committee
+     *
+     * @bodyParam committee_name string required The committee name.
+     * @bodyParam active boolean required Whether active. Default true.
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'committee_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $bidsAwardsCommittees = BidsAwardsCommittee::query();
-
-        if (! empty($search)) {
-            $bidsAwardsCommittees = $bidsAwardsCommittees->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('committee_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'committee_name_formatted':
-                    $columnSort = 'committee_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $bidsAwardsCommittees = $bidsAwardsCommittees->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $bidsAwardsCommittees->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $bidsAwardsCommittees = $bidsAwardsCommittees->where('active', true);
-            }
-
-            $bidsAwardsCommittees = $showAll
-                ? $bidsAwardsCommittees->get()
-                : $bidsAwardsCommittees = $bidsAwardsCommittees->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $bidsAwardsCommittees,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'committee_name' => 'required|unique:bids_awards_committees,committee_name',
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $bidsAwardsCommittee = BidsAwardsCommittee::create($validated);
-
-            $this->logRepository->create([
-                'message' => 'Bids awards committee created successfully.',
-                'log_id' => $bidsAwardsCommittee->id,
-                'log_module' => 'lib-bid-committee',
-                'data' => $bidsAwardsCommittee,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Bids awards committee creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-bid-committee',
-                'data' => $validated,
-            ], isError: true);
+            $committee = $this->service->create($validated);
 
             return response()->json([
-                'message' => 'Bids awards committee creation failed. Please try again.',
-            ], 422);
+                'data' => new BidsAwardsCommitteeResource($committee),
+                'message' => 'Bids awards committee created successfully.',
+            ], 201);
+        } catch (\Throwable $th) {
+            $this->service->logError('Bids awards committee creation failed.', $th, $validated);
+
+            return response()->json(['message' => 'Bids awards committee creation failed. Please try again.'], 422);
+        }
+    }
+
+    /**
+     * Show Bids and Awards Committee
+     *
+     * @urlParam id string required The UUID.
+     */
+    public function show(string $id): JsonResponse
+    {
+        $committee = $this->service->getById($id);
+        if (! $committee) {
+            return response()->json(['message' => 'Bids awards committee not found.'], 404);
         }
 
-        return response()->json([
-            'data' => [
-                'data' => $bidsAwardsCommittee,
-                'message' => 'Bids awards committee created successfully.',
-            ],
-        ]);
+        return response()->json(['data' => new BidsAwardsCommitteeResource($committee)]);
     }
 
     /**
-     * Display the specified resource.
+     * Update Bids and Awards Committee
+     *
+     * @urlParam id string required The UUID.
+     *
+     * @bodyParam committee_name string required The committee name.
+     * @bodyParam active boolean required Whether active.
      */
-    public function show(BidsAwardsCommittee $bidsAwardsCommittee)
-    {
-        return response()->json([
-            'data' => [
-                'data' => $bidsAwardsCommittee,
-            ],
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, BidsAwardsCommittee $bidsAwardsCommittee)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'committee_name' => 'required|unique:bids_awards_committees,committee_name,'.$bidsAwardsCommittee->id,
+            'committee_name' => 'required|unique:bids_awards_committees,committee_name,'.$id,
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $bidsAwardsCommittee->update($validated);
-
-            $this->logRepository->create([
-                'message' => 'Bids awards committee updated successfully.',
-                'log_id' => $bidsAwardsCommittee->id,
-                'log_module' => 'lib-bid-committee',
-                'data' => $bidsAwardsCommittee,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Bids awards committee update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $bidsAwardsCommittee->id,
-                'log_module' => 'lib-bid-committee',
-                'data' => $validated,
-            ], isError: true);
+            $committee = $this->service->update($id, $validated);
 
             return response()->json([
-                'message' => 'Bids awards committee update failed. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'data' => [
-                'data' => $bidsAwardsCommittee,
+                'data' => new BidsAwardsCommitteeResource($committee),
                 'message' => 'Bids awards committee updated successfully.',
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $th) {
+            $this->service->logError('Bids awards committee update failed.', $th, $validated);
+
+            return response()->json(['message' => 'Bids awards committee update failed. Please try again.'], 422);
+        }
     }
 }

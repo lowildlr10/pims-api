@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\InspectionAcceptanceReport;
 use App\Models\InspectionAcceptanceReportItem;
 use App\Models\PurchaseRequestItem;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
@@ -81,6 +82,69 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                 'po_item_id' => $item['po_item_id'],
             ]);
         }
+    }
+
+    public function getAll(array $filters, ?string $userId = null): LengthAwarePaginator
+    {
+        $query = InspectionAcceptanceReport::query()
+            ->select([
+                'id',
+                'purchase_order_id',
+                'supplier_id',
+                'iar_no',
+                'iar_date',
+                'sig_inspection_id',
+                'status',
+            ])
+            ->with([
+                'purchase_order:id,po_no,supplier_id',
+                'supplier:id,supplier_name',
+                'signatory_inspection.user:id,firstname,middlename,lastname',
+                'signatory_inspection.detail' => function ($query) {
+                    $query->where('document', 'iar')
+                        ->where('signatory_type', 'inspection');
+                },
+            ]);
+
+        if ($userId) {
+            $query->whereRelation('purchase_request', function ($query) use ($userId) {
+                $query->where('requested_by_id', $userId);
+            });
+        }
+
+        $search = $filters['search'] ?? '';
+        if (! empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                    ->orWhere('iar_no', 'ILIKE', "%{$search}%")
+                    ->orWhere('iar_date', 'ILIKE', "%{$search}%")
+                    ->orWhere('invoice_no', 'ILIKE', "%{$search}%")
+                    ->orWhereRelation('purchase_order', function ($query) use ($search) {
+                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
+                    });
+            });
+        }
+
+        $columnSort = $filters['column_sort'] ?? 'iar_no';
+        $sortDirection = $filters['sort_direction'] ?? 'desc';
+        $perPage = $filters['per_page'] ?? 50;
+
+        return $query->orderBy($columnSort, $sortDirection)->paginate($perPage);
+    }
+
+    public function getById(string $id): ?InspectionAcceptanceReport
+    {
+        return InspectionAcceptanceReport::with([
+            'supplier',
+            'purchase_order',
+            'purchase_request',
+            'items',
+            'items.pr_item',
+            'items.po_item',
+            'signatory_inspection',
+            'signatory_inspection.user',
+            'acceptance',
+        ])->find($id);
     }
 
     private function generateNewIarNumber(): string
@@ -200,7 +264,8 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -218,7 +283,8 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         // $pdf->setCellHeightRatio(1.6);

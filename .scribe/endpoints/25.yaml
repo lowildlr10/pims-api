@@ -1,0 +1,331 @@
+name: 'Library - Account Classifications'
+description: 'APIs for managing account classifications'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/libraries/account-classifications
+    metadata:
+      custom: []
+      groupName: 'Library - Account Classifications'
+      groupDescription: 'APIs for managing account classifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Account Classifications'
+      description: 'Retrieve a paginated list of account classifications.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by classification name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Number of items per page. Default 50.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      show_all:
+        custom: []
+        name: show_all
+        description: 'Show all items without pagination. Default false.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      show_inactive:
+        custom: []
+        name: show_inactive
+        description: 'Show inactive classifications. Default false.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      column_sort:
+        custom: []
+        name: column_sort
+        description: 'Sort field. Default classification_name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      sort_direction:
+        custom: []
+        name: sort_direction
+        description: 'Sort direction (asc/desc). Default desc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      paginated:
+        custom: []
+        name: paginated
+        description: 'Return paginated results. Default true.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      per_page: 16
+      show_all: false
+      show_inactive: false
+      column_sort: architecto
+      sort_direction: architecto
+      paginated: false
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": [...], "meta": {...}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/libraries/account-classifications
+    metadata:
+      custom: []
+      groupName: 'Library - Account Classifications'
+      groupDescription: 'APIs for managing account classifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Create Account Classification'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      classification_name:
+        custom: []
+        name: classification_name
+        description: 'The classification name.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      active:
+        custom: []
+        name: active
+        description: 'Whether active. Default true.'
+        required: true
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      classification_name: architecto
+      active: false
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: '{"data": {"id": "uuid", "classification_name": "Name"}, "message": "Account classification created successfully."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/libraries/account-classifications/{accountClassification}'
+    metadata:
+      custom: []
+      groupName: 'Library - Account Classifications'
+      groupDescription: 'APIs for managing account classifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Show Account Classification'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      accountClassification:
+        custom: []
+        name: accountClassification
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The account classification UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      accountClassification: architecto
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": {"id": "uuid", "classification_name": "Name"}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/libraries/account-classifications/{accountClassification}'
+    metadata:
+      custom: []
+      groupName: 'Library - Account Classifications'
+      groupDescription: 'APIs for managing account classifications'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update Account Classification'
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      accountClassification:
+        custom: []
+        name: accountClassification
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The account classification UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      accountClassification: architecto
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      classification_name:
+        custom: []
+        name: classification_name
+        description: 'The classification name.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      active:
+        custom: []
+        name: active
+        description: 'Whether active.'
+        required: true
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      classification_name: architecto
+      active: false
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": {...}, "message": "Account classification updated successfully."}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

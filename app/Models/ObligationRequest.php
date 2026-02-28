@@ -35,7 +35,7 @@ class ObligationRequest extends Model
         'budget_signed_date',
         'disapproved_reason',
         'status',
-        'status_timestamps'
+        'status_timestamps',
     ];
 
     /**
@@ -46,9 +46,12 @@ class ObligationRequest extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\ObligationRequestStatus::class,
             'funding' => 'array',
             'compliance_status' => 'array',
             'status_timestamps' => 'array',
+            'head_signed_date' => 'datetime',
+            'budget_signed_date' => 'datetime',
         ];
     }
 

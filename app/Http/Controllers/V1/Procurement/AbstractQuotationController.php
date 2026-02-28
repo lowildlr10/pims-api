@@ -2,303 +2,131 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
-use App\Enums\AbstractQuotationStatus;
-use App\Enums\PurchaseRequestStatus;
-use App\Enums\RequestQuotationStatus;
-use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AbstractQuotationResource;
+use App\Http\Resources\PurchaseRequestResource;
 use App\Models\AbstractQuotation;
-use App\Models\FundingSource;
-use App\Models\PurchaseRequest;
-use App\Models\PurchaseRequestItem;
-use App\Models\RequestQuotation;
-use App\Models\User;
-use App\Repositories\AbstractQuotationRepository;
-use App\Repositories\LogRepository;
-use Carbon\Carbon;
+use App\Services\AbstractQuotationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @group Abstract Quotations
+ * APIs for managing abstract of quotations/bids
+ */
 class AbstractQuotationController extends Controller
 {
-    private LogRepository $logRepository;
-
-    private AbstractQuotationRepository $abstractQuotationRepository;
-
     public function __construct(
-        LogRepository $logRepository,
-        AbstractQuotationRepository $abstractQuotationRepository
-    ) {
-        $this->logRepository = $logRepository;
-        $this->abstractQuotationRepository = $abstractQuotationRepository;
-    }
+        protected AbstractQuotationService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Abstract Quotations
+     *
+     * Retrieve a paginated list of purchase requests with abstract quotations.
+     *
+     * @queryParam search string Search by PR number, purpose, etc.
+     * @queryParam per_page int Number of items per page. Default: 50.
+     * @queryParam show_all boolean Show all results without pagination. Default: false.
+     * @queryParam column_sort string Sort field. Default: pr_no.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default: desc.
+     * @queryParam paginated boolean Return paginated results. Default: true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "links": {...},
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
+
+        $paginated = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $user = Auth::user();
-
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'pr_no');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
-            ->with([
-                'funding_source:id,title',
-                'requestor:id,firstname,lastname',
-                'aoqs' => function ($query) {
-                    $query->select(
-                        'id',
-                        'purchase_request_id',
-                        'solicitation_no',
-                        'solicitation_date',
-                        'abstract_no',
-                        'opened_on',
-                        'mode_procurement_id',
-                        'bac_action',
-                        'status'
-                    )
-                        ->orderByRaw("CAST(REPLACE(abstract_no, '-', '') AS VARCHAR) asc");
-                },
-                'aoqs.mode_procurement:id,mode_name',
-            ])->whereIn('status', [
-                PurchaseRequestStatus::FOR_RECANVASSING,
-                PurchaseRequestStatus::FOR_ABSTRACT,
-                PurchaseRequestStatus::PARTIALLY_AWARDED,
-                PurchaseRequestStatus::AWARDED,
-                PurchaseRequestStatus::COMPLETED,
-            ]);
-
-        if ($user->tokenCan('super:*')
-            || $user->tokenCan('head:*')
-            || $user->tokenCan('supply:*')
-            || $user->tokenCan('budget:*')
-            || $user->tokenCan('accountant:*')
-        ) {
-        } else {
-            $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
-        }
-
-        if (! empty($search)) {
-            $purchaseRequests = $purchaseRequests->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('pr_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('pr_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('sai_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('sai_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('alobs_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('purpose', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('funding_source', 'title', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('requestor', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_cash_available.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_approval.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                            ->orWhere('solicitation_no', 'ILIKE', "%{$search}%")
-                            ->orWhere('solicitation_date', 'ILIKE', "%{$search}%")
-                            ->orWhere('abstract_no', 'ILIKE', "%{$search}%")
-                            ->orWhere('bac_action', 'ILIKE', "%{$search}%")
-                            ->orWhere('status', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.bids_awards_committee', function ($query) use ($search) {
-                        $query->where('committee_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.mode_procurement', function ($query) use ($search) {
-                        $query->where('mode_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_twg_chairperson.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_twg_member_1.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_twg_member_2.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_chairman.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_vice_chairman.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_member_1.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_member_2.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('aoqs.signatory_member_3.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    });
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'pr_no':
-                    $purchaseRequests = $purchaseRequests->orderByRaw("CAST(REPLACE(pr_no, '-', '') AS INTEGER) {$sortDirection}");
-                    break;
-
-                case 'pr_date_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('pr_date', $sortDirection);
-                    break;
-
-                case 'funding_source_title':
-                    $purchaseRequests = $purchaseRequests->orderBy(
-                        FundingSource::select('title')->whereColumn('funding_sources.id', 'purchase_requests.funding_source_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'purpose_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('purpose', $sortDirection);
-                    break;
-
-                case 'requestor_fullname':
-                    $purchaseRequests = $purchaseRequests->orderBy(
-                        User::select('firstname')->whereColumn('users.id', 'purchase_requests.requested_by_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'status_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('status', $sortDirection);
-                    break;
-
-                default:
-                    $purchaseRequests = $purchaseRequests->orderBy($columnSort, $sortDirection);
-                    break;
-            }
-        }
+        $result = $this->service->getAll($filters, $user);
 
         if ($paginated) {
-            return $purchaseRequests->paginate($perPage);
-        } else {
-            $purchaseRequests = $showAll
-                ? $purchaseRequests->get()
-                : $purchaseRequests = $purchaseRequests->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $purchaseRequests,
-            ]);
+            return PurchaseRequestResource::collection($result);
         }
-    }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(AbstractQuotation $abstractQuotation): JsonResponse
-    {
-        $abstractQuotation->load([
-            'bids_awards_committee:id,committee_name',
-            'mode_procurement:id,mode_name',
-            'signatory_twg_chairperson:id,user_id',
-            'signatory_twg_chairperson.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_twg_chairperson.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'twg_chairperson');
-            },
-            'signatory_twg_member_1:id,user_id',
-            'signatory_twg_member_1.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_twg_member_1.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'twg_member_1');
-            },
-            'signatory_twg_member_2:id,user_id',
-            'signatory_twg_member_2.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_twg_member_2.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'twg_member_2');
-            },
-            'signatory_chairman:id,user_id',
-            'signatory_chairman.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_chairman.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'chairman');
-            },
-            'signatory_vice_chairman:id,user_id',
-            'signatory_vice_chairman.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_vice_chairman.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'vice_chairman');
-            },
-            'signatory_member_1:id,user_id',
-            'signatory_member_1.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_member_1.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'member_1');
-            },
-            'signatory_member_2:id,user_id',
-            'signatory_member_2.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_member_2.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'member_2');
-            },
-            'signatory_member_3:id,user_id',
-            'signatory_member_3.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_member_3.detail' => function ($query) {
-                $query->where('document', 'aoq')
-                    ->where('signatory_type', 'member_3');
-            },
-            'items' => function ($query) {
-                $query->orderBy(
-                    PurchaseRequestItem::select('item_sequence')
-                        ->whereColumn(
-                            'abstract_quotation_items.pr_item_id', 'purchase_request_items.id'
-                        ),
-                    'asc'
-                );
-            },
-            'items.awardee:id,supplier_name',
-            'items.pr_item:id,unit_issue_id,item_sequence,quantity,description,stock_no',
-            'items.pr_item.unit_issue:id,unit_name',
-            'items.details',
-            'items.details.supplier:id,supplier_name',
-            'purchase_request:id,purpose',
-        ]);
+        $showAll = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $results = $showAll ? $result->get() : $result->limit($filters['per_page'] ?? 50)->get();
 
         return response()->json([
-            'data' => [
-                'data' => $abstractQuotation,
-            ],
+            'data' => PurchaseRequestResource::collection($results),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Get Abstract Quotation
+     *
+     * Display the specified abstract quotation.
+     *
+     * @urlParam abstractQuotation string required The abstract quotation UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
+     * @response 404 {
+     *   "message": "Abstract quotation not found."
+     * }
+     */
+    public function show(string $id): JsonResponse
+    {
+        $abstractQuotation = $this->service->getById($id);
+
+        if (! $abstractQuotation) {
+            return response()->json(['message' => 'Abstract quotation not found.'], 404);
+        }
+
+        return response()->json([
+            'data' => new AbstractQuotationResource($abstractQuotation),
+        ]);
+    }
+
+    /**
+     * Update Abstract Quotation
+     *
+     * Update the specified abstract quotation in storage.
+     *
+     * @urlParam abstractQuotation string required The abstract quotation UUID.
+     *
+     * @bodyParam bids_awards_committee_id string required The BAC ID.
+     * @bodyParam mode_procurement_id string required The mode of procurement ID.
+     * @bodyParam solicitation_no string required The solicitation number.
+     * @bodyParam solicitation_date date required The solicitation date.
+     * @bodyParam opened_on date nullable The date opened.
+     * @bodyParam bac_action string nullable The BAC action.
+     * @bodyParam sig_twg_chairperson_id string nullable The TWG chairperson signatory ID.
+     * @bodyParam sig_twg_member_1_id string nullable The TWG member 1 signatory ID.
+     * @bodyParam sig_twg_member_2_id string nullable The TWG member 2 signatory ID.
+     * @bodyParam sig_chairman_id string nullable The chairman signatory ID.
+     * @bodyParam sig_vice_chairman_id string nullable The vice chairman signatory ID.
+     * @bodyParam sig_member_1_id string nullable The member 1 signatory ID.
+     * @bodyParam sig_member_2_id string nullable The member 2 signatory ID.
+     * @bodyParam sig_member_3_id string nullable The member 3 signatory ID.
+     * @bodyParam items array required The AOQ items.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Abstract of bids and quotation updated successfully."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function update(Request $request, AbstractQuotation $abstractQuotation): JsonResponse
     {
-        $user = Auth::user();
-
         $validated = $request->validate([
             'bids_awards_committee_id' => 'required',
             'mode_procurement_id' => 'required',
@@ -318,276 +146,116 @@ class AbstractQuotationController extends Controller
         ]);
 
         try {
-            $message = 'Abstract of bids and quotation updated successfully.';
-
-            $this->abstractQuotationRepository->storeUpdate($validated, $abstractQuotation);
-
-            $abstractQuotation->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $abstractQuotation,
-            ]);
+            $abstractQuotation = $this->service->createOrUpdate($validated, $abstractQuotation);
 
             return response()->json([
-                'data' => [
-                    'data' => $abstractQuotation,
-                    'message' => $message,
-                ],
+                'data' => new AbstractQuotationResource($abstractQuotation->load('items')),
+                'message' => 'Abstract of bids and quotation updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Abstract of bids or quotation update failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Abstract of bids or quotation update failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Set Abstract Quotation as Pending
+     *
+     * Mark the abstract quotation as pending.
+     *
+     * @urlParam abstractQuotation string required The abstract quotation UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Abstract of bids and quotation successfully marked as Pending."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function pending(AbstractQuotation $abstractQuotation): JsonResponse
     {
         try {
-            $message = 'Abstract of bids and quotation successfully marked as "Pending".';
-
-            $currentStatus = AbstractQuotationStatus::from($abstractQuotation->status);
-
-            if ($currentStatus !== AbstractQuotationStatus::DRAFT) {
-                $message =
-                    'Failed to set the abstract of bids and quotation to pending.
-                    It is already pending or approved or awarded.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $abstractQuotation->id,
-                    'log_module' => 'aoq',
-                    'data' => $abstractQuotation,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $abstractQuotation->update([
-                'status' => AbstractQuotationStatus::PENDING,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'pending_at', $abstractQuotation->status_timestamps
-                ),
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $abstractQuotation,
-            ]);
-
-            $abstractQuotation->load('items');
+            $abstractQuotation = $this->service->pending($abstractQuotation);
 
             return response()->json([
-                'data' => [
-                    'data' => $abstractQuotation,
-                    'message' => $message,
-                ],
+                'data' => new AbstractQuotationResource($abstractQuotation->load('items')),
+                'message' => 'Abstract of bids and quotation successfully marked as "Pending".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Abstract of bids and quotation failed to marked as "Pending".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $abstractQuotation,
-            ], isError: true);
+            $this->service->logError('Abstract quotation pending failed.', $th, $abstractQuotation->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Approve Abstract Quotation
+     *
+     * Mark the abstract quotation as approved.
+     *
+     * @urlParam abstractQuotation string required The abstract quotation UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Abstract of bids and quotation successfully marked as Approved."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function approve(AbstractQuotation $abstractQuotation): JsonResponse
     {
         try {
-            $message = 'Abstract of bids and quotation successfully marked as "Approved".';
-
-            $currentStatus = AbstractQuotationStatus::from($abstractQuotation->status);
-
-            if ($currentStatus !== AbstractQuotationStatus::PENDING) {
-                $message =
-                    'Failed to set the abstract of bids and quotation to approved.
-                    It may already be awarded or still in draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $abstractQuotation->id,
-                    'log_module' => 'aoq',
-                    'data' => $abstractQuotation,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $abstractQuotation->update([
-                'status' => AbstractQuotationStatus::APPROVED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'approved_at', $abstractQuotation->status_timestamps
-                ),
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $abstractQuotation,
-            ]);
-
-            $abstractQuotation->load('items');
+            $abstractQuotation = $this->service->approve($abstractQuotation);
 
             return response()->json([
-                'data' => [
-                    'data' => $abstractQuotation,
-                    'message' => $message,
-                ],
+                'data' => new AbstractQuotationResource($abstractQuotation->load('items')),
+                'message' => 'Abstract of bids and quotation successfully marked as "Approved".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Abstract of bids and quotation failed to marked as "Approved".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $abstractQuotation,
-            ], isError: true);
+            $this->service->logError('Abstract quotation approval failed.', $th, $abstractQuotation->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the specified resource in storage.
+     * Revert Abstract Quotation
+     *
+     * Revert changes for this abstract quotation to draft status.
+     *
+     * @urlParam abstractQuotation string required The abstract quotation UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Changes for this abstract of bids and quotation successfully reverted."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function revert(AbstractQuotation $abstractQuotation): JsonResponse
     {
         try {
-            $message = 'Changes for this abstract of bids and quotation successfully reverted.';
-
-            $currentStatus = AbstractQuotationStatus::from($abstractQuotation->status);
-
-            if ($currentStatus === AbstractQuotationStatus::APPROVED || $currentStatus === AbstractQuotationStatus::AWARDED) {
-                $message =
-                    'Failed to revert changes from this abstract of bids and quotation.
-                    It may already be approved or awarded.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $abstractQuotation->id,
-                    'log_module' => 'aoq',
-                    'data' => $abstractQuotation,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseRequest = PurchaseRequest::with('items')->find($abstractQuotation->purchase_request_id);
-            $rfqCompleted = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
-                ->where('status', RequestQuotationStatus::COMPLETED)
-                ->where('batch', $purchaseRequest->rfq_batch - 1)
-                ->get();
-
-            $updatedAoq = $this->abstractQuotationRepository->storeUpdate([
-                'bids_awards_committee_id' => null,
-                'mode_procurement_id' => null,
-                'opened_on' => null,
-                'bac_action' => null,
-                'sig_twg_chairperson_id' => null,
-                'sig_twg_member_1_id' => null,
-                'sig_twg_member_2_id' => null,
-                'sig_chairman_id' => null,
-                'sig_vice_chairman_id' => null,
-                'sig_member_1_id' => null,
-                'sig_member_2_id' => null,
-                'sig_member_3_id' => null,
-                'status' => AbstractQuotationStatus::DRAFT,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'draft_at', $abstractQuotation->status_timestamps
-                ),
-                'solicitation_no' => isset($rfqCompleted[0]->rfq_no)
-                    ? $rfqCompleted[0]->rfq_no : '',
-                'solicitation_date' => Carbon::now()->toDateString(),
-                'items' => $purchaseRequest->items->map(function (PurchaseRequestItem $item) use ($rfqCompleted) {
-                    return [
-                        'pr_item_id' => $item->id,
-                        'included' => empty($item->awarded_to) ? true : false,
-                        'document_type' => 'po',
-                        'details' => $rfqCompleted->map(function (RequestQuotation $rfq) use ($item) {
-                            $rfq->load([
-                                'items' => function ($query) use ($item) {
-                                    $query->where('pr_item_id', $item->id);
-                                },
-                            ]);
-                            $rfqItem = $rfq->items[0];
-
-                            return [
-                                'quantity' => $item->quantity,
-                                'supplier_id' => $rfqItem->supplier_id,
-                                'brand_model' => $rfqItem->brand_model,
-                                'unit_cost' => $rfqItem->unit_cost,
-                            ];
-                        }),
-                    ];
-                }),
-            ], $abstractQuotation);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $updatedAoq,
-            ]);
-
-            $updatedAoq->load('items');
+            $abstractQuotation = $this->service->revert($abstractQuotation);
 
             return response()->json([
-                'data' => [
-                    'data' => $updatedAoq,
-                    'message' => $message,
-                ],
+                'data' => new AbstractQuotationResource($abstractQuotation->load('items')),
+                'message' => 'Changes for this abstract of bids and quotation successfully reverted.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Changes for this abstract of bids and quotation failed to revert.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $abstractQuotation,
-            ], isError: true);
+            $this->service->logError('Abstract quotation revert failed.', $th, $abstractQuotation->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }

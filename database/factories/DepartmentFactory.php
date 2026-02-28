@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class DepartmentFactory extends Factory
 {
     protected $model = Department::class;
-    
+
     /**
      * Define the model's default state.
      *

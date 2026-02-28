@@ -1,0 +1,100 @@
+name: Logs
+description: 'APIs for managing system logs'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/logs
+    metadata:
+      custom: []
+      groupName: Logs
+      groupDescription: 'APIs for managing system logs'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Logs'
+      description: 'Retrieve a paginated list of logs with optional filtering.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by log_id, log_module, log_type, message, details, or user name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Number of items per page. Default 50.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      column_sort:
+        custom: []
+        name: column_sort
+        description: 'Sort field. Default logged_at.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      sort_direction:
+        custom: []
+        name: sort_direction
+        description: 'Sort direction (asc/desc). Default desc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      log_id:
+        custom: []
+        name: log_id
+        description: 'Filter by specific log entity ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      per_page: 16
+      column_sort: architecto
+      sort_direction: architecto
+      log_id: architecto
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: '{"data": [...], "meta": {...}}'
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

@@ -5,7 +5,6 @@ namespace Database\Seeders\Production;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Position;
-use App\Models\Role;
 use App\Models\Section;
 use App\Models\User;
 use Illuminate\Database\Seeder;

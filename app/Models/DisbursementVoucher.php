@@ -45,7 +45,7 @@ class DisbursementVoucher extends Model
         'jev_date',
         'disapproved_reason',
         'status',
-        'status_timestamps'
+        'status_timestamps',
     ];
 
     /**
@@ -56,8 +56,15 @@ class DisbursementVoucher extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\DisbursementVoucherStatus::class,
             'accountant_certified_choices' => 'array',
             'status_timestamps' => 'array',
+            'accountant_signed_date' => 'datetime',
+            'treasurer_signed_date' => 'datetime',
+            'head_signed_date' => 'datetime',
+            'check_date' => 'datetime',
+            'received_date' => 'datetime',
+            'jev_date' => 'datetime',
         ];
     }
 

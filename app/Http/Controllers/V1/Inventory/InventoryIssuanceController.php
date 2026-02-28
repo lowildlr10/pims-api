@@ -2,127 +2,89 @@
 
 namespace App\Http\Controllers\V1\Inventory;
 
-use App\Enums\DocumentPrintType;
-use App\Enums\InventoryIssuanceStatus;
-use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\InventoryIssuanceResource;
 use App\Models\InventoryIssuance;
-use App\Models\InventorySupply;
-use App\Models\PurchaseOrder;
-use App\Models\Supplier;
-use App\Repositories\InventoryIssuanceRepository;
-use App\Repositories\LogRepository;
+use App\Services\InventoryIssuanceService;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
 
+/**
+ * @group Inventory Issuances
+ * APIs for managing inventory issuances (RIS, ICS, ARE)
+ */
 class InventoryIssuanceController extends Controller
 {
-    private LogRepository $logRepository;
-
-    private InventoryIssuanceRepository $inventoryIssuanceRepository;
-
-    public function __construct(LogRepository $logRepository, InventoryIssuanceRepository $inventoryIssuanceRepository)
-    {
-        $this->logRepository = $logRepository;
-        $this->inventoryIssuanceRepository = $inventoryIssuanceRepository;
-    }
+    public function __construct(
+        protected InventoryIssuanceService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Inventory Issuances
+     *
+     * Retrieve a paginated list of inventory issuances grouped by purchase order.
+     *
+     * @queryParam search string Search by PO number, inventory number, etc.
+     * @queryParam per_page int Number of items per page. Default: 10.
+     * @queryParam show_all boolean Show all results without pagination. Default: false.
+     * @queryParam column_sort string Sort field. Default: po_no.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default: desc.
+     * @queryParam paginated boolean Return paginated results. Default: true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "links": {...},
+     *   "meta": {...}
+     * }
      */
     public function index(Request $request): JsonResponse|LengthAwarePaginator
     {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 10);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'pr_no');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
 
-        $purchaseOrders = PurchaseOrder::query()
-            ->select('id', 'purchase_request_id', 'supplier_id', 'po_no', 'status_timestamps')
-            ->with([
-                'purchase_request:id,funding_source_id',
-                'purchase_request.funding_source:id,title',
+        $result = $this->service->getAll($filters);
 
-                'supplier:id,supplier_name',
-
-                'issuances' => function ($query) {
-                    $query->select(
-                        'id', 'purchase_order_id', 'inventory_no', 'document_type',
-                        'received_by_id', 'status'
-                    )->orderByRaw("CAST(REPLACE(inventory_no, '-', '') AS INTEGER) desc");
-                },
-                'issuances.recipient:id,firstname,middlename,lastname',
-            ])
-            ->has('issuances');
-
-        if (! empty($search)) {
-            $purchaseOrders = $purchaseOrders->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('po_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('supplier', 'supplier_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('issuances', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                            ->orWhere('document_type', 'ILIKE', "%{$search}%")
-                            ->orWhere('inventory_no', 'ILIKE', "%{$search}%")
-                            ->orWhere('inventory_date', 'ILIKE', "%{$search}%")
-                            ->orWhere('status', 'ILIKE', "%{$search}%")
-                            ->orWhereRelation('recipient', function ($query) use ($search) {
-                                $query->where('firstname', 'ILIKE', "%{$search}%")
-                                    ->orWhere('middlename', 'ILIKE', "%{$search}%")
-                                    ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                            });
-                    })
-                    ->orWhereRelation('supplies', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
-                    });
-            });
+        if ($result instanceof LengthAwarePaginator) {
+            return $result;
         }
 
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'po_no':
-                    $purchaseOrders = $purchaseOrders->orderByRaw("CAST(REPLACE(po_no, '-', '') AS INTEGER) {$sortDirection}");
-                    break;
-
-                case 'funding_source_title':
-                    break;
-
-                case 'supplier_name':
-                    $purchaseOrders = $purchaseOrders->orderBy(
-                        Supplier::select('supplier_name')->whereColumn('suppliers.id', 'purchase_orders.supplier_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'delivery_date_formatted':
-                    $purchaseOrders = $purchaseOrders->orderBy('delivery_date', $sortDirection);
-                    break;
-
-                default:
-                    $purchaseOrders = $purchaseOrders->orderBy($columnSort, $sortDirection);
-                    break;
-            }
-        }
-
-        if ($paginated) {
-            return $purchaseOrders->paginate($perPage);
-        } else {
-            $purchaseOrders = $showAll
-                ? $purchaseOrders->get()
-                : $purchaseOrders = $purchaseOrders->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $purchaseOrders,
-            ]);
-        }
+        return response()->json([
+            'data' => $result,
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create Inventory Issuance
+     *
+     * Store a newly created inventory issuance.
+     *
+     * @bodyParam purchase_order_id string required The purchase order ID.
+     * @bodyParam responsibility_center_id string nullable The responsibility center ID.
+     * @bodyParam inventory_date date required The inventory date.
+     * @bodyParam sai_no string nullable The SAI number.
+     * @bodyParam sai_date date nullable The SAI date.
+     * @bodyParam document_type string required The document type (ris, ics, are).
+     * @bodyParam requested_by_id string nullable The requestor user ID.
+     * @bodyParam requested_date date nullable The requested date.
+     * @bodyParam sig_approved_by_id string nullable The signatory for approval ID.
+     * @bodyParam approved_date date nullable The approved date.
+     * @bodyParam sig_issued_by_id string required The signatory for issuance ID.
+     * @bodyParam issued_date date nullable The issued date.
+     * @bodyParam received_by_id string required The receiver user ID.
+     * @bodyParam received_date date nullable The received date.
+     * @bodyParam items array required The issuance items.
+     *
+     * @response 201 {
+     *   "data": {...},
+     *   "message": "Inventory issuance created successfully."
+     * }
      */
     public function store(Request $request): JsonResponse
     {
@@ -145,90 +107,72 @@ class InventoryIssuanceController extends Controller
         ]);
 
         try {
-            $message = 'Inventory issuance created successfully.';
-
-            $inventoryIssuance = $this->inventoryIssuanceRepository->storeUpdate($validated, null);
-
-            $inventoryIssuance->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ]);
+            $inventoryIssuance = $this->service->create($validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $inventoryIssuance,
-                    'message' => $message,
-                ],
-            ]);
+                'data' => new InventoryIssuanceResource($inventoryIssuance),
+                'message' => 'Inventory issuance created successfully.',
+            ], 201);
         } catch (\Throwable $th) {
-            $message = 'Inventory issuance creation failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_module' => 'inv-issuance',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Inventory issuance creation failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Display the specified resource.
+     * Get Inventory Issuance
+     *
+     * Display the specified inventory issuance.
+     *
+     * @urlParam inventoryIssuance string required The inventory issuance UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
      */
     public function show(InventoryIssuance $inventoryIssuance): JsonResponse
     {
-        $inventoryIssuance->load([
-            'requestor',
-            'signatory_approval:id,user_id',
-            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_approval.detail' => function ($query) use ($inventoryIssuance) {
-                $query->where('document', $inventoryIssuance->document_type)
-                    ->where('signatory_type', '	approved_by');
-            },
-            'signatory_issuer:id,user_id',
-            'signatory_issuer.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_issuer.detail' => function ($query) use ($inventoryIssuance) {
-                $query->where('document', $inventoryIssuance->document_type)
-                    ->where('signatory_type', $inventoryIssuance->document_type === DocumentPrintType::RIS ? 'issued_by' : 'received_from');
-            },
-            'recipient',
+        $inventoryIssuance = $this->service->getById($inventoryIssuance->id);
 
-            'items' => function ($query) {
-                $query->orderBy(
-                    InventorySupply::select('item_sequence')
-                        ->whereColumn(
-                            'inventory_issuance_items.inventory_supply_id', 'inventory_supplies.id'
-                        ),
-                    'asc'
-                );
-            },
-            'items.supply',
-            'items.supply.unit_issue:id,unit_name',
-
-            'responsibility_center',
-            'purchase_order',
-            'purchase_order.purchase_request',
-            'purchase_order.obligation_request',
-            'purchase_order.disbursement_voucher',
-        ]);
+        if (! $inventoryIssuance) {
+            return response()->json(['message' => 'Inventory issuance not found.'], 404);
+        }
 
         return response()->json([
-            'data' => [
-                'data' => $inventoryIssuance,
-            ],
+            'data' => new InventoryIssuanceResource($inventoryIssuance),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Inventory Issuance
+     *
+     * Update the specified inventory issuance in storage.
+     *
+     * @urlParam inventoryIssuance string required The inventory issuance UUID.
+     *
+     * @bodyParam purchase_order_id string required The purchase order ID.
+     * @bodyParam responsibility_center_id string nullable The responsibility center ID.
+     * @bodyParam inventory_date date required The inventory date.
+     * @bodyParam sai_no string nullable The SAI number.
+     * @bodyParam sai_date date nullable The SAI date.
+     * @bodyParam document_type string required The document type (ris, ics, are).
+     * @bodyParam requested_by_id string nullable The requestor user ID.
+     * @bodyParam requested_date date nullable The requested date.
+     * @bodyParam sig_approved_by_id string nullable The signatory for approval ID.
+     * @bodyParam approved_date date nullable The approved date.
+     * @bodyParam sig_issued_by_id string required The signatory for issuance ID.
+     * @bodyParam issued_date date nullable The issued date.
+     * @bodyParam received_by_id string required The receiver user ID.
+     * @bodyParam received_date date nullable The received date.
+     * @bodyParam items array required The issuance items.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inventory issuance updated successfully."
+     * }
      */
     public function update(Request $request, InventoryIssuance $inventoryIssuance): JsonResponse
     {
@@ -251,253 +195,108 @@ class InventoryIssuanceController extends Controller
         ]);
 
         try {
-            $message = 'Inventory issuance update successfully.';
-
-            $this->inventoryIssuanceRepository->storeUpdate($validated, $inventoryIssuance);
-
-            $inventoryIssuance->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ]);
+            $inventoryIssuance = $this->service->update($inventoryIssuance, $validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $inventoryIssuance,
-                    'message' => $message,
-                ],
+                'data' => new InventoryIssuanceResource($inventoryIssuance),
+                'message' => 'Inventory issuance updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Inventory issuance update failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_module' => 'inv-issuance',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Inventory issuance update failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => 'Inventory issuance update failed. Please try again.',
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Set Inventory Issuance as Pending
+     *
+     * Mark the inventory issuance as pending.
+     *
+     * @urlParam inventoryIssuance string required The inventory issuance UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inventory issuance successfully marked as Pending."
+     * }
      */
     public function pending(InventoryIssuance $inventoryIssuance): JsonResponse
     {
         try {
-            $message = 'Inventory issuance successfully marked as "Pending".';
-            $issuanceCurrentStatus = InventoryIssuanceStatus::from($inventoryIssuance->status);
-            $newStatus = InventoryIssuanceStatus::PENDING;
-
-            if ($inventoryIssuance && $issuanceCurrentStatus !== InventoryIssuanceStatus::DRAFT) {
-                $message = 'Failed to set inventory issuance to pending. This document has already been issued or is still processing.';
-
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $inventoryIssuance->id,
-                    'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance,
-                ]);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            if (empty($inventoryIssuance->received_by_id) || empty($inventoryIssuance->sig_issued_by_id)) {
-                $message = 'Failed to set inventory issuance to pending. Both a receiver and an issuer must be specified.';
-
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $inventoryIssuance->id,
-                    'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance,
-                ]);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $inventoryIssuance->update([
-                'status' => $newStatus,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'pending_at', $inventoryIssuance->status_timestamps
-                ),
-            ]);
-
-            $inventoryIssuance->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ]);
+            $inventoryIssuance = $this->service->pending($inventoryIssuance);
 
             return response()->json([
-                'data' => [
-                    'data' => $inventoryIssuance,
-                    'message' => $message,
-                ],
+                'data' => new InventoryIssuanceResource($inventoryIssuance),
+                'message' => 'Inventory issuance successfully marked as "Pending".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Failed to set inventory issuance to pending.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ], isError: true);
+            $this->service->logError('Failed to set inventory issuance to pending.', $th, $inventoryIssuance->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Issue Inventory
+     *
+     * Mark the inventory issuance as issued.
+     *
+     * @urlParam inventoryIssuance string required The inventory issuance UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inventory issuance successfully marked as Issued."
+     * }
      */
     public function issue(InventoryIssuance $inventoryIssuance): JsonResponse
     {
         try {
-            $message = 'Inventory issuance successfully marked as "Issued".';
-            $issuanceCurrentStatus = InventoryIssuanceStatus::from($inventoryIssuance->status);
-            $newStatus = InventoryIssuanceStatus::ISSUED;
-
-            if ($inventoryIssuance && $issuanceCurrentStatus !== InventoryIssuanceStatus::PENDING) {
-                $message = 'Failed to set inventory issuance to issued. This document has already been issued or is still draft.';
-
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $inventoryIssuance->id,
-                    'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance,
-                ]);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            if (empty($inventoryIssuance->received_by_id) || empty($inventoryIssuance->sig_issued_by_id)) {
-                $message = 'Failed to set inventory issuance to pending. Both a receiver and an issuer must be specified.';
-
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $inventoryIssuance->id,
-                    'log_module' => 'inv-issuance',
-                    'data' => $inventoryIssuance,
-                ]);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $inventoryIssuance->update([
-                'status' => $newStatus,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'issued_at', $inventoryIssuance->status_timestamps
-                ),
-            ]);
-
-            $inventoryIssuance->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ]);
+            $inventoryIssuance = $this->service->issue($inventoryIssuance);
 
             return response()->json([
-                'data' => [
-                    'data' => $inventoryIssuance,
-                    'message' => $message,
-                ],
+                'data' => new InventoryIssuanceResource($inventoryIssuance),
+                'message' => 'Inventory issuance successfully marked as "Issued".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Failed to set inventory issuance to issued.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ], isError: true);
+            $this->service->logError('Failed to set inventory issuance to issued.', $th, $inventoryIssuance->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Cancel Inventory Issuance
+     *
+     * Mark the inventory issuance as cancelled.
+     *
+     * @urlParam inventoryIssuance string required The inventory issuance UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inventory issuance successfully marked as Cancelled."
+     * }
      */
     public function cancel(InventoryIssuance $inventoryIssuance): JsonResponse
     {
         try {
-            $message = 'Inventory issuance successfully marked as "Cancelled".';
-            $issuanceCurrentStatus = InventoryIssuanceStatus::from($inventoryIssuance->status);
-            $newStatus = InventoryIssuanceStatus::CANCELLED;
-
-            $inventoryIssuance->update([
-                'status' => $newStatus,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'cancelled_at', $inventoryIssuance->status_timestamps
-                ),
-            ]);
-
-            $inventoryIssuance->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ]);
+            $inventoryIssuance = $this->service->cancel($inventoryIssuance);
 
             return response()->json([
-                'data' => [
-                    'data' => $inventoryIssuance,
-                    'message' => $message,
-                ],
+                'data' => new InventoryIssuanceResource($inventoryIssuance),
+                'message' => 'Inventory issuance successfully marked as "Cancelled".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Failed to set inventory issuance to cancelled.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $inventoryIssuance->id,
-                'log_module' => 'inv-issuance',
-                'data' => $inventoryIssuance,
-            ], isError: true);
+            $this->service->logError('Failed to set inventory issuance to cancelled.', $th, $inventoryIssuance->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    // public function destroy(Supply $supply)
-    // {
-    //     //
-    // }
 }

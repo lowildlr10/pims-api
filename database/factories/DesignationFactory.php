@@ -12,7 +12,7 @@ use Illuminate\Support\Str;
 class DesignationFactory extends Factory
 {
     protected $model = Designation::class;
-    
+
     /**
      * Define the model's default state.
      *
@@ -22,7 +22,7 @@ class DesignationFactory extends Factory
     {
         return [
             'id' => (string) Str::uuid(),
-            'designation_name' => $this->faker->unique()->jobTitle
+            'designation_name' => $this->faker->unique()->jobTitle,
         ];
     }
 }

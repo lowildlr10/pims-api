@@ -11,7 +11,7 @@ class StatusTimestampsHelper
         $current = match (true) {
             is_string($current) => json_decode($current, true),
             is_object($current) => (array) $current,
-            !is_array($current) || is_null($current) => [],
+            ! is_array($current) || is_null($current) => [],
             default => [],
         };
 

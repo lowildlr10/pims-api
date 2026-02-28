@@ -3,49 +3,47 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Position;
-use Illuminate\Http\JsonResponse;
+use App\Http\Resources\PositionResource;
+use App\Services\PositionService;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Account - Positions
+ * APIs for managing positions
+ */
 class PositionController extends Controller
 {
+    public function __construct(
+        protected PositionService $service
+    ) {}
+
     /**
-     * Display a listing of the resource.
+     * List Positions
+     *
+     * Retrieve a paginated list of positions.
+     *
+     * @queryParam search string Search by position name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam column_sort string Sort field. Default position_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'position_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'column_sort',
+            'sort_direction',
+        ]);
 
-        $positions = Position::query();
+        $positions = $this->service->getAll($filters);
 
-        if (! empty($search)) {
-            $positions = $positions->where(function ($query) use ($search) {
-                $query->where('position_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            $positions = $positions->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $positions->paginate($perPage);
-        } else {
-            if ($showAll) {
-                $positions = $positions->get();
-            } else {
-                $positions = $positions->limit($perPage)->get();
-            }
-
-            return response()->json([
-                'data' => $positions,
-            ]);
-        }
+        return PositionResource::collection($positions);
     }
 }

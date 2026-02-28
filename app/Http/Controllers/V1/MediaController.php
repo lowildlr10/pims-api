@@ -4,22 +4,38 @@ namespace App\Http\Controllers\V1;
 
 use App\Enums\FileUploadType;
 use App\Http\Controllers\Controller;
-use App\Repositories\MediaRepository;
+use App\Services\MediaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use ValueError;
 
+/**
+ * @group Media Management
+ * APIs for managing file uploads and media
+ */
 class MediaController extends Controller
 {
-    private MediaRepository $repository;
-
-    public function __construct(MediaRepository $repository)
-    {
-        $this->repository = $repository;
-    }
+    public function __construct(
+        protected MediaService $service
+    ) {}
 
     /**
-     * Store the specified resource in storage.
+     * Upload Media File
+     *
+     * Store a new file upload.
+     *
+     * @bodyParam file string nullable The base64 encoded file content.
+     * @bodyParam type string required The file upload type.
+     * @bodyParam parent_id string required The parent entity ID.
+     * @bodyParam disk string nullable The storage disk. Default: public.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Successfully uploaded file"
+     * }
+     * @response 422 {
+     *   "message": "Invalid file upload type."
+     * }
      */
     public function store(Request $request): JsonResponse
     {
@@ -39,20 +55,20 @@ class MediaController extends Controller
         }
 
         try {
-            $file = $this->repository->upload(
+            $file = $this->service->upload(
                 $validated['parent_id'],
                 $validated['file'],
                 $type,
-                $request->get('disk', 'public')
+                $validated['disk'] ?? 'public'
             );
 
             return response()->json([
-                'data' => [
-                    'data' => $file,
-                    'message' => 'Successfully uploaded file',
-                ],
+                'data' => $file,
+                'message' => 'Successfully uploaded file',
             ]);
         } catch (\Throwable $th) {
+            $this->service->logError('File upload failed.', $th, $validated);
+
             return response()->json([
                 'message' => $th->getMessage(),
             ], 422);
@@ -60,7 +76,21 @@ class MediaController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Get Media File
+     *
+     * Retrieve a file by parent ID and type.
+     *
+     * @queryParam type string required The file upload type.
+     * @queryParam parent_id string required The parent entity ID.
+     * @queryParam disk string nullable The storage disk. Default: public.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "OK"
+     * }
+     * @response 422 {
+     *   "message": "Invalid file upload type."
+     * }
      */
     public function show(Request $request): JsonResponse
     {
@@ -79,19 +109,19 @@ class MediaController extends Controller
         }
 
         try {
-            $file = $this->repository->get(
+            $file = $this->service->get(
                 $validated['parent_id'],
                 $type,
-                $request->get('disk', 'public')
+                $validated['disk'] ?? 'public'
             );
 
             return response()->json([
-                'data' => [
-                    'data' => $file,
-                    'message' => 'OK',
-                ],
+                'data' => $file,
+                'message' => 'OK',
             ]);
         } catch (\Throwable $th) {
+            $this->service->logError('Failed to get file.', $th, $validated);
+
             return response()->json([
                 'message' => $th->getMessage(),
             ], 422);

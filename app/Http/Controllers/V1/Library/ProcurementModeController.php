@@ -3,166 +3,162 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\ProcurementMode;
-use App\Repositories\LogRepository;
+use App\Http\Resources\ProcurementModeResource;
+use App\Services\ProcurementModeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Procurement Modes
+ * APIs for managing procurement modes
+ */
 class ProcurementModeController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(
+        protected ProcurementModeService $service
+    ) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Procurement Modes
+     *
+     * Retrieve a paginated list of procurement modes.
+     *
+     * @queryParam search string Search by mode name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items without pagination. Default false.
+     * @queryParam show_inactive boolean Show inactive procurement modes. Default false.
+     * @queryParam column_sort string Sort field. Default mode_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'show_inactive',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
+
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        $procurementModes = $this->service->getAll($filters);
+
+        return ProcurementModeResource::collection($procurementModes);
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Procurement Mode
+     *
+     * Create a new procurement mode.
+     *
+     * @bodyParam mode_name string required The mode name.
+     * @bodyParam active boolean required Whether the procurement mode is active. Default true.
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "mode_name": "Competitive Bidding"
+     *   },
+     *   "message": "Mode of procurement created successfully."
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'mode_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $procurementModes = ProcurementMode::query();
-
-        if (! empty($search)) {
-            $procurementModes = $procurementModes->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('mode_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'mode_name_formatted':
-                    $columnSort = 'mode_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $procurementModes = $procurementModes->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $procurementModes->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $procurementModes = $procurementModes->where('active', true);
-            }
-
-            $procurementModes = $showAll
-                ? $procurementModes->get()
-                : $procurementModes = $procurementModes->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $procurementModes,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'mode_name' => 'required|unique:procurement_modes,mode_name',
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $procurementMode = ProcurementMode::create($validated);
+            $procurementMode = $this->service->create($validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new ProcurementModeResource($procurementMode),
                 'message' => 'Mode of procurement created successfully.',
-                'log_id' => $procurementMode->id,
-                'log_module' => 'lib-mode-proc',
-                'data' => $procurementMode,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Mode of procurement creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-mode-proc',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Mode of procurement creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Mode of procurement creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $procurementMode,
-                'message' => 'Mode of procurement created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Procurement Mode
+     *
+     * Get a specific procurement mode by ID.
+     *
+     * @urlParam id string required The procurement mode UUID.
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "mode_name": "Competitive Bidding"
+     *   }
+     * }
      */
-    public function show(ProcurementMode $procurementMode)
+    public function show(string $id): JsonResponse
     {
+        $procurementMode = $this->service->getById($id);
+
+        if (! $procurementMode) {
+            return response()->json(['message' => 'Mode of procurement not found.'], 404);
+        }
+
         return response()->json([
-            'data' => [
-                'data' => $procurementMode,
-            ],
+            'data' => new ProcurementModeResource($procurementMode),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Procurement Mode
+     *
+     * Update an existing procurement mode.
+     *
+     * @urlParam id string required The procurement mode UUID.
+     *
+     * @bodyParam mode_name string required The mode name.
+     * @bodyParam active boolean required Whether the procurement mode is active.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Mode of procurement updated successfully."
+     * }
      */
-    public function update(Request $request, ProcurementMode $procurementMode)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'mode_name' => 'required|unique:procurement_modes,mode_name,'.$procurementMode->id,
+            'mode_name' => 'required|unique:procurement_modes,mode_name,'.$id,
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $procurementMode->update($validated);
+            $procurementMode = $this->service->update($id, $validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new ProcurementModeResource($procurementMode),
                 'message' => 'Mode of procurement updated successfully.',
-                'log_id' => $procurementMode->id,
-                'log_module' => 'lib-mode-proc',
-                'data' => $procurementMode,
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Mode of procurement update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $procurementMode->id,
-                'log_module' => 'lib-mode-proc',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Mode of procurement update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Mode of procurement update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $procurementMode,
-                'message' => 'Mode of procurement updated successfully.',
-            ],
-        ]);
     }
 }

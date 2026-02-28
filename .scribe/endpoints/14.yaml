@@ -1,0 +1,849 @@
+name: 'Request Quotations'
+description: 'APIs for managing request for quotations (RFQ)'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/request-quotations
+    metadata:
+      custom: []
+      groupName: 'Request Quotations'
+      groupDescription: 'APIs for managing request for quotations (RFQ)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Purchase Requests with RFQs'
+      description: 'Retrieve a paginated list of purchase requests that have RFQs.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by PR number, purpose, etc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Number of items per page. Default: 50.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      show_all:
+        custom: []
+        name: show_all
+        description: 'Show all results without pagination. Default: false.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      column_sort:
+        custom: []
+        name: column_sort
+        description: 'Sort field. Default: pr_no.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      sort_direction:
+        custom: []
+        name: sort_direction
+        description: 'Sort direction (asc/desc). Default: desc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      paginated:
+        custom: []
+        name: paginated
+        description: 'Return paginated results. Default: true.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      per_page: 16
+      show_all: false
+      column_sort: architecto
+      sort_direction: architecto
+      paginated: false
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [...],
+            "links": {...},
+            "meta": {...}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/request-quotations
+    metadata:
+      custom: []
+      groupName: 'Request Quotations'
+      groupDescription: 'APIs for managing request for quotations (RFQ)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Create Request Quotation'
+      description: 'Create a new request for quotation.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      rfq_no:
+        custom: []
+        name: rfq_no
+        description: 'The RFQ number.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      purchase_request_id:
+        custom: []
+        name: purchase_request_id
+        description: 'The purchase request ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      copies:
+        custom: []
+        name: copies
+        description: 'Number of copies (1-10).'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      signed_type:
+        custom: []
+        name: signed_type
+        description: 'The signed type (bac/lce).'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      rfq_date:
+        custom: []
+        name: rfq_date
+        description: 'The RFQ date.'
+        required: true
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      supplier_id:
+        custom: []
+        name: supplier_id
+        description: 'nullable The supplier ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      opening_dt:
+        custom: []
+        name: opening_dt
+        description: 'nullable The opening date/time.'
+        required: false
+        example: architecto
+        type: datetime
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_approval_id:
+        custom: []
+        name: sig_approval_id
+        description: 'The approval signatory ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      canvassers:
+        custom: []
+        name: canvassers
+        description: 'nullable List of canvasser user IDs.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      items:
+        custom: []
+        name: items
+        description: 'The RFQ items.'
+        required: true
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      vat_registered:
+        custom: []
+        name: vat_registered
+        description: 'nullable Whether supplier is VAT registered.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      'items.*.pr_item_id':
+        custom: []
+        name: 'items.*.pr_item_id'
+        description: 'The PR item ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'items.*.included':
+        custom: []
+        name: 'items.*.included'
+        description: 'Whether the item is included.'
+        required: true
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      rfq_no: architecto
+      purchase_request_id: architecto
+      copies: 16
+      signed_type: architecto
+      rfq_date: architecto
+      supplier_id: architecto
+      opening_dt: architecto
+      sig_approval_id: architecto
+      canvassers:
+        - architecto
+      items:
+        - architecto
+      vat_registered: false
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: |-
+          {
+            "data": {...},
+            "message": "Request for quotation created successfully."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/request-quotations/{requestQuotation}'
+    metadata:
+      custom: []
+      groupName: 'Request Quotations'
+      groupDescription: 'APIs for managing request for quotations (RFQ)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Request Quotation'
+      description: 'Display the specified request for quotation.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      requestQuotation:
+        custom: []
+        name: requestQuotation
+        description: 'The request quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      requestQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...}
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "message": "Request quotation not found."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/request-quotations/{requestQuotation_id}'
+    metadata:
+      custom: []
+      groupName: 'Request Quotations'
+      groupDescription: 'APIs for managing request for quotations (RFQ)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update Request Quotation'
+      description: 'Update an existing request for quotation.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      requestQuotation_id:
+        custom: []
+        name: requestQuotation_id
+        description: 'The ID of the requestQuotation.'
+        required: true
+        example: 019c988d-d140-7231-953b-f922b069056f
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      requestQuotation:
+        custom: []
+        name: requestQuotation
+        description: 'The request quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      requestQuotation_id: 019c988d-d140-7231-953b-f922b069056f
+      requestQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      rfq_no:
+        custom: []
+        name: rfq_no
+        description: 'The RFQ number.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      signed_type:
+        custom: []
+        name: signed_type
+        description: 'The signed type (bac/lce).'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      rfq_date:
+        custom: []
+        name: rfq_date
+        description: 'The RFQ date.'
+        required: true
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      supplier_id:
+        custom: []
+        name: supplier_id
+        description: 'nullable The supplier ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      opening_dt:
+        custom: []
+        name: opening_dt
+        description: 'nullable The opening date/time.'
+        required: false
+        example: architecto
+        type: datetime
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_approval_id:
+        custom: []
+        name: sig_approval_id
+        description: 'The approval signatory ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      canvassers:
+        custom: []
+        name: canvassers
+        description: 'nullable List of canvasser user IDs.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      items:
+        custom: []
+        name: items
+        description: 'The RFQ items.'
+        required: true
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      vat_registered:
+        custom: []
+        name: vat_registered
+        description: 'nullable Whether supplier is VAT registered.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      'items.*.pr_item_id':
+        custom: []
+        name: 'items.*.pr_item_id'
+        description: 'The PR item ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'items.*.quantity':
+        custom: []
+        name: 'items.*.quantity'
+        description: 'Item quantity.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'items.*.unit_cost':
+        custom: []
+        name: 'items.*.unit_cost'
+        description: 'nullable Unit cost.'
+        required: false
+        example: 4326.41688
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'items.*.brand_model':
+        custom: []
+        name: 'items.*.brand_model'
+        description: 'nullable Brand/model.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      'items.*.included':
+        custom: []
+        name: 'items.*.included'
+        description: 'Whether the item is included.'
+        required: true
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      rfq_no: architecto
+      signed_type: architecto
+      rfq_date: architecto
+      supplier_id: architecto
+      opening_dt: architecto
+      sig_approval_id: architecto
+      canvassers:
+        - architecto
+      items:
+        - architecto
+      vat_registered: false
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Request for quotation updated successfully."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/request-quotations/{requestQuotation_id}/issue-canvassing'
+    metadata:
+      custom: []
+      groupName: 'Request Quotations'
+      groupDescription: 'APIs for managing request for quotations (RFQ)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Issue for Canvassing'
+      description: 'Mark the request quotation as canvassing.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      requestQuotation_id:
+        custom: []
+        name: requestQuotation_id
+        description: 'The ID of the requestQuotation.'
+        required: true
+        example: 019c988d-d140-7231-953b-f922b069056f
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      requestQuotation:
+        custom: []
+        name: requestQuotation
+        description: 'The request quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      requestQuotation_id: 019c988d-d140-7231-953b-f922b069056f
+      requestQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Request for quotation successfully marked as Canvassing."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/request-quotations/{requestQuotation_id}/canvass-complete'
+    metadata:
+      custom: []
+      groupName: 'Request Quotations'
+      groupDescription: 'APIs for managing request for quotations (RFQ)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Complete Canvassing'
+      description: 'Mark the request quotation as completed.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      requestQuotation_id:
+        custom: []
+        name: requestQuotation_id
+        description: 'The ID of the requestQuotation.'
+        required: true
+        example: 019c988d-d140-7231-953b-f922b069056f
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      requestQuotation:
+        custom: []
+        name: requestQuotation
+        description: 'The request quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      requestQuotation_id: 019c988d-d140-7231-953b-f922b069056f
+      requestQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Request for quotation successfully marked as Completed."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/request-quotations/{requestQuotation_id}/cancel'
+    metadata:
+      custom: []
+      groupName: 'Request Quotations'
+      groupDescription: 'APIs for managing request for quotations (RFQ)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Cancel Request Quotation'
+      description: 'Cancel the request quotation.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      requestQuotation_id:
+        custom: []
+        name: requestQuotation_id
+        description: 'The ID of the requestQuotation.'
+        required: true
+        example: 019c988d-d140-7231-953b-f922b069056f
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      requestQuotation:
+        custom: []
+        name: requestQuotation
+        description: 'The request quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      requestQuotation_id: 019c988d-d140-7231-953b-f922b069056f
+      requestQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Request for quotation successfully marked as Cancelled."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

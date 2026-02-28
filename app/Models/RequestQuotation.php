@@ -40,6 +40,7 @@ class RequestQuotation extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\RequestQuotationStatus::class,
             'status_timestamps' => 'array',
         ];
     }

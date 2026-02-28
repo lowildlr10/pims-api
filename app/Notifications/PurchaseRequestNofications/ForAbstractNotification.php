@@ -48,7 +48,7 @@ class ForAbstractNotification extends Notification implements ShouldQueue
             'title' => 'Ready for Abstract Preparation',
             'message' => "<q>Purchase Request - {$this->pr->pr_no}</q> with ".
                 "<q>RFQ - {$this->rfq->rfq_no}</q> is ready for abstract preparation ".
-                "based on request for quotations.",
+                'based on request for quotations.',
         ];
     }
 

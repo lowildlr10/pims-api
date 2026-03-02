@@ -33,9 +33,7 @@ class BidsAwardsCommitteeRepository implements BidsAwardsCommitteeRepositoryInte
                     ->orWhere('committee_name', 'ILIKE', "%{$search}%");
             });
         }
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
+
         if (in_array($sortDirection, ['asc', 'desc'])) {
             if ($columnSort === 'committee_name_formatted') {
                 $columnSort = 'committee_name';

@@ -37,10 +37,6 @@ class ProcurementModeRepository implements ProcurementModeRepositoryInterface
             });
         }
 
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
-
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'mode_name_formatted':

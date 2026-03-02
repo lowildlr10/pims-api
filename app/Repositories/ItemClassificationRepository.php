@@ -33,9 +33,7 @@ class ItemClassificationRepository implements ItemClassificationRepositoryInterf
                     ->orWhere('classification_name', 'ILIKE', "%{$search}%");
             });
         }
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
+
         if (in_array($sortDirection, ['asc', 'desc'])) {
             if ($columnSort === 'classification_name_formatted') {
                 $columnSort = 'classification_name';

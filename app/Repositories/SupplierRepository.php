@@ -43,10 +43,6 @@ class SupplierRepository implements SupplierRepositoryInterface
             });
         }
 
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
-
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'supplier_name_formatted':

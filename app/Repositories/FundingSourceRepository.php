@@ -40,10 +40,6 @@ class FundingSourceRepository implements FundingSourceRepositoryInterface
             });
         }
 
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
-
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'title_formatted':

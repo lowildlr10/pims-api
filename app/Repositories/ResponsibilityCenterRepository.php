@@ -34,9 +34,7 @@ class ResponsibilityCenterRepository implements ResponsibilityCenterRepositoryIn
                     ->orWhere('description', 'ILIKE', "%{$search}%");
             });
         }
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
+
         if (in_array($sortDirection, ['asc', 'desc'])) {
             if ($columnSort === 'description_formatted') {
                 $columnSort = 'description';

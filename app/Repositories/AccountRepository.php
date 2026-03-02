@@ -36,9 +36,7 @@ class AccountRepository implements AccountRepositoryInterface
                     ->orWhereRelation('classification', 'classification_name', 'ILIKE', "%{$search}%");
             });
         }
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
+
         if (in_array($sortDirection, ['asc', 'desc'])) {
             if ($columnSort === 'code_formatted') {
                 $columnSort = 'code';

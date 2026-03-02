@@ -37,10 +37,6 @@ class UnitIssueRepository implements UnitIssueRepositoryInterface
             });
         }
 
-        if (! $showInactive) {
-            $query->where('active', true);
-        }
-
         if (in_array($sortDirection, ['asc', 'desc'])) {
             switch ($columnSort) {
                 case 'unit_name_formatted':

@@ -189,7 +189,8 @@ class InspectionAcceptanceReportRepository implements InspectionAcceptanceReport
                 'acceptance.position:id,position_name',
                 'acceptance.designation:id,designation_name',
 
-                'purchase_request:id,section_id',
+                'purchase_request:id,department_id,section_id',
+                'purchase_request.department:id,department_name',
                 'purchase_request.section:id,section_name',
                 'purchase_order:id,po_no,po_date',
             ])->find($iarId);

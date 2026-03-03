@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 interface PurchaseRequestRepositoryInterface
 {
-    public function getAll(array $filters, ?string $userId): LengthAwarePaginator|Collection;
+    public function getAll(array $filters, ?string $userId, bool $hasFullAccess = false): LengthAwarePaginator|Collection;
 
     public function getById(string $id): ?Model;
 

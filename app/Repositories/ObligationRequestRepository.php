@@ -10,6 +10,8 @@ use App\Models\Company;
 use App\Models\ObligationRequest;
 use App\Models\ObligationRequestAccount;
 use App\Models\ObligationRequestFpp;
+use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
@@ -47,14 +49,16 @@ class ObligationRequestRepository implements ObligationRequestInterface
             ->select([
                 'id',
                 'purchase_order_id',
+                'payee_type',
                 'payee_id',
                 'obr_no',
                 'particulars',
+                'transaction_type',
                 'status',
             ])
             ->with([
                 'purchase_order:id,po_no',
-                'payee:id,supplier_name',
+                'payee',
             ]);
 
         if ($userId) {
@@ -71,7 +75,8 @@ class ObligationRequestRepository implements ObligationRequestInterface
                     ->orWhere('office', 'ILIKE', "%{$search}%")
                     ->orWhere('address', 'ILIKE', "%{$search}%")
                     ->orWhere('particulars', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%");
+                    ->orWhere('status', 'ILIKE', "%{$search}%")
+                    ->orWhereRaw('CAST(purchase_order_id AS TEXT) = ?', [$search]);
             });
         }
 
@@ -85,7 +90,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
     public function getById(string $id): ?ObligationRequest
     {
         return ObligationRequest::with([
-            'payee:id,supplier_name',
+            'payee',
             'responsibility_center:id,code',
             'purchase_order:id,po_no,total_amount',
             'signatory_budget:id,user_id',
@@ -109,6 +114,8 @@ class ObligationRequestRepository implements ObligationRequestInterface
 
     public function storeUpdate(array $data, ?ObligationRequest $obligationRequest = null): ObligationRequest
     {
+        $data = $this->resolvePayeeType($data);
+
         if (! empty($obligationRequest)) {
             $obligationRequest->update($data);
         } else {
@@ -137,6 +144,21 @@ class ObligationRequestRepository implements ObligationRequestInterface
         );
 
         return $obligationRequest;
+    }
+
+    private function resolvePayeeType(array $data): array
+    {
+        if (empty($data['payee_id']) || ! empty($data['payee_type'])) {
+            return $data;
+        }
+
+        if (Supplier::where('id', $data['payee_id'])->exists()) {
+            $data['payee_type'] = 'App\\Models\\Supplier';
+        } elseif (User::where('id', $data['payee_id'])->exists()) {
+            $data['payee_type'] = 'App\\Models\\User';
+        }
+
+        return $data;
     }
 
     private function storeUpdateFpps(Collection $fpps, ObligationRequest $obligationRequest): void
@@ -249,6 +271,13 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 ->toArray()
                 ?? []
         );
+        $accountAmounts = $data->accounts->isNotEmpty()
+            ? implode(
+                '<br />',
+                $data->accounts->map(fn ($account) => number_format($account->amount, 2))
+                    ->toArray()
+            )
+            : number_format($data->total_amount, 2);
         $amount = number_format($data->total_amount, 2);
         $complianceStatus = $data->compliance_status;
         $headName = $data->signatory_head?->user?->fullname ?? '';
@@ -458,8 +487,8 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 >'.$accounts.'</td>
                 <td
                     width="18.52%"
-                    align="center"
-                >'.$amount.'</td>
+                    align="right"
+                >'.$accountAmounts.'</td>
             </tr>
             <tr>
                 <td
@@ -516,7 +545,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 <td
                     style="border-top: 2px solid black; border-bottom: 2px solid black;"
                     width="18.52%"
-                    align="center"
+                    align="right"
                 >P'.$amount.'</td>
             </tr></tbody></table>
         ';

@@ -364,7 +364,7 @@ endpoints:
         name: inventoryIssuance_id
         description: 'The ID of the inventoryIssuance.'
         required: true
-        example: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+        example: architecto
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -382,7 +382,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inventoryIssuance_id: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+      inventoryIssuance_id: architecto
       inventoryIssuance: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -428,7 +428,7 @@ endpoints:
         name: inventoryIssuance_id
         description: 'The ID of the inventoryIssuance.'
         required: true
-        example: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+        example: architecto
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -446,7 +446,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inventoryIssuance_id: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+      inventoryIssuance_id: architecto
       inventoryIssuance: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -675,7 +675,7 @@ endpoints:
         name: inventoryIssuance_id
         description: 'The ID of the inventoryIssuance.'
         required: true
-        example: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+        example: architecto
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -693,7 +693,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inventoryIssuance_id: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+      inventoryIssuance_id: architecto
       inventoryIssuance: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -740,7 +740,7 @@ endpoints:
         name: inventoryIssuance_id
         description: 'The ID of the inventoryIssuance.'
         required: true
-        example: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+        example: architecto
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -758,7 +758,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inventoryIssuance_id: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+      inventoryIssuance_id: architecto
       inventoryIssuance: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -805,7 +805,7 @@ endpoints:
         name: inventoryIssuance_id
         description: 'The ID of the inventoryIssuance.'
         required: true
-        example: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+        example: architecto
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -823,7 +823,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inventoryIssuance_id: 019c98a0-315b-72d9-8a98-b12fbf4fd643
+      inventoryIssuance_id: architecto
       inventoryIssuance: architecto
     queryParameters: []
     cleanQueryParameters: []

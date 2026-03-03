@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Enums\PurchaseRequestStatus;
 use App\Helpers\FileHelper;
 use App\Interfaces\PurchaseRequestRepositoryInterface;
 use App\Models\Company;
@@ -42,7 +43,7 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
-    public function getAll(array $filters, ?string $userId): LengthAwarePaginator|Collection
+    public function getAll(array $filters, ?string $userId, bool $hasFullAccess = false): LengthAwarePaginator|Collection
     {
         $query = $this->model->query()
             ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
@@ -61,9 +62,14 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
             ? explode(',', $filters['status'])
             : [];
 
-        if ($userId) {
-            $query->where('requested_by_id', $userId);
-        }
+        $query->where(function ($q) use ($userId, $hasFullAccess) {
+            if ($userId) {
+                $q->where('requested_by_id', $userId);
+            }
+            if ($hasFullAccess) {
+                $q->orWhere('status', '!=', PurchaseRequestStatus::DRAFT);
+            }
+        });
 
         if (! empty($search)) {
             $query->where(function ($q) use ($search) {
@@ -538,6 +544,24 @@ class PurchaseRequestRepository implements PurchaseRequestRepositoryInterface
 
         $x = $pdf->GetX();
         $y = $pdf->GetY();
+
+        if (! empty($data->notes)) {
+            $notes = trim(str_replace("\r", '<br />', $data->notes));
+            $notes = str_replace("\n", '<br />', $notes);
+            $htmlNotes = '
+                <div style="border: 1px solid black;">
+                    <table cellpadding="2">
+                        <tr>
+                            <td style="color: black; font-size: 9px; font-style: italic;" width="9%">Notes:</td>
+                            <td width="91%" style="font-weight: bold; text-align: justify; font-size: 10px;">'.$notes.'</td>
+                        </tr>
+                    </table>
+                </div>
+            ';
+            $pdf->SetFont($this->fontArial, '', 10);
+            $pdf->writeHTML($htmlNotes, ln: false);
+            $pdf->Ln(0);
+        }
 
         $purpose = trim(str_replace("\r", '<br />', $data->purpose));
         $purpose = str_replace("\n", '<br />', $purpose);

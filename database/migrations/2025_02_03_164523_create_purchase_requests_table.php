@@ -27,6 +27,7 @@ return new class extends Migration
             $table->date('sai_date')->nullable();
             $table->string('alobs_no')->nullable();
             $table->date('alobs_date')->nullable();
+            $table->text('notes')->nullable();
             $table->text('purpose');
             $table->uuid('funding_source_id')->nullable();
             $table->foreign('funding_source_id')

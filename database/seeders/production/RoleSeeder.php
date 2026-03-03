@@ -51,7 +51,7 @@ class RoleSeeder extends Seeder
                 'user:*',
 
                 'pr:view,create,update,submit,issue-rfq,cancel,print',
-                'rfq:view,create,update,issue,cancel,print',
+                'rfq:view,print',
                 'aoq:view,print',
                 'po:view,print',
                 'iar:view,print',

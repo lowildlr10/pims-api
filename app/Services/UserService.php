@@ -48,7 +48,7 @@ class UserService
 
         $data['position_id'] = $position->id;
         $data['designation_id'] = $designation->id;
-        $data['department_id'] = $section?->department_id;
+        $data['department_id'] = $section?->department_id ?? $data['department_id'];
         $data['avatar'] = null;
         $data['signature'] = null;
         $data['password'] = bcrypt($data['password']);

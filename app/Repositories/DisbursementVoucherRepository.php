@@ -44,14 +44,16 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
             ->select([
                 'id',
                 'purchase_order_id',
+                'payee_type',
                 'payee_id',
                 'dv_no',
                 'explanation',
+                'transaction_type',
                 'status',
             ])
             ->with([
                 'purchase_order:id,po_no',
-                'payee:id,supplier_name',
+                'payee',
             ]);
 
         if ($userId) {
@@ -84,7 +86,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
     public function getById(string $id): ?DisbursementVoucher
     {
         return DisbursementVoucher::with([
-            'payee:id,supplier_name,tin_no',
+            'payee',
             'responsibility_center:id,code',
             'purchase_order:id,po_no,total_amount',
             'obligation_request:id,obr_no',

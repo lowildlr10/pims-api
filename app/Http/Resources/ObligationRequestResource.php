@@ -13,11 +13,33 @@ class ObligationRequestResource extends JsonResource
             'id' => $this->id,
             'purchase_request_id' => $this->purchase_request_id,
             'purchase_order_id' => $this->purchase_order_id,
+            'transaction_type' => $this->transaction_type?->value,
+            'transaction_type_formatted' => $this->transaction_type?->label(),
+            'payee_type' => $this->payee_type,
+            'payee_id' => $this->payee_id,
+            'payee' => $this->when($this->payee, function () {
+                if ($this->payee instanceof \App\Models\Supplier) {
+                    return new SupplierResource($this->payee);
+                }
+
+                return null;
+            }),
+            'payee_name' => $this->when($this->payee, function () {
+                if ($this->payee instanceof \App\Models\Supplier) {
+                    return $this->payee->supplier_name;
+                }
+
+                if ($this->payee instanceof \App\Models\User) {
+                    return $this->payee->fullname;
+                }
+
+                return null;
+            }),
             'obr_no' => $this->obr_no,
             'office' => $this->office,
             'address' => $this->address,
             'particulars' => $this->particulars,
-            'total_amount' => $this->total_amount,
+            'total_amount' => (float) $this->total_amount,
             'total_amount_formatted' => number_format($this->total_amount, 2),
             'funding' => $this->funding,
             'compliance_status' => $this->compliance_status,
@@ -29,7 +51,6 @@ class ObligationRequestResource extends JsonResource
             'status' => $this->status?->value,
             'status_formatted' => $this->status?->label(),
             'status_timestamps' => $this->status_timestamps,
-            'payee' => new SupplierResource($this->whenLoaded('payee')),
             'responsibility_center_id' => $this->responsibility_center_id,
             'responsibility_center' => new ResponsibilityCenterResource($this->whenLoaded('responsibility_center')),
             'purchase_order' => new PurchaseOrderResource($this->whenLoaded('purchase_order')),

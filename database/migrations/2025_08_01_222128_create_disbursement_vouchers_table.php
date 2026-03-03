@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('disbursement_vouchers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id');
+            $table->uuid('purchase_request_id')->nullable();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
-            $table->uuid('purchase_order_id');
+            $table->uuid('purchase_order_id')->nullable();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
@@ -25,12 +25,14 @@ return new class extends Migration
             $table->foreign('obligation_request_id')
                 ->references('id')
                 ->on('obligation_requests');
+            $table->enum('transaction_type', [
+                'procurement',
+                'bills_payment',
+            ])->default('procurement');
             $table->string('dv_no');
             $table->enum('mode_payment', ['check', 'cash', 'other'])->nullable();
-            $table->uuid('payee_id');
-            $table->foreign('payee_id')
-                ->references('id')
-                ->on('suppliers');
+            $table->string('payee_type')->nullable();
+            $table->uuid('payee_id')->nullable();
             $table->text('address')->nullable();
             $table->string('office')->nullable();
             $table->uuid('responsibility_center_id')->nullable();

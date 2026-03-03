@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class DisbursementVoucher extends Model
 {
@@ -20,8 +21,10 @@ class DisbursementVoucher extends Model
         'purchase_request_id',
         'purchase_order_id',
         'obligation_request_id',
+        'transaction_type',
         'dv_no',
         'mode_payment',
+        'payee_type',
         'payee_id',
         'address',
         'office',
@@ -57,6 +60,7 @@ class DisbursementVoucher extends Model
     {
         return [
             'status' => \App\Enums\DisbursementVoucherStatus::class,
+            'transaction_type' => \App\Enums\TransactionType::class,
             'accountant_certified_choices' => 'array',
             'status_timestamps' => 'array',
             'accountant_signed_date' => 'datetime',
@@ -71,9 +75,9 @@ class DisbursementVoucher extends Model
     /**
      * The disbursement voucher that has one payee.
      */
-    public function payee(): HasOne
+    public function payee(): MorphTo
     {
-        return $this->hasOne(Supplier::class, 'id', 'payee_id');
+        return $this->morphTo();
     }
 
     /**

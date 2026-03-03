@@ -27,6 +27,7 @@ class PurchaseRequest extends Model
         'sai_date',
         'alobs_no',
         'alobs_date',
+        'notes',
         'purpose',
         'funding_source_id',
         'requested_by_id',

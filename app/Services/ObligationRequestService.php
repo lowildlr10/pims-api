@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Enums\ObligationRequestStatus;
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\TransactionType;
+use App\Helpers\RequiredFieldsValidationHelper;
 use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\ObligationRequestInterface;
 use App\Models\ObligationRequest;
@@ -44,6 +46,13 @@ class ObligationRequestService
 
     public function create(array $data): ObligationRequest
     {
+        $transactionType = TransactionType::from($data['transaction_type'] ?? 'procurement');
+
+        if ($transactionType === TransactionType::BILLS_PAYMENT) {
+            $data['purchase_request_id'] = null;
+            $data['purchase_order_id'] = null;
+        }
+
         $obr = $this->repository->storeUpdate($data);
 
         $this->logRepository->create([
@@ -102,6 +111,30 @@ class ObligationRequestService
             ], isError: true);
 
             throw new \Exception($message);
+        }
+
+        $requiredFields = [
+            'payee_id' => 'Payee',
+            'obr_no' => 'OBR Number',
+            'address' => 'Address',
+            'responsibility_center_id' => 'Responsibility Center',
+            'particulars' => 'Particulars',
+            'total_amount' => 'Total Amount',
+            'sig_head_id' => 'Head Signatory',
+            'sig_budget_id' => 'Budget Signatory',
+        ];
+
+        $missingFields = RequiredFieldsValidationHelper::getMissingFields($requiredFields, $obr);
+
+        if (! empty($missingFields)) {
+            $this->logRepository->create([
+                'message' => 'Cannot set obligation request to pending. Missing required fields.',
+                'log_id' => $obr->id,
+                'log_module' => 'obr',
+                'data' => ['missing_fields' => $missingFields],
+            ], isError: true);
+
+            throw new \Exception('Cannot set obligation request to pending. Please fill out the following fields first: '.implode(', ', $missingFields));
         }
 
         $purchaseOrder = PurchaseOrder::find($obr->purchase_order_id);
@@ -198,6 +231,8 @@ class ObligationRequestService
             'purchase_request_id' => $obr->purchase_request_id,
             'purchase_order_id' => $obr->purchase_order_id,
             'obligation_request_id' => $obr->id,
+            'transaction_type' => $obr->transaction_type?->value,
+            'payee_type' => $obr->payee_type,
             'payee_id' => $obr->payee_id,
             'office' => $obr->office,
             'address' => $obr->address ?? null,

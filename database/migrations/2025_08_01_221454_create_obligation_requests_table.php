@@ -13,14 +13,18 @@ return new class extends Migration
     {
         Schema::create('obligation_requests', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id');
+            $table->uuid('purchase_request_id')->nullable();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
-            $table->uuid('purchase_order_id');
+            $table->uuid('purchase_order_id')->nullable();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
+            $table->enum('transaction_type', [
+                'procurement',
+                'bills_payment',
+            ])->default('procurement');
             $table->json('funding')
                 ->nullable()
                 ->default(json_encode([
@@ -29,10 +33,8 @@ return new class extends Migration
                     'gf_mdrrmf_5' => false,
                     'sef' => false,
                 ]));
-            $table->uuid('payee_id');
-            $table->foreign('payee_id')
-                ->references('id')
-                ->on('suppliers');
+            $table->string('payee_type')->nullable();
+            $table->uuid('payee_id')->nullable();
             $table->string('obr_no');
             $table->string('office')->nullable();
             $table->text('address')->nullable();

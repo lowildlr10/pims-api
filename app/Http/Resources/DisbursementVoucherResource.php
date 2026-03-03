@@ -14,14 +14,35 @@ class DisbursementVoucherResource extends JsonResource
             'purchase_request_id' => $this->purchase_request_id,
             'purchase_order_id' => $this->purchase_order_id,
             'obligation_request_id' => $this->obligation_request_id,
+            'transaction_type' => $this->transaction_type?->value,
+            'transaction_type_formatted' => $this->transaction_type?->label(),
             'dv_no' => $this->dv_no,
             'mode_payment' => $this->mode_payment,
+            'payee_type' => $this->payee_type,
             'payee_id' => $this->payee_id,
+            'payee' => $this->when($this->payee, function () {
+                if ($this->payee instanceof \App\Models\Supplier) {
+                    return new SupplierResource($this->payee);
+                }
+
+                return null;
+            }),
+            'payee_name' => $this->when($this->payee, function () {
+                if ($this->payee instanceof \App\Models\Supplier) {
+                    return $this->payee->supplier_name;
+                }
+
+                if ($this->payee instanceof \App\Models\User) {
+                    return $this->payee->fullname;
+                }
+
+                return null;
+            }),
             'address' => $this->address,
             'office' => $this->office,
             'responsibility_center_id' => $this->responsibility_center_id,
             'explanation' => $this->explanation,
-            'total_amount' => $this->total_amount,
+            'total_amount' => (float) $this->total_amount,
             'total_amount_formatted' => number_format($this->total_amount, 2),
             'accountant_certified_choices' => $this->accountant_certified_choices,
             'sig_accountant_id' => $this->sig_accountant_id,
@@ -42,7 +63,6 @@ class DisbursementVoucherResource extends JsonResource
             'status' => $this->status?->value,
             'status_formatted' => $this->status?->label(),
             'status_timestamps' => $this->status_timestamps,
-            'payee' => new SupplierResource($this->whenLoaded('payee')),
             'responsibility_center' => new ResponsibilityCenterResource($this->whenLoaded('responsibility_center')),
             'purchase_order' => new PurchaseOrderResource($this->whenLoaded('purchase_order')),
             'obligation_request' => $this->whenLoaded('obligation_request', fn () => [

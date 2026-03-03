@@ -5,7 +5,6 @@ use App\Http\Controllers\V1 as MainControllers;
 use App\Http\Controllers\V1\Inventory as InventoryControllers;
 use App\Http\Controllers\V1\Library as LibraryControllers;
 use App\Http\Controllers\V1\Procurement as ProcurementControllers;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -293,22 +292,25 @@ Route::prefix('v1')->group(function () {
 
         // Obligation Requests
         Route::name('obligation_requests.')->prefix('/obligation-requests')->group(function () {
-            Route::get('/', [ProcurementControllers\ObligationRequestStatusController::class, 'index'])
+            Route::get('/', [ProcurementControllers\ObligationRequestController::class, 'index'])
                 ->middleware('ability:super:*,head:*,budget:*,obr:*,obr:view')
                 ->name('index');
-            Route::get('/{obligationRequest}', [ProcurementControllers\ObligationRequestStatusController::class, 'show'])
+            Route::get('/{obligationRequest}', [ProcurementControllers\ObligationRequestController::class, 'show'])
                 ->middleware('ability:super:*,head:*,budget:*,obr:*,obr:view')
                 ->name('show');
-            Route::put('/{obligationRequest}', [ProcurementControllers\ObligationRequestStatusController::class, 'update'])
+            Route::post('/', [ProcurementControllers\ObligationRequestController::class, 'store'])
+                ->middleware('ability:super:*,budget:*,obr:*,obr:create')
+                ->name('store');
+            Route::put('/{obligationRequest}', [ProcurementControllers\ObligationRequestController::class, 'update'])
                 ->middleware('ability:super:*,budget:*,obr:*,obr:update')
                 ->name('update');
-            Route::put('/{obligationRequest}/pending', [ProcurementControllers\ObligationRequestStatusController::class, 'pending'])
+            Route::put('/{obligationRequest}/pending', [ProcurementControllers\ObligationRequestController::class, 'pending'])
                 ->middleware('ability:super:*,budget:*,obr:*,obr:pending')
                 ->name('pending');
-            Route::put('/{obligationRequest}/disapprove', [ProcurementControllers\ObligationRequestStatusController::class, 'disapprove'])
+            Route::put('/{obligationRequest}/disapprove', [ProcurementControllers\ObligationRequestController::class, 'disapprove'])
                 ->middleware('ability:super:*,budget:*,obr:*,obr:disapprove')
                 ->name('disapprove');
-            Route::put('/{obligationRequest}/obligate', [ProcurementControllers\ObligationRequestStatusController::class, 'obligate'])
+            Route::put('/{obligationRequest}/obligate', [ProcurementControllers\ObligationRequestController::class, 'obligate'])
                 ->middleware('ability:super:*,budget:*,obr:*,obr:obligate')
                 ->name('obligate');
         });
@@ -560,6 +562,11 @@ Route::prefix('v1')->group(function () {
                 ->middleware('ability:super:*,lib-signatory:*,lib-signatory:update')
                 ->name('update');
         });
+
+        // Library - Payees (combined suppliers and users)
+        Route::get('/libraries/payees', [LibraryControllers\PayeeController::class, 'index'])
+            ->middleware('ability:super:*,head:*,budget:*,obr:*,obr:view')
+            ->name('payees.index');
 
         // Library - Suppliers
         Route::name('suppliers.')->prefix('/libraries/suppliers')->group(function () {

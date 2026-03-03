@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\DisbursementVoucherStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Helpers\RequiredFieldsValidationHelper;
 use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\DisbursementVoucherInterface;
 use App\Models\DisbursementVoucher;
@@ -102,22 +103,28 @@ class DisbursementVoucherService
             throw new \Exception($message);
         }
 
-        $purchaseOrder = PurchaseOrder::find($dv->purchase_order_id);
+        $requiredFields = [
+            'dv_no' => 'DV Number',
+            'address' => 'Address',
+            'office' => 'Office',
+            'responsibility_center_id' => 'Responsibility Center',
+            'explanation' => 'Explanation',
+            'sig_accountant_id' => 'Accountant Signatory',
+            'sig_treasurer_id' => 'Treasurer Signatory',
+            'sig_head_id' => 'Head Signatory',
+        ];
 
-        if ($purchaseOrder) {
-            $purchaseOrder->update([
-                'status' => PurchaseOrderStatus::FOR_DISBURSEMENT,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'for_disbursement_at', $purchaseOrder->status_timestamps
-                ),
-            ]);
+        $missingFields = RequiredFieldsValidationHelper::getMissingFields($requiredFields, $dv);
 
+        if (! empty($missingFields)) {
             $this->logRepository->create([
-                'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').' order successfully marked as for disbursement.',
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ]);
+                'message' => 'Cannot set disbursement voucher to pending. Missing required fields.',
+                'log_id' => $dv->id,
+                'log_module' => 'dv',
+                'data' => ['missing_fields' => $missingFields],
+            ], isError: true);
+
+            throw new \Exception('Cannot set disbursement voucher to pending. Please fill out the following fields first: '.implode(', ', $missingFields));
         }
 
         $dv->update([
@@ -237,6 +244,29 @@ class DisbursementVoucherService
             ], isError: true);
 
             throw new \Exception($message);
+        }
+
+        $requiredFields = [
+            'check_no' => 'Check Number',
+            'bank_name' => 'Bank Name',
+            'check_date' => 'Check Date',
+            'received_name' => 'Received By',
+            'received_date' => 'Received Date',
+            'jev_no' => 'JEV Number',
+            'jev_date' => 'JEV Date',
+        ];
+
+        $missingFields = RequiredFieldsValidationHelper::getMissingFields($requiredFields, $dv);
+
+        if (! empty($missingFields)) {
+            $this->logRepository->create([
+                'message' => 'Cannot set disbursement voucher to paid. Missing required fields.',
+                'log_id' => $dv->id,
+                'log_module' => 'dv',
+                'data' => ['missing_fields' => $missingFields],
+            ], isError: true);
+
+            throw new \Exception('Cannot set disbursement voucher to paid. Please fill out the following fields first: '.implode(', ', $missingFields));
         }
 
         $dv->update([

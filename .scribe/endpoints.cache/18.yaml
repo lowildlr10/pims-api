@@ -153,7 +153,7 @@ endpoints:
         name: obligationRequest_id
         description: 'The ID of the obligationRequest.'
         required: true
-        example: 019c988d-5c40-73be-8979-4ac2859aa87d
+        example: 019cb36a-36f7-7152-8f3b-dd1890023169
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -171,7 +171,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      obligationRequest_id: 019c988d-5c40-73be-8979-4ac2859aa87d
+      obligationRequest_id: 019cb36a-36f7-7152-8f3b-dd1890023169
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -185,6 +185,232 @@ endpoints:
         content: |-
           {
             "data": {...}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/obligation-requests
+    metadata:
+      custom: []
+      groupName: 'Obligation Requests'
+      groupDescription: 'APIs for managing obligation requests'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Create Obligation Request'
+      description: 'Create a new obligation request for bills payment (bypassing procurement workflow).'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      transaction_type:
+        custom: []
+        name: transaction_type
+        description: 'The transaction type (procurement/bills_payment).'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      payee_id:
+        custom: []
+        name: payee_id
+        description: 'The payee UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      office:
+        custom: []
+        name: office
+        description: 'nullable The office.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      address:
+        custom: []
+        name: address
+        description: 'nullable The address.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      responsibility_center_id:
+        custom: []
+        name: responsibility_center_id
+        description: 'The responsibility center ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      particulars:
+        custom: []
+        name: particulars
+        description: 'The particulars.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      total_amount:
+        custom: []
+        name: total_amount
+        description: 'The total amount.'
+        required: true
+        example: 4326.41688
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      funding:
+        custom: []
+        name: funding
+        description: 'nullable The funding details.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      compliance_status:
+        custom: []
+        name: compliance_status
+        description: 'nullable The compliance status.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_head_id:
+        custom: []
+        name: sig_head_id
+        description: 'nullable The head signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_budget_id:
+        custom: []
+        name: sig_budget_id
+        description: 'nullable The budget signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      fpps:
+        custom: []
+        name: fpps
+        description: 'nullable The FPPs.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      accounts:
+        custom: []
+        name: accounts
+        description: 'nullable The accounts.'
+        required: false
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      payee_type:
+        custom: []
+        name: payee_type
+        description: 'The payee type (App\Models\Supplier or App\Models\User).'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      transaction_type: architecto
+      payee_id: architecto
+      office: architecto
+      address: architecto
+      responsibility_center_id: architecto
+      particulars: architecto
+      total_amount: 4326.41688
+      funding:
+        - architecto
+      compliance_status:
+        - architecto
+      sig_head_id: architecto
+      sig_budget_id: architecto
+      fpps:
+        - architecto
+      accounts:
+        - architecto
+      payee_type: architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 201
+        content: |-
+          {
+            "data": {...},
+            "message": "Obligation request created successfully."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
           }
         headers: []
         description: ''
@@ -217,7 +443,7 @@ endpoints:
         name: obligationRequest_id
         description: 'The ID of the obligationRequest.'
         required: true
-        example: 019c988d-5c40-73be-8979-4ac2859aa87d
+        example: 019cb36a-36f7-7152-8f3b-dd1890023169
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -235,11 +461,22 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      obligationRequest_id: 019c988d-5c40-73be-8979-4ac2859aa87d
+      obligationRequest_id: 019cb36a-36f7-7152-8f3b-dd1890023169
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
     bodyParameters:
+      obr_no:
+        custom: []
+        name: obr_no
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
       funding:
         custom: []
         name: funding
@@ -388,6 +625,7 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
+      obr_no: architecto
       funding:
         - architecto
       office: architecto
@@ -455,7 +693,7 @@ endpoints:
         name: obligationRequest_id
         description: 'The ID of the obligationRequest.'
         required: true
-        example: 019c988d-5c40-73be-8979-4ac2859aa87d
+        example: 019cb36a-36f7-7152-8f3b-dd1890023169
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -473,7 +711,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      obligationRequest_id: 019c988d-5c40-73be-8979-4ac2859aa87d
+      obligationRequest_id: 019cb36a-36f7-7152-8f3b-dd1890023169
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -529,7 +767,7 @@ endpoints:
         name: obligationRequest_id
         description: 'The ID of the obligationRequest.'
         required: true
-        example: 019c988d-5c40-73be-8979-4ac2859aa87d
+        example: 019cb36a-36f7-7152-8f3b-dd1890023169
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -547,7 +785,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      obligationRequest_id: 019c988d-5c40-73be-8979-4ac2859aa87d
+      obligationRequest_id: 019cb36a-36f7-7152-8f3b-dd1890023169
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -615,7 +853,7 @@ endpoints:
         name: obligationRequest_id
         description: 'The ID of the obligationRequest.'
         required: true
-        example: 019c988d-5c40-73be-8979-4ac2859aa87d
+        example: 019cb36a-36f7-7152-8f3b-dd1890023169
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -633,7 +871,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      obligationRequest_id: 019c988d-5c40-73be-8979-4ac2859aa87d
+      obligationRequest_id: 019cb36a-36f7-7152-8f3b-dd1890023169
       id: architecto
     queryParameters: []
     cleanQueryParameters: []

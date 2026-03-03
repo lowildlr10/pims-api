@@ -477,6 +477,16 @@
                             </li>
                                                                         </ul>
                             </ul>
+                    <ul id="tocify-header-library-payees" class="tocify-header">
+                <li class="tocify-item level-1" data-unique="library-payees">
+                    <a href="#library-payees">Library - Payees</a>
+                </li>
+                                    <ul id="tocify-subheader-library-payees" class="tocify-subheader">
+                                                    <li class="tocify-item level-2" data-unique="library-payees-GETapi-v1-libraries-payees">
+                                <a href="#library-payees-GETapi-v1-libraries-payees">List Payees</a>
+                            </li>
+                                                                        </ul>
+                            </ul>
                     <ul id="tocify-header-library-payment-terms" class="tocify-header">
                 <li class="tocify-item level-1" data-unique="library-payment-terms">
                     <a href="#library-payment-terms">Library - Payment Terms</a>
@@ -635,6 +645,9 @@
                                                                                 <li class="tocify-item level-2" data-unique="obligation-requests-GETapi-v1-obligation-requests--obligationRequest_id-">
                                 <a href="#obligation-requests-GETapi-v1-obligation-requests--obligationRequest_id-">Get Obligation Request</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="obligation-requests-POSTapi-v1-obligation-requests">
+                                <a href="#obligation-requests-POSTapi-v1-obligation-requests">Create Obligation Request</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="obligation-requests-PUTapi-v1-obligation-requests--obligationRequest_id-">
                                 <a href="#obligation-requests-PUTapi-v1-obligation-requests--obligationRequest_id-">Update Obligation Request</a>
                             </li>
@@ -779,7 +792,7 @@
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: February 28, 2026</li>
+        <li>Last updated: March 3, 2026</li>
     </ul>
 </div>
 
@@ -1183,7 +1196,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17" \
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -1210,7 +1223,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17"
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e"
 );
 
 const headers = {
@@ -1346,10 +1359,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="abstractQuotation_id"                data-endpoint="PUTapi-v1-abstract-quotations--abstractQuotation_id-"
-               value="019c987a-d831-700b-abcb-5ef9227afc17"
+               value="019cb2e4-5331-7171-acde-facc6257d59e"
                data-component="url">
     <br>
-<p>The ID of the abstractQuotation. Example: <code>019c987a-d831-700b-abcb-5ef9227afc17</code></p>
+<p>The ID of the abstractQuotation. Example: <code>019cb2e4-5331-7171-acde-facc6257d59e</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>abstractQuotation</code></b>&nbsp;&nbsp;
@@ -1561,14 +1574,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17/revert" \
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e/revert" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17/revert"
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e/revert"
 );
 
 const headers = {
@@ -1684,10 +1697,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="abstractQuotation_id"                data-endpoint="PUTapi-v1-abstract-quotations--abstractQuotation_id--revert"
-               value="019c987a-d831-700b-abcb-5ef9227afc17"
+               value="019cb2e4-5331-7171-acde-facc6257d59e"
                data-component="url">
     <br>
-<p>The ID of the abstractQuotation. Example: <code>019c987a-d831-700b-abcb-5ef9227afc17</code></p>
+<p>The ID of the abstractQuotation. Example: <code>019cb2e4-5331-7171-acde-facc6257d59e</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>abstractQuotation</code></b>&nbsp;&nbsp;
@@ -1716,14 +1729,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17/pending" \
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e/pending" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17/pending"
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e/pending"
 );
 
 const headers = {
@@ -1839,10 +1852,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="abstractQuotation_id"                data-endpoint="PUTapi-v1-abstract-quotations--abstractQuotation_id--pending"
-               value="019c987a-d831-700b-abcb-5ef9227afc17"
+               value="019cb2e4-5331-7171-acde-facc6257d59e"
                data-component="url">
     <br>
-<p>The ID of the abstractQuotation. Example: <code>019c987a-d831-700b-abcb-5ef9227afc17</code></p>
+<p>The ID of the abstractQuotation. Example: <code>019cb2e4-5331-7171-acde-facc6257d59e</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>abstractQuotation</code></b>&nbsp;&nbsp;
@@ -1871,14 +1884,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17/approve" \
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e/approve" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/abstract-quotations/019c987a-d831-700b-abcb-5ef9227afc17/approve"
+    "http://localhost/api/v1/abstract-quotations/019cb2e4-5331-7171-acde-facc6257d59e/approve"
 );
 
 const headers = {
@@ -1994,10 +2007,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="abstractQuotation_id"                data-endpoint="PUTapi-v1-abstract-quotations--abstractQuotation_id--approve"
-               value="019c987a-d831-700b-abcb-5ef9227afc17"
+               value="019cb2e4-5331-7171-acde-facc6257d59e"
                data-component="url">
     <br>
-<p>The ID of the abstractQuotation. Example: <code>019c987a-d831-700b-abcb-5ef9227afc17</code></p>
+<p>The ID of the abstractQuotation. Example: <code>019cb2e4-5331-7171-acde-facc6257d59e</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>abstractQuotation</code></b>&nbsp;&nbsp;
@@ -5849,14 +5862,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a" \
+    --get "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
 );
 
 const headers = {
@@ -5962,10 +5975,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="disbursementVoucher_id"                data-endpoint="GETapi-v1-disbursement-vouchers--disbursementVoucher_id-"
-               value="019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+               value="019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
                data-component="url">
     <br>
-<p>The ID of the disbursementVoucher. Example: <code>019ca34c-dfe8-70a5-bb57-155823ff3c8a</code></p>
+<p>The ID of the disbursementVoucher. Example: <code>019cb3d5-7193-71bc-8dd5-3f2a484fbd7f</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -5994,7 +6007,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a" \
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -6027,7 +6040,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
 );
 
 const headers = {
@@ -6169,10 +6182,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="disbursementVoucher_id"                data-endpoint="PUTapi-v1-disbursement-vouchers--disbursementVoucher_id-"
-               value="019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+               value="019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
                data-component="url">
     <br>
-<p>The ID of the disbursementVoucher. Example: <code>019ca34c-dfe8-70a5-bb57-155823ff3c8a</code></p>
+<p>The ID of the disbursementVoucher. Example: <code>019cb3d5-7193-71bc-8dd5-3f2a484fbd7f</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -6468,14 +6481,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/pending" \
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/pending" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/pending"
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/pending"
 );
 
 const headers = {
@@ -6591,10 +6604,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="disbursementVoucher_id"                data-endpoint="PUTapi-v1-disbursement-vouchers--disbursementVoucher_id--pending"
-               value="019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+               value="019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
                data-component="url">
     <br>
-<p>The ID of the disbursementVoucher. Example: <code>019ca34c-dfe8-70a5-bb57-155823ff3c8a</code></p>
+<p>The ID of the disbursementVoucher. Example: <code>019cb3d5-7193-71bc-8dd5-3f2a484fbd7f</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -6623,7 +6636,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/disapprove" \
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/disapprove" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -6634,7 +6647,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/disapprove"
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/disapprove"
 );
 
 const headers = {
@@ -6754,10 +6767,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="disbursementVoucher_id"                data-endpoint="PUTapi-v1-disbursement-vouchers--disbursementVoucher_id--disapprove"
-               value="019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+               value="019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
                data-component="url">
     <br>
-<p>The ID of the disbursementVoucher. Example: <code>019ca34c-dfe8-70a5-bb57-155823ff3c8a</code></p>
+<p>The ID of the disbursementVoucher. Example: <code>019cb3d5-7193-71bc-8dd5-3f2a484fbd7f</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -6799,14 +6812,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/disburse" \
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/disburse" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/disburse"
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/disburse"
 );
 
 const headers = {
@@ -6922,10 +6935,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="disbursementVoucher_id"                data-endpoint="PUTapi-v1-disbursement-vouchers--disbursementVoucher_id--disburse"
-               value="019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+               value="019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
                data-component="url">
     <br>
-<p>The ID of the disbursementVoucher. Example: <code>019ca34c-dfe8-70a5-bb57-155823ff3c8a</code></p>
+<p>The ID of the disbursementVoucher. Example: <code>019cb3d5-7193-71bc-8dd5-3f2a484fbd7f</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -6954,14 +6967,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/paid" \
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/paid" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/disbursement-vouchers/019ca34c-dfe8-70a5-bb57-155823ff3c8a/paid"
+    "http://localhost/api/v1/disbursement-vouchers/019cb3d5-7193-71bc-8dd5-3f2a484fbd7f/paid"
 );
 
 const headers = {
@@ -7077,10 +7090,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="disbursementVoucher_id"                data-endpoint="PUTapi-v1-disbursement-vouchers--disbursementVoucher_id--paid"
-               value="019ca34c-dfe8-70a5-bb57-155823ff3c8a"
+               value="019cb3d5-7193-71bc-8dd5-3f2a484fbd7f"
                data-component="url">
     <br>
-<p>The ID of the disbursementVoucher. Example: <code>019ca34c-dfe8-70a5-bb57-155823ff3c8a</code></p>
+<p>The ID of the disbursementVoucher. Example: <code>019cb3d5-7193-71bc-8dd5-3f2a484fbd7f</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -7840,7 +7853,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inspection-acceptance-reports/019c9888-fc5b-7006-8e7f-eaee790e2e9f" \
+    "http://localhost/api/v1/inspection-acceptance-reports/019cb32f-1a0c-7351-830f-cb3c5e5f7561" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -7859,7 +7872,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inspection-acceptance-reports/019c9888-fc5b-7006-8e7f-eaee790e2e9f"
+    "http://localhost/api/v1/inspection-acceptance-reports/019cb32f-1a0c-7351-830f-cb3c5e5f7561"
 );
 
 const headers = {
@@ -7987,10 +8000,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inspectionAcceptanceReport_id"                data-endpoint="PUTapi-v1-inspection-acceptance-reports--inspectionAcceptanceReport_id-"
-               value="019c9888-fc5b-7006-8e7f-eaee790e2e9f"
+               value="019cb32f-1a0c-7351-830f-cb3c5e5f7561"
                data-component="url">
     <br>
-<p>The ID of the inspectionAcceptanceReport. Example: <code>019c9888-fc5b-7006-8e7f-eaee790e2e9f</code></p>
+<p>The ID of the inspectionAcceptanceReport. Example: <code>019cb32f-1a0c-7351-830f-cb3c5e5f7561</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -8148,14 +8161,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inspection-acceptance-reports/019c9888-fc5b-7006-8e7f-eaee790e2e9f/pending" \
+    "http://localhost/api/v1/inspection-acceptance-reports/019cb32f-1a0c-7351-830f-cb3c5e5f7561/pending" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inspection-acceptance-reports/019c9888-fc5b-7006-8e7f-eaee790e2e9f/pending"
+    "http://localhost/api/v1/inspection-acceptance-reports/019cb32f-1a0c-7351-830f-cb3c5e5f7561/pending"
 );
 
 const headers = {
@@ -8271,10 +8284,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inspectionAcceptanceReport_id"                data-endpoint="PUTapi-v1-inspection-acceptance-reports--inspectionAcceptanceReport_id--pending"
-               value="019c9888-fc5b-7006-8e7f-eaee790e2e9f"
+               value="019cb32f-1a0c-7351-830f-cb3c5e5f7561"
                data-component="url">
     <br>
-<p>The ID of the inspectionAcceptanceReport. Example: <code>019c9888-fc5b-7006-8e7f-eaee790e2e9f</code></p>
+<p>The ID of the inspectionAcceptanceReport. Example: <code>019cb32f-1a0c-7351-830f-cb3c5e5f7561</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -8303,7 +8316,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inspection-acceptance-reports/019c9888-fc5b-7006-8e7f-eaee790e2e9f/inspect" \
+    "http://localhost/api/v1/inspection-acceptance-reports/019cb32f-1a0c-7351-830f-cb3c5e5f7561/inspect" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -8316,7 +8329,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inspection-acceptance-reports/019c9888-fc5b-7006-8e7f-eaee790e2e9f/inspect"
+    "http://localhost/api/v1/inspection-acceptance-reports/019cb32f-1a0c-7351-830f-cb3c5e5f7561/inspect"
 );
 
 const headers = {
@@ -8438,10 +8451,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inspectionAcceptanceReport_id"                data-endpoint="PUTapi-v1-inspection-acceptance-reports--inspectionAcceptanceReport_id--inspect"
-               value="019c9888-fc5b-7006-8e7f-eaee790e2e9f"
+               value="019cb32f-1a0c-7351-830f-cb3c5e5f7561"
                data-component="url">
     <br>
-<p>The ID of the inspectionAcceptanceReport. Example: <code>019c9888-fc5b-7006-8e7f-eaee790e2e9f</code></p>
+<p>The ID of the inspectionAcceptanceReport. Example: <code>019cb32f-1a0c-7351-830f-cb3c5e5f7561</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -9059,14 +9072,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643" \
+    --get "http://localhost/api/v1/inventories/issuances/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643"
+    "http://localhost/api/v1/inventories/issuances/architecto"
 );
 
 const headers = {
@@ -9172,10 +9185,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inventoryIssuance_id"                data-endpoint="GETapi-v1-inventories-issuances--inventoryIssuance_id-"
-               value="019c98a0-315b-72d9-8a98-b12fbf4fd643"
+               value="architecto"
                data-component="url">
     <br>
-<p>The ID of the inventoryIssuance. Example: <code>019c98a0-315b-72d9-8a98-b12fbf4fd643</code></p>
+<p>The ID of the inventoryIssuance. Example: <code>architecto</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>inventoryIssuance</code></b>&nbsp;&nbsp;
@@ -9204,7 +9217,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643" \
+    "http://localhost/api/v1/inventories/issuances/architecto" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -9231,7 +9244,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643"
+    "http://localhost/api/v1/inventories/issuances/architecto"
 );
 
 const headers = {
@@ -9358,10 +9371,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inventoryIssuance_id"                data-endpoint="PUTapi-v1-inventories-issuances--inventoryIssuance_id-"
-               value="019c98a0-315b-72d9-8a98-b12fbf4fd643"
+               value="architecto"
                data-component="url">
     <br>
-<p>The ID of the inventoryIssuance. Example: <code>019c98a0-315b-72d9-8a98-b12fbf4fd643</code></p>
+<p>The ID of the inventoryIssuance. Example: <code>architecto</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>inventoryIssuance</code></b>&nbsp;&nbsp;
@@ -9573,14 +9586,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643/pending" \
+    "http://localhost/api/v1/inventories/issuances/architecto/pending" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643/pending"
+    "http://localhost/api/v1/inventories/issuances/architecto/pending"
 );
 
 const headers = {
@@ -9687,10 +9700,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inventoryIssuance_id"                data-endpoint="PUTapi-v1-inventories-issuances--inventoryIssuance_id--pending"
-               value="019c98a0-315b-72d9-8a98-b12fbf4fd643"
+               value="architecto"
                data-component="url">
     <br>
-<p>The ID of the inventoryIssuance. Example: <code>019c98a0-315b-72d9-8a98-b12fbf4fd643</code></p>
+<p>The ID of the inventoryIssuance. Example: <code>architecto</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>inventoryIssuance</code></b>&nbsp;&nbsp;
@@ -9719,14 +9732,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643/issue" \
+    "http://localhost/api/v1/inventories/issuances/architecto/issue" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643/issue"
+    "http://localhost/api/v1/inventories/issuances/architecto/issue"
 );
 
 const headers = {
@@ -9833,10 +9846,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inventoryIssuance_id"                data-endpoint="PUTapi-v1-inventories-issuances--inventoryIssuance_id--issue"
-               value="019c98a0-315b-72d9-8a98-b12fbf4fd643"
+               value="architecto"
                data-component="url">
     <br>
-<p>The ID of the inventoryIssuance. Example: <code>019c98a0-315b-72d9-8a98-b12fbf4fd643</code></p>
+<p>The ID of the inventoryIssuance. Example: <code>architecto</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>inventoryIssuance</code></b>&nbsp;&nbsp;
@@ -9865,14 +9878,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643/cancel" \
+    "http://localhost/api/v1/inventories/issuances/architecto/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inventories/issuances/019c98a0-315b-72d9-8a98-b12fbf4fd643/cancel"
+    "http://localhost/api/v1/inventories/issuances/architecto/cancel"
 );
 
 const headers = {
@@ -9979,10 +9992,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inventoryIssuance_id"                data-endpoint="PUTapi-v1-inventories-issuances--inventoryIssuance_id--cancel"
-               value="019c98a0-315b-72d9-8a98-b12fbf4fd643"
+               value="architecto"
                data-component="url">
     <br>
-<p>The ID of the inventoryIssuance. Example: <code>019c98a0-315b-72d9-8a98-b12fbf4fd643</code></p>
+<p>The ID of the inventoryIssuance. Example: <code>architecto</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>inventoryIssuance</code></b>&nbsp;&nbsp;
@@ -10300,14 +10313,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/v1/inventories/supplies/019c988d-5c2d-70c0-8fa5-426c129218e1" \
+    --get "http://localhost/api/v1/inventories/supplies/019cb36a-36de-70bf-a967-308984af2456" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inventories/supplies/019c988d-5c2d-70c0-8fa5-426c129218e1"
+    "http://localhost/api/v1/inventories/supplies/019cb36a-36de-70bf-a967-308984af2456"
 );
 
 const headers = {
@@ -10413,10 +10426,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inventorySupply_id"                data-endpoint="GETapi-v1-inventories-supplies--inventorySupply_id-"
-               value="019c988d-5c2d-70c0-8fa5-426c129218e1"
+               value="019cb36a-36de-70bf-a967-308984af2456"
                data-component="url">
     <br>
-<p>The ID of the inventorySupply. Example: <code>019c988d-5c2d-70c0-8fa5-426c129218e1</code></p>
+<p>The ID of the inventorySupply. Example: <code>019cb36a-36de-70bf-a967-308984af2456</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>inventorySupply</code></b>&nbsp;&nbsp;
@@ -10445,7 +10458,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/inventories/supplies/019c988d-5c2d-70c0-8fa5-426c129218e1" \
+    "http://localhost/api/v1/inventories/supplies/019cb36a-36de-70bf-a967-308984af2456" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -10461,7 +10474,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/inventories/supplies/019c988d-5c2d-70c0-8fa5-426c129218e1"
+    "http://localhost/api/v1/inventories/supplies/019cb36a-36de-70bf-a967-308984af2456"
 );
 
 const headers = {
@@ -10577,10 +10590,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="inventorySupply_id"                data-endpoint="PUTapi-v1-inventories-supplies--inventorySupply_id-"
-               value="019c988d-5c2d-70c0-8fa5-426c129218e1"
+               value="019cb36a-36de-70bf-a967-308984af2456"
                data-component="url">
     <br>
-<p>The ID of the inventorySupply. Example: <code>019c988d-5c2d-70c0-8fa5-426c129218e1</code></p>
+<p>The ID of the inventorySupply. Example: <code>019cb36a-36de-70bf-a967-308984af2456</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>inventorySupply</code></b>&nbsp;&nbsp;
@@ -16500,6 +16513,185 @@ You can check the Dev Tools console for debugging information.</code></pre>
         </div>
         </form>
 
+                <h1 id="library-payees">Library - Payees</h1>
+
+    <p>APIs for retrieving payees (suppliers and users combined)</p>
+
+                                <h2 id="library-payees-GETapi-v1-libraries-payees">List Payees</h2>
+
+<p>
+</p>
+
+<p>Retrieve a combined list of suppliers and users as payees.</p>
+
+<span id="example-requests-GETapi-v1-libraries-payees">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost/api/v1/libraries/payees?search=architecto&amp;show_inactive=" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost/api/v1/libraries/payees"
+);
+
+const params = {
+    "search": "architecto",
+    "show_inactive": "0",
+};
+Object.keys(params)
+    .forEach(key =&gt; url.searchParams.append(key, params[key]));
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-libraries-payees">
+            <blockquote>
+            <p>Example response (200):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;data&quot;: [
+        {
+            &quot;id&quot;: &quot;uuid&quot;,
+            &quot;name&quot;: &quot;Supplier Name&quot;,
+            &quot;type&quot;: &quot;App\\Models\\Supplier&quot;,
+            &quot;payee_value&quot;: &quot;App\\Models\\Supplier:uuid&quot;
+        },
+        {
+            &quot;id&quot;: &quot;uuid&quot;,
+            &quot;name&quot;: &quot;User Full Name&quot;,
+            &quot;type&quot;: &quot;App\\Models\\User&quot;,
+            &quot;payee_value&quot;: &quot;App\\Models\\User:uuid&quot;
+        }
+    ]
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-libraries-payees" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-libraries-payees"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-libraries-payees"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-libraries-payees" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-libraries-payees">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-libraries-payees" data-method="GET"
+      data-path="api/v1/libraries/payees"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-libraries-payees', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-libraries-payees"
+                    onclick="tryItOut('GETapi-v1-libraries-payees');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-libraries-payees"
+                    onclick="cancelTryOut('GETapi-v1-libraries-payees');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-libraries-payees"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/libraries/payees</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-libraries-payees"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-libraries-payees"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                            <h4 class="fancy-heading-panel"><b>Query Parameters</b></h4>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>search</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="search"                data-endpoint="GETapi-v1-libraries-payees"
+               value="architecto"
+               data-component="query">
+    <br>
+<p>Search by name. Example: <code>architecto</code></p>
+            </div>
+                                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>show_inactive</code></b>&nbsp;&nbsp;
+<small>boolean</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <label data-endpoint="GETapi-v1-libraries-payees" style="display: none">
+            <input type="radio" name="show_inactive"
+                   value="1"
+                   data-endpoint="GETapi-v1-libraries-payees"
+                   data-component="query"             >
+            <code>true</code>
+        </label>
+        <label data-endpoint="GETapi-v1-libraries-payees" style="display: none">
+            <input type="radio" name="show_inactive"
+                   value="0"
+                   data-endpoint="GETapi-v1-libraries-payees"
+                   data-component="query"             >
+            <code>false</code>
+        </label>
+    <br>
+<p>Include inactive suppliers. Default false. Example: <code>false</code></p>
+            </div>
+                </form>
+
                 <h1 id="library-payment-terms">Library - Payment Terms</h1>
 
     <p>APIs for managing payment terms</p>
@@ -22081,14 +22273,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request GET \
-    --get "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d" \
+    --get "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d"
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169"
 );
 
 const headers = {
@@ -22194,10 +22386,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="obligationRequest_id"                data-endpoint="GETapi-v1-obligation-requests--obligationRequest_id-"
-               value="019c988d-5c40-73be-8979-4ac2859aa87d"
+               value="019cb36a-36f7-7152-8f3b-dd1890023169"
                data-component="url">
     <br>
-<p>The ID of the obligationRequest. Example: <code>019c988d-5c40-73be-8979-4ac2859aa87d</code></p>
+<p>The ID of the obligationRequest. Example: <code>019cb36a-36f7-7152-8f3b-dd1890023169</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -22213,6 +22405,363 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                     </form>
 
+                    <h2 id="obligation-requests-POSTapi-v1-obligation-requests">Create Obligation Request</h2>
+
+<p>
+</p>
+
+<p>Create a new obligation request for bills payment (bypassing procurement workflow).</p>
+
+<span id="example-requests-POSTapi-v1-obligation-requests">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request POST \
+    "http://localhost/api/v1/obligation-requests" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json" \
+    --data "{
+    \"transaction_type\": \"architecto\",
+    \"payee_id\": \"architecto\",
+    \"office\": \"architecto\",
+    \"address\": \"architecto\",
+    \"responsibility_center_id\": \"architecto\",
+    \"particulars\": \"architecto\",
+    \"total_amount\": 4326.41688,
+    \"funding\": [
+        \"architecto\"
+    ],
+    \"compliance_status\": [
+        \"architecto\"
+    ],
+    \"sig_head_id\": \"architecto\",
+    \"sig_budget_id\": \"architecto\",
+    \"fpps\": [
+        \"architecto\"
+    ],
+    \"accounts\": [
+        \"architecto\"
+    ],
+    \"payee_type\": \"architecto\"
+}"
+</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost/api/v1/obligation-requests"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+let body = {
+    "transaction_type": "architecto",
+    "payee_id": "architecto",
+    "office": "architecto",
+    "address": "architecto",
+    "responsibility_center_id": "architecto",
+    "particulars": "architecto",
+    "total_amount": 4326.41688,
+    "funding": [
+        "architecto"
+    ],
+    "compliance_status": [
+        "architecto"
+    ],
+    "sig_head_id": "architecto",
+    "sig_budget_id": "architecto",
+    "fpps": [
+        "architecto"
+    ],
+    "accounts": [
+        "architecto"
+    ],
+    "payee_type": "architecto"
+};
+
+fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-POSTapi-v1-obligation-requests">
+            <blockquote>
+            <p>Example response (201):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+  &quot;data&quot;: {...},
+  &quot;message&quot;: &quot;Obligation request created successfully.&quot;
+}</code>
+ </pre>
+            <blockquote>
+            <p>Example response (422):</p>
+        </blockquote>
+                <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;message&quot;: &quot;Error message&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-POSTapi-v1-obligation-requests" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-POSTapi-v1-obligation-requests"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-POSTapi-v1-obligation-requests"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-POSTapi-v1-obligation-requests" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-POSTapi-v1-obligation-requests">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-POSTapi-v1-obligation-requests" data-method="POST"
+      data-path="api/v1/obligation-requests"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('POSTapi-v1-obligation-requests', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-POSTapi-v1-obligation-requests"
+                    onclick="tryItOut('POSTapi-v1-obligation-requests');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-POSTapi-v1-obligation-requests"
+                    onclick="cancelTryOut('POSTapi-v1-obligation-requests');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-POSTapi-v1-obligation-requests"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-black">POST</small>
+            <b><code>api/v1/obligation-requests</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>transaction_type</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="transaction_type"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The transaction type (procurement/bills_payment). Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>payee_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="payee_id"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The payee UUID. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>office</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="office"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>nullable The office. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>address</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="address"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>nullable The address. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>responsibility_center_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="responsibility_center_id"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The responsibility center ID. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>particulars</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="particulars"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The particulars. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>total_amount</code></b>&nbsp;&nbsp;
+<small>number</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="number" style="display: none"
+               step="any"               name="total_amount"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="4326.41688"
+               data-component="body">
+    <br>
+<p>The total amount. Example: <code>4326.41688</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>funding</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="funding[0]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="funding[1]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+    <br>
+<p>nullable The funding details.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>compliance_status</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="compliance_status[0]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="compliance_status[1]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+    <br>
+<p>nullable The compliance status.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>sig_head_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="sig_head_id"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>nullable The head signatory ID. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>sig_budget_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="sig_budget_id"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>nullable The budget signatory ID. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>fpps</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="fpps[0]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="fpps[1]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+    <br>
+<p>nullable The FPPs.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>accounts</code></b>&nbsp;&nbsp;
+<small>string[]</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="accounts[0]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+        <input type="text" style="display: none"
+               name="accounts[1]"                data-endpoint="POSTapi-v1-obligation-requests"
+               data-component="body">
+    <br>
+<p>nullable The accounts.</p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>payee_type</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="payee_type"                data-endpoint="POSTapi-v1-obligation-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The payee type (App\Models\Supplier or App\Models\User). Example: <code>architecto</code></p>
+        </div>
+        </form>
+
                     <h2 id="obligation-requests-PUTapi-v1-obligation-requests--obligationRequest_id-">Update Obligation Request</h2>
 
 <p>
@@ -22226,10 +22775,11 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d" \
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
+    \"obr_no\": \"architecto\",
     \"funding\": [
         \"architecto\"
     ],
@@ -22257,7 +22807,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d"
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169"
 );
 
 const headers = {
@@ -22266,6 +22816,7 @@ const headers = {
 };
 
 let body = {
+    "obr_no": "architecto",
     "funding": [
         "architecto"
     ],
@@ -22397,10 +22948,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="obligationRequest_id"                data-endpoint="PUTapi-v1-obligation-requests--obligationRequest_id-"
-               value="019c988d-5c40-73be-8979-4ac2859aa87d"
+               value="019cb36a-36f7-7152-8f3b-dd1890023169"
                data-component="url">
     <br>
-<p>The ID of the obligationRequest. Example: <code>019c988d-5c40-73be-8979-4ac2859aa87d</code></p>
+<p>The ID of the obligationRequest. Example: <code>019cb36a-36f7-7152-8f3b-dd1890023169</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -22416,6 +22967,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                             <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
         <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>obr_no</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="obr_no"                data-endpoint="PUTapi-v1-obligation-requests--obligationRequest_id-"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>funding</code></b>&nbsp;&nbsp;
 <small>string[]</small>&nbsp;
 <i>optional</i> &nbsp;
@@ -22594,14 +23157,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d/pending" \
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169/pending" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d/pending"
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169/pending"
 );
 
 const headers = {
@@ -22717,10 +23280,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="obligationRequest_id"                data-endpoint="PUTapi-v1-obligation-requests--obligationRequest_id--pending"
-               value="019c988d-5c40-73be-8979-4ac2859aa87d"
+               value="019cb36a-36f7-7152-8f3b-dd1890023169"
                data-component="url">
     <br>
-<p>The ID of the obligationRequest. Example: <code>019c988d-5c40-73be-8979-4ac2859aa87d</code></p>
+<p>The ID of the obligationRequest. Example: <code>019cb36a-36f7-7152-8f3b-dd1890023169</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -22749,7 +23312,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d/disapprove" \
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169/disapprove" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -22760,7 +23323,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d/disapprove"
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169/disapprove"
 );
 
 const headers = {
@@ -22880,10 +23443,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="obligationRequest_id"                data-endpoint="PUTapi-v1-obligation-requests--obligationRequest_id--disapprove"
-               value="019c988d-5c40-73be-8979-4ac2859aa87d"
+               value="019cb36a-36f7-7152-8f3b-dd1890023169"
                data-component="url">
     <br>
-<p>The ID of the obligationRequest. Example: <code>019c988d-5c40-73be-8979-4ac2859aa87d</code></p>
+<p>The ID of the obligationRequest. Example: <code>019cb36a-36f7-7152-8f3b-dd1890023169</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -22925,14 +23488,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d/obligate" \
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169/obligate" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/obligation-requests/019c988d-5c40-73be-8979-4ac2859aa87d/obligate"
+    "http://localhost/api/v1/obligation-requests/019cb36a-36f7-7152-8f3b-dd1890023169/obligate"
 );
 
 const headers = {
@@ -23048,10 +23611,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="obligationRequest_id"                data-endpoint="PUTapi-v1-obligation-requests--obligationRequest_id--obligate"
-               value="019c988d-5c40-73be-8979-4ac2859aa87d"
+               value="019cb36a-36f7-7152-8f3b-dd1890023169"
                data-component="url">
     <br>
-<p>The ID of the obligationRequest. Example: <code>019c988d-5c40-73be-8979-4ac2859aa87d</code></p>
+<p>The ID of the obligationRequest. Example: <code>019cb36a-36f7-7152-8f3b-dd1890023169</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
@@ -23511,7 +24074,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb" \
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -23531,7 +24094,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb"
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7"
 );
 
 const headers = {
@@ -23660,10 +24223,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseOrder_id"                data-endpoint="PUTapi-v1-purchase-orders--purchaseOrder_id-"
-               value="019ca081-c594-72fa-8e24-8c3b0b1a9dfb"
+               value="019cb324-d92f-73c5-9f26-545fe3ed46f7"
                data-component="url">
     <br>
-<p>The ID of the purchaseOrder. Example: <code>019ca081-c594-72fa-8e24-8c3b0b1a9dfb</code></p>
+<p>The ID of the purchaseOrder. Example: <code>019cb324-d92f-73c5-9f26-545fe3ed46f7</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseOrder</code></b>&nbsp;&nbsp;
@@ -23791,14 +24354,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/pending" \
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/pending" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/pending"
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/pending"
 );
 
 const headers = {
@@ -23914,10 +24477,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseOrder_id"                data-endpoint="PUTapi-v1-purchase-orders--purchaseOrder_id--pending"
-               value="019ca081-c594-72fa-8e24-8c3b0b1a9dfb"
+               value="019cb324-d92f-73c5-9f26-545fe3ed46f7"
                data-component="url">
     <br>
-<p>The ID of the purchaseOrder. Example: <code>019ca081-c594-72fa-8e24-8c3b0b1a9dfb</code></p>
+<p>The ID of the purchaseOrder. Example: <code>019cb324-d92f-73c5-9f26-545fe3ed46f7</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseOrder</code></b>&nbsp;&nbsp;
@@ -23946,14 +24509,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/approve" \
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/approve" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/approve"
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/approve"
 );
 
 const headers = {
@@ -24069,10 +24632,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseOrder_id"                data-endpoint="PUTapi-v1-purchase-orders--purchaseOrder_id--approve"
-               value="019ca081-c594-72fa-8e24-8c3b0b1a9dfb"
+               value="019cb324-d92f-73c5-9f26-545fe3ed46f7"
                data-component="url">
     <br>
-<p>The ID of the purchaseOrder. Example: <code>019ca081-c594-72fa-8e24-8c3b0b1a9dfb</code></p>
+<p>The ID of the purchaseOrder. Example: <code>019cb324-d92f-73c5-9f26-545fe3ed46f7</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseOrder</code></b>&nbsp;&nbsp;
@@ -24101,14 +24664,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/issue" \
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/issue" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/issue"
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/issue"
 );
 
 const headers = {
@@ -24224,10 +24787,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseOrder_id"                data-endpoint="PUTapi-v1-purchase-orders--purchaseOrder_id--issue"
-               value="019ca081-c594-72fa-8e24-8c3b0b1a9dfb"
+               value="019cb324-d92f-73c5-9f26-545fe3ed46f7"
                data-component="url">
     <br>
-<p>The ID of the purchaseOrder. Example: <code>019ca081-c594-72fa-8e24-8c3b0b1a9dfb</code></p>
+<p>The ID of the purchaseOrder. Example: <code>019cb324-d92f-73c5-9f26-545fe3ed46f7</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseOrder</code></b>&nbsp;&nbsp;
@@ -24256,14 +24819,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/receive" \
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/receive" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/receive"
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/receive"
 );
 
 const headers = {
@@ -24379,10 +24942,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseOrder_id"                data-endpoint="PUTapi-v1-purchase-orders--purchaseOrder_id--receive"
-               value="019ca081-c594-72fa-8e24-8c3b0b1a9dfb"
+               value="019cb324-d92f-73c5-9f26-545fe3ed46f7"
                data-component="url">
     <br>
-<p>The ID of the purchaseOrder. Example: <code>019ca081-c594-72fa-8e24-8c3b0b1a9dfb</code></p>
+<p>The ID of the purchaseOrder. Example: <code>019cb324-d92f-73c5-9f26-545fe3ed46f7</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseOrder</code></b>&nbsp;&nbsp;
@@ -24411,14 +24974,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/delivered" \
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/delivered" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-orders/019ca081-c594-72fa-8e24-8c3b0b1a9dfb/delivered"
+    "http://localhost/api/v1/purchase-orders/019cb324-d92f-73c5-9f26-545fe3ed46f7/delivered"
 );
 
 const headers = {
@@ -24534,10 +25097,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseOrder_id"                data-endpoint="PUTapi-v1-purchase-orders--purchaseOrder_id--delivered"
-               value="019ca081-c594-72fa-8e24-8c3b0b1a9dfb"
+               value="019cb324-d92f-73c5-9f26-545fe3ed46f7"
                data-component="url">
     <br>
-<p>The ID of the purchaseOrder. Example: <code>019ca081-c594-72fa-8e24-8c3b0b1a9dfb</code></p>
+<p>The ID of the purchaseOrder. Example: <code>019cb324-d92f-73c5-9f26-545fe3ed46f7</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseOrder</code></b>&nbsp;&nbsp;
@@ -24820,6 +25383,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"sai_date\": \"architecto\",
     \"alobs_no\": \"architecto\",
     \"alobs_date\": \"architecto\",
+    \"notes\": \"architecto\",
     \"purpose\": \"architecto\",
     \"funding_source_id\": \"architecto\",
     \"requested_by_id\": \"architecto\",
@@ -24850,6 +25414,7 @@ let body = {
     "sai_date": "architecto",
     "alobs_no": "architecto",
     "alobs_date": "architecto",
+    "notes": "architecto",
     "purpose": "architecto",
     "funding_source_id": "architecto",
     "requested_by_id": "architecto",
@@ -25044,6 +25609,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
                data-component="body">
     <br>
 <p>nullable The ALOBS date. Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>notes</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="notes"                data-endpoint="POSTapi-v1-purchase-requests"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Example: <code>architecto</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>purpose</code></b>&nbsp;&nbsp;
@@ -25337,7 +25914,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -25348,6 +25925,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"sai_date\": \"architecto\",
     \"alobs_no\": \"architecto\",
     \"alobs_date\": \"architecto\",
+    \"notes\": \"architecto\",
     \"purpose\": \"architecto\",
     \"funding_source_id\": \"architecto\",
     \"requested_by_id\": \"architecto\",
@@ -25362,7 +25940,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d"
 );
 
 const headers = {
@@ -25378,6 +25956,7 @@ let body = {
     "sai_date": "architecto",
     "alobs_no": "architecto",
     "alobs_date": "architecto",
+    "notes": "architecto",
     "purpose": "architecto",
     "funding_source_id": "architecto",
     "requested_by_id": "architecto",
@@ -25496,10 +26075,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id-"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -25599,6 +26178,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>nullable The ALOBS date. Example: <code>architecto</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>notes</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+<i>optional</i> &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="notes"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id-"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>Example: <code>architecto</code></p>
+        </div>
+                <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>purpose</code></b>&nbsp;&nbsp;
 <small>string</small>&nbsp;
  &nbsp;
@@ -25687,14 +26278,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/submit-approval" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/submit-approval" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/submit-approval"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/submit-approval"
 );
 
 const headers = {
@@ -25801,10 +26392,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--submit-approval"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -25833,14 +26424,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/approve-cash-availability" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/approve-cash-availability" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/approve-cash-availability"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/approve-cash-availability"
 );
 
 const headers = {
@@ -25947,10 +26538,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--approve-cash-availability"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -25979,14 +26570,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/approve" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/approve" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/approve"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/approve"
 );
 
 const headers = {
@@ -26093,10 +26684,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--approve"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -26125,7 +26716,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/disapprove" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/disapprove" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -26136,7 +26727,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/disapprove"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/disapprove"
 );
 
 const headers = {
@@ -26247,10 +26838,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--disapprove"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -26292,14 +26883,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/cancel" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/cancel"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/cancel"
 );
 
 const headers = {
@@ -26406,10 +26997,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--cancel"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -26438,14 +27029,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/issue-all-request-quotations" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/issue-all-request-quotations" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/issue-all-request-quotations"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/issue-all-request-quotations"
 );
 
 const headers = {
@@ -26552,10 +27143,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--issue-all-request-quotations"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -26576,7 +27167,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 <p>
 </p>
 
-<p>Mark the purchase request as for abstract after RFQ completion.</p>
+<p>Mark approved request quotations and create an abstract of quotations.</p>
 
 <span id="example-requests-PUTapi-v1-purchase-requests--purchaseRequest_id--approve-request-quotations">
 <blockquote>Example request:</blockquote>
@@ -26584,14 +27175,18 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/approve-request-quotations" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/approve-request-quotations" \
     --header "Content-Type: application/json" \
-    --header "Accept: application/json"</code></pre></div>
+    --header "Accept: application/json" \
+    --data "{
+    \"mode_procurement_id\": \"architecto\"
+}"
+</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/approve-request-quotations"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/approve-request-quotations"
 );
 
 const headers = {
@@ -26599,10 +27194,14 @@ const headers = {
     "Accept": "application/json",
 };
 
+let body = {
+    "mode_procurement_id": "architecto"
+};
 
 fetch(url, {
     method: "PUT",
     headers,
+    body: JSON.stringify(body),
 }).then(response =&gt; response.json());</code></pre></div>
 
 </span>
@@ -26698,10 +27297,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--approve-request-quotations"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -26715,7 +27314,20 @@ You can check the Dev Tools console for debugging information.</code></pre>
     <br>
 <p>The purchase request UUID. Example: <code>architecto</code></p>
             </div>
-                    </form>
+                            <h4 class="fancy-heading-panel"><b>Body Parameters</b></h4>
+        <div style=" padding-left: 28px;  clear: unset;">
+            <b style="line-height: 2;"><code>mode_procurement_id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="mode_procurement_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--approve-request-quotations"
+               value="architecto"
+               data-component="body">
+    <br>
+<p>The mode of procurement ID. Example: <code>architecto</code></p>
+        </div>
+        </form>
 
                     <h2 id="purchase-requests-PUTapi-v1-purchase-requests--purchaseRequest_id--award-abstract-quotations">Award Abstract Quotations</h2>
 
@@ -26730,14 +27342,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/award-abstract-quotations" \
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/award-abstract-quotations" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/purchase-requests/019c9865-02b2-7357-a6f7-70ae643a6878/award-abstract-quotations"
+    "http://localhost/api/v1/purchase-requests/019cb2bc-b7de-7095-9f51-b0ca5999b91d/award-abstract-quotations"
 );
 
 const headers = {
@@ -26844,10 +27456,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="purchaseRequest_id"                data-endpoint="PUTapi-v1-purchase-requests--purchaseRequest_id--award-abstract-quotations"
-               value="019c9865-02b2-7357-a6f7-70ae643a6878"
+               value="019cb2bc-b7de-7095-9f51-b0ca5999b91d"
                data-component="url">
     <br>
-<p>The ID of the purchaseRequest. Example: <code>019c9865-02b2-7357-a6f7-70ae643a6878</code></p>
+<p>The ID of the purchaseRequest. Example: <code>019cb2bc-b7de-7095-9f51-b0ca5999b91d</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>purchaseRequest</code></b>&nbsp;&nbsp;
@@ -27605,7 +28217,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f" \
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
@@ -27628,7 +28240,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f"
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69"
 );
 
 const headers = {
@@ -27760,10 +28372,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="requestQuotation_id"                data-endpoint="PUTapi-v1-request-quotations--requestQuotation_id-"
-               value="019c988d-d140-7231-953b-f922b069056f"
+               value="019cb2d1-78c6-7324-a8a7-060ba7e38c69"
                data-component="url">
     <br>
-<p>The ID of the requestQuotation. Example: <code>019c988d-d140-7231-953b-f922b069056f</code></p>
+<p>The ID of the requestQuotation. Example: <code>019cb2d1-78c6-7324-a8a7-060ba7e38c69</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>requestQuotation</code></b>&nbsp;&nbsp;
@@ -27995,14 +28607,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f/issue-canvassing" \
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69/issue-canvassing" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f/issue-canvassing"
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69/issue-canvassing"
 );
 
 const headers = {
@@ -28118,10 +28730,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="requestQuotation_id"                data-endpoint="PUTapi-v1-request-quotations--requestQuotation_id--issue-canvassing"
-               value="019c988d-d140-7231-953b-f922b069056f"
+               value="019cb2d1-78c6-7324-a8a7-060ba7e38c69"
                data-component="url">
     <br>
-<p>The ID of the requestQuotation. Example: <code>019c988d-d140-7231-953b-f922b069056f</code></p>
+<p>The ID of the requestQuotation. Example: <code>019cb2d1-78c6-7324-a8a7-060ba7e38c69</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>requestQuotation</code></b>&nbsp;&nbsp;
@@ -28150,14 +28762,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f/canvass-complete" \
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69/canvass-complete" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f/canvass-complete"
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69/canvass-complete"
 );
 
 const headers = {
@@ -28273,10 +28885,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="requestQuotation_id"                data-endpoint="PUTapi-v1-request-quotations--requestQuotation_id--canvass-complete"
-               value="019c988d-d140-7231-953b-f922b069056f"
+               value="019cb2d1-78c6-7324-a8a7-060ba7e38c69"
                data-component="url">
     <br>
-<p>The ID of the requestQuotation. Example: <code>019c988d-d140-7231-953b-f922b069056f</code></p>
+<p>The ID of the requestQuotation. Example: <code>019cb2d1-78c6-7324-a8a7-060ba7e38c69</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>requestQuotation</code></b>&nbsp;&nbsp;
@@ -28305,14 +28917,14 @@ You can check the Dev Tools console for debugging information.</code></pre>
 
 <div class="bash-example">
     <pre><code class="language-bash">curl --request PUT \
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f/cancel" \
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69/cancel" \
     --header "Content-Type: application/json" \
     --header "Accept: application/json"</code></pre></div>
 
 
 <div class="javascript-example">
     <pre><code class="language-javascript">const url = new URL(
-    "http://localhost/api/v1/request-quotations/019c988d-d140-7231-953b-f922b069056f/cancel"
+    "http://localhost/api/v1/request-quotations/019cb2d1-78c6-7324-a8a7-060ba7e38c69/cancel"
 );
 
 const headers = {
@@ -28428,10 +29040,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="requestQuotation_id"                data-endpoint="PUTapi-v1-request-quotations--requestQuotation_id--cancel"
-               value="019c988d-d140-7231-953b-f922b069056f"
+               value="019cb2d1-78c6-7324-a8a7-060ba7e38c69"
                data-component="url">
     <br>
-<p>The ID of the requestQuotation. Example: <code>019c988d-d140-7231-953b-f922b069056f</code></p>
+<p>The ID of the requestQuotation. Example: <code>019cb2d1-78c6-7324-a8a7-060ba7e38c69</code></p>
             </div>
                     <div style="padding-left: 28px; clear: unset;">
                 <b style="line-height: 2;"><code>requestQuotation</code></b>&nbsp;&nbsp;

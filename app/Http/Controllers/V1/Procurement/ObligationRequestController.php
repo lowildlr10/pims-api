@@ -14,7 +14,7 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
  * @group Obligation Requests
  * APIs for managing obligation requests
  */
-class ObligationRequestStatusController extends Controller
+class ObligationRequestController extends Controller
 {
     public function __construct(
         protected ObligationRequestService $service
@@ -102,6 +102,68 @@ class ObligationRequestStatusController extends Controller
     }
 
     /**
+     * Create Obligation Request
+     *
+     * Create a new obligation request for bills payment (bypassing procurement workflow).
+     *
+     * @bodyParam transaction_type string required The transaction type (procurement/bills_payment).
+     * @bodyParam payee_type string required The payee type (App\Models\Supplier or App\Models\User).
+     * @bodyParam payee_id string required The payee UUID.
+     * @bodyParam office string nullable The office.
+     * @bodyParam address string nullable The address.
+     * @bodyParam responsibility_center_id string required The responsibility center ID.
+     * @bodyParam particulars string required The particulars.
+     * @bodyParam total_amount float required The total amount.
+     * @bodyParam funding array nullable The funding details.
+     * @bodyParam compliance_status array nullable The compliance status.
+     * @bodyParam sig_head_id string nullable The head signatory ID.
+     * @bodyParam sig_budget_id string nullable The budget signatory ID.
+     * @bodyParam fpps array nullable The FPPs.
+     * @bodyParam accounts array nullable The accounts.
+     *
+     * @response 201 {
+     *   "data": {...},
+     *   "message": "Obligation request created successfully."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'transaction_type' => 'required|in:procurement,bills_payment',
+            'payee_id' => 'required|uuid',
+            'office' => 'nullable|string',
+            'address' => 'nullable|string',
+            'responsibility_center_id' => 'required|uuid',
+            'particulars' => 'required',
+            'total_amount' => 'required|numeric|min:0',
+            'funding' => 'nullable|array',
+            'compliance_status' => 'nullable|array',
+            'sig_head_id' => 'nullable|uuid',
+            'sig_budget_id' => 'nullable|uuid',
+            'fpps' => 'nullable|array',
+            'accounts' => 'nullable|array',
+        ]);
+
+        try {
+            $obr = $this->service->create($validated);
+
+            return response()->json([
+                'data' => new ObligationRequestResource($obr),
+                'message' => 'Obligation request created successfully.',
+            ], 201);
+        } catch (\Throwable $th) {
+            $this->service->logError('Obligation request creation failed.', $th, $validated);
+
+            return response()->json([
+                'message' => $th->getMessage(),
+            ], 422);
+        }
+    }
+
+    /**
      * Update Obligation Request
      *
      * Update the specified obligation request.
@@ -133,6 +195,7 @@ class ObligationRequestStatusController extends Controller
     public function update(Request $request, ObligationRequest $obligationRequest): JsonResponse
     {
         $validated = $request->validate([
+            'obr_no' => 'nullable|string',
             'funding' => 'nullable|array',
             'office' => 'nullable|string',
             'address' => 'nullable|string',

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\InspectionAcceptanceReportStatus;
 use App\Enums\PurchaseOrderStatus;
+use App\Helpers\RequiredFieldsValidationHelper;
 use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\InspectionAcceptanceReportInterface;
 use App\Models\InspectionAcceptanceReport;
@@ -88,6 +89,25 @@ class InspectionAcceptanceReportService
             throw new \Exception($message);
         }
 
+        $requiredFields = [
+            'iar_date' => 'IAR Date',
+            'invoice_no' => 'Invoice Number',
+            'invoice_date' => 'Invoice Date',
+        ];
+
+        $missingFields = RequiredFieldsValidationHelper::getMissingFields($requiredFields, $iar);
+
+        if (! empty($missingFields)) {
+            $this->logRepository->create([
+                'message' => 'Cannot set inspection & acceptance report to pending. Missing required fields.',
+                'log_id' => $iar->id,
+                'log_module' => 'iar',
+                'data' => ['missing_fields' => $missingFields],
+            ], isError: true);
+
+            throw new \Exception('Cannot set inspection & acceptance report to pending. Please fill out the following fields first: '.implode(', ', $missingFields));
+        }
+
         $purchaseOrder = PurchaseOrder::find($iar->purchase_order_id);
 
         if ($purchaseOrder) {
@@ -146,16 +166,23 @@ class InspectionAcceptanceReportService
             throw new \Exception($message);
         }
 
-        if (empty($iar->sig_inspection_id)) {
-            $message = 'Failed to set the inspection & acceptance report to inspected. Please select a signatory for inspection.';
+        $requiredFields = [
+            'inspected_date' => 'Inspected Date',
+            'inspected' => 'Inspected By',
+            'sig_inspection_id' => 'Inspection Signatory',
+        ];
+
+        $missingFields = RequiredFieldsValidationHelper::getMissingFields($requiredFields, $iar);
+
+        if (! empty($missingFields)) {
             $this->logRepository->create([
-                'message' => $message,
+                'message' => 'Cannot set inspection & acceptance report to inspected. Missing required fields.',
                 'log_id' => $iar->id,
                 'log_module' => 'iar',
-                'data' => ['iar' => $iar, 'items' => $items],
+                'data' => ['missing_fields' => $missingFields, 'items' => $items],
             ], isError: true);
 
-            throw new \Exception($message);
+            throw new \Exception('Cannot set inspection & acceptance report to inspected. Please fill out the following fields first: '.implode(', ', $missingFields));
         }
 
         foreach ($items ?? [] as $key => $item) {
@@ -180,6 +207,7 @@ class InspectionAcceptanceReportService
             'purchase_request_id' => $iar->purchase_request_id,
             'purchase_order_id' => $iar->purchase_order_id,
             'payee_id' => $iar->purchase_order->supplier_id,
+            'payee_type' => \App\Models\Supplier::class,
             'address' => $iar->purchase_order->supplier->address ?? null,
             'total_amount' => $iar->purchase_order->total_amount ?? 0.00,
         ]);

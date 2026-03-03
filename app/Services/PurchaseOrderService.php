@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Helpers\RequiredFieldsValidationHelper;
 use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\PurchaseOrderRepositoryInterface;
 use App\Models\FundingSource;
@@ -167,6 +168,29 @@ class PurchaseOrderService
 
         if ($currentStatus !== PurchaseOrderStatus::DRAFT) {
             throw new \Exception('Failed to set the Purchase Order to pending. It may already be set to pending or processing status.');
+        }
+
+        $requiredFields = [
+            'po_date' => 'PO Date',
+            'place_delivery_id' => 'Place of Delivery',
+            'delivery_date' => 'Delivery Date',
+            'delivery_term_id' => 'Delivery Term',
+            'payment_term_id' => 'Payment Term',
+            'total_amount_words' => 'Total Amount in Words',
+            'sig_approval_id' => 'Approval Signatory',
+        ];
+
+        $missingFields = RequiredFieldsValidationHelper::getMissingFields($requiredFields, $purchaseOrder);
+
+        if (! empty($missingFields)) {
+            $this->logRepository->create([
+                'message' => 'Cannot set purchase order to pending. Missing required fields.',
+                'log_id' => $purchaseOrder->id,
+                'log_module' => 'po',
+                'data' => ['missing_fields' => $missingFields],
+            ], isError: true);
+
+            throw new \Exception('Cannot set purchase order to pending. Please fill out the following fields first: '.implode(', ', $missingFields));
         }
 
         $purchaseOrder->update([

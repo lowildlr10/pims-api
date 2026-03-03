@@ -214,7 +214,7 @@ endpoints:
         name: inspectionAcceptanceReport_id
         description: 'The ID of the inspectionAcceptanceReport.'
         required: true
-        example: 019c9888-fc5b-7006-8e7f-eaee790e2e9f
+        example: 019cb32f-1a0c-7351-830f-cb3c5e5f7561
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -232,7 +232,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inspectionAcceptanceReport_id: 019c9888-fc5b-7006-8e7f-eaee790e2e9f
+      inspectionAcceptanceReport_id: 019cb32f-1a0c-7351-830f-cb3c5e5f7561
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -396,7 +396,7 @@ endpoints:
         name: inspectionAcceptanceReport_id
         description: 'The ID of the inspectionAcceptanceReport.'
         required: true
-        example: 019c9888-fc5b-7006-8e7f-eaee790e2e9f
+        example: 019cb32f-1a0c-7351-830f-cb3c5e5f7561
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -414,7 +414,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inspectionAcceptanceReport_id: 019c9888-fc5b-7006-8e7f-eaee790e2e9f
+      inspectionAcceptanceReport_id: 019cb32f-1a0c-7351-830f-cb3c5e5f7561
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -470,7 +470,7 @@ endpoints:
         name: inspectionAcceptanceReport_id
         description: 'The ID of the inspectionAcceptanceReport.'
         required: true
-        example: 019c9888-fc5b-7006-8e7f-eaee790e2e9f
+        example: 019cb32f-1a0c-7351-830f-cb3c5e5f7561
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -488,7 +488,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inspectionAcceptanceReport_id: 019c9888-fc5b-7006-8e7f-eaee790e2e9f
+      inspectionAcceptanceReport_id: 019cb32f-1a0c-7351-830f-cb3c5e5f7561
       id: architecto
     queryParameters: []
     cleanQueryParameters: []

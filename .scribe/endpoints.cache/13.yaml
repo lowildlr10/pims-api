@@ -229,6 +229,17 @@ endpoints:
         exampleWasSpecified: false
         nullable: true
         deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
       purpose:
         custom: []
         name: purpose
@@ -359,6 +370,7 @@ endpoints:
       sai_date: architecto
       alobs_no: architecto
       alobs_date: architecto
+      notes: architecto
       purpose: architecto
       funding_source_id: architecto
       requested_by_id: architecto
@@ -468,7 +480,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -486,7 +498,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -568,6 +580,17 @@ endpoints:
         exampleWasSpecified: false
         nullable: true
         deprecated: false
+      notes:
+        custom: []
+        name: notes
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
       purpose:
         custom: []
         name: purpose
@@ -643,6 +666,7 @@ endpoints:
       sai_date: architecto
       alobs_no: architecto
       alobs_date: architecto
+      notes: architecto
       purpose: architecto
       funding_source_id: architecto
       requested_by_id: architecto
@@ -700,7 +724,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -718,7 +742,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -765,7 +789,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -783,7 +807,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -830,7 +854,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -848,7 +872,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -895,7 +919,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -913,7 +937,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -972,7 +996,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -990,7 +1014,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -1037,7 +1061,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -1055,7 +1079,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -1090,7 +1114,7 @@ endpoints:
       subgroup: ''
       subgroupDescription: ''
       title: 'Approve Request Quotations'
-      description: 'Mark the purchase request as for abstract after RFQ completion.'
+      description: 'Mark approved request quotations and create an abstract of quotations.'
       authenticated: false
       deprecated: false
     headers:
@@ -1102,7 +1126,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -1120,12 +1144,24 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
+    bodyParameters:
+      mode_procurement_id:
+        custom: []
+        name: mode_procurement_id
+        description: 'The mode of procurement ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      mode_procurement_id: architecto
     fileParameters: []
     responses:
       -
@@ -1167,7 +1203,7 @@ endpoints:
         name: purchaseRequest_id
         description: 'The ID of the purchaseRequest.'
         required: true
-        example: 019c9865-02b2-7357-a6f7-70ae643a6878
+        example: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -1185,7 +1221,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseRequest_id: 019c9865-02b2-7357-a6f7-70ae643a6878
+      purchaseRequest_id: 019cb2bc-b7de-7095-9f51-b0ca5999b91d
       purchaseRequest: architecto
     queryParameters: []
     cleanQueryParameters: []

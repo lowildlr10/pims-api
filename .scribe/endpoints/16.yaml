@@ -236,7 +236,7 @@ endpoints:
         name: purchaseOrder_id
         description: 'The ID of the purchaseOrder.'
         required: true
-        example: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+        example: 019cb324-d92f-73c5-9f26-545fe3ed46f7
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -254,7 +254,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseOrder_id: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+      purchaseOrder_id: 019cb324-d92f-73c5-9f26-545fe3ed46f7
       purchaseOrder: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -408,7 +408,7 @@ endpoints:
         name: purchaseOrder_id
         description: 'The ID of the purchaseOrder.'
         required: true
-        example: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+        example: 019cb324-d92f-73c5-9f26-545fe3ed46f7
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -426,7 +426,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseOrder_id: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+      purchaseOrder_id: 019cb324-d92f-73c5-9f26-545fe3ed46f7
       purchaseOrder: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -482,7 +482,7 @@ endpoints:
         name: purchaseOrder_id
         description: 'The ID of the purchaseOrder.'
         required: true
-        example: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+        example: 019cb324-d92f-73c5-9f26-545fe3ed46f7
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -500,7 +500,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseOrder_id: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+      purchaseOrder_id: 019cb324-d92f-73c5-9f26-545fe3ed46f7
       purchaseOrder: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -556,7 +556,7 @@ endpoints:
         name: purchaseOrder_id
         description: 'The ID of the purchaseOrder.'
         required: true
-        example: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+        example: 019cb324-d92f-73c5-9f26-545fe3ed46f7
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -574,7 +574,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseOrder_id: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+      purchaseOrder_id: 019cb324-d92f-73c5-9f26-545fe3ed46f7
       purchaseOrder: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -630,7 +630,7 @@ endpoints:
         name: purchaseOrder_id
         description: 'The ID of the purchaseOrder.'
         required: true
-        example: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+        example: 019cb324-d92f-73c5-9f26-545fe3ed46f7
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -648,7 +648,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseOrder_id: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+      purchaseOrder_id: 019cb324-d92f-73c5-9f26-545fe3ed46f7
       purchaseOrder: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -704,7 +704,7 @@ endpoints:
         name: purchaseOrder_id
         description: 'The ID of the purchaseOrder.'
         required: true
-        example: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+        example: 019cb324-d92f-73c5-9f26-545fe3ed46f7
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -722,7 +722,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      purchaseOrder_id: 019ca081-c594-72fa-8e24-8c3b0b1a9dfb
+      purchaseOrder_id: 019cb324-d92f-73c5-9f26-545fe3ed46f7
       purchaseOrder: architecto
     queryParameters: []
     cleanQueryParameters: []

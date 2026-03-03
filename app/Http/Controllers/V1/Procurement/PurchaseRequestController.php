@@ -105,6 +105,7 @@ class PurchaseRequestController extends Controller
             'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
             'alobs_date' => 'nullable',
+            'notes' => 'string',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',
@@ -192,6 +193,7 @@ class PurchaseRequestController extends Controller
             'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
             'alobs_date' => 'nullable',
+            'notes' => 'string',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',
@@ -405,9 +407,11 @@ class PurchaseRequestController extends Controller
     /**
      * Approve Request Quotations
      *
-     * Mark the purchase request as for abstract after RFQ completion.
+     * Mark approved request quotations and create an abstract of quotations.
      *
      * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @bodyParam mode_procurement_id string required The mode of procurement ID.
      *
      * @response 200 {
      *   "data": {...},
@@ -416,8 +420,12 @@ class PurchaseRequestController extends Controller
      */
     public function approveRequestQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
+        $validated = $request->validate([
+            'mode_procurement_id' => 'required|uuid',
+        ]);
+
         try {
-            $purchaseRequest = $this->service->approveRequestQuotations($purchaseRequest);
+            $purchaseRequest = $this->service->approveRequestQuotations($purchaseRequest, $validated);
 
             return response()->json([
                 'data' => new PurchaseRequestResource($purchaseRequest),

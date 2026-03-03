@@ -19,6 +19,7 @@ class PurchaseRequestResource extends JsonResource
             'sai_date' => $this->sai_date,
             'alobs_no' => $this->alobs_no,
             'alobs_date' => $this->alobs_date,
+            'notes' => $this->notes,
             'purpose' => $this->purpose,
             'funding_source_id' => $this->funding_source_id,
             'requested_by_id' => $this->requested_by_id,

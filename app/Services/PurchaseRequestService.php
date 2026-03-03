@@ -44,9 +44,9 @@ class PurchaseRequestService
             $user->tokenCan('accountant:*'),
         ]);
 
-        $userId = $hasFullAccess ? null : $user->id;
+        $userId = $user->id;
 
-        return $this->repository->getAll($filters, $userId);
+        return $this->repository->getAll($filters, $userId, $hasFullAccess);
     }
 
     public function getById(string $id): ?PurchaseRequest
@@ -496,7 +496,7 @@ class PurchaseRequestService
         return $rfqDraft;
     }
 
-    public function approveRequestQuotations(PurchaseRequest $purchaseRequest): PurchaseRequest
+    public function approveRequestQuotations(PurchaseRequest $purchaseRequest, array $data): PurchaseRequest
     {
         $currentStatus = $purchaseRequest->status instanceof PurchaseRequestStatus
             ? $purchaseRequest->status
@@ -583,6 +583,7 @@ class PurchaseRequestService
 
         $abstractQuotation = $this->abstractQuotationRepository->storeUpdate([
             'purchase_request_id' => $purchaseRequest->id,
+            'mode_procurement_id' => $data['mode_procurement_id'] ?? null,
             'solicitation_no' => isset($rfqCompleted[0]->rfq_no)
                 ? $rfqCompleted[0]->rfq_no : '',
             'solicitation_date' => Carbon::now()->toDateString(),

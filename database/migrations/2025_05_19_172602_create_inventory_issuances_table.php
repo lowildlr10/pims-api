@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('inventory_issuances', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->enum('document_type', ['ris', 'ics', 'are']);
-            $table->uuid('purchase_order_id');
+            $table->enum('document_type', ['ris', 'ics', 'are'])->index();
+            $table->uuid('purchase_order_id')->index();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
-            $table->uuid('responsibility_center_id')->nullable();
+            $table->uuid('responsibility_center_id')->nullable()->index();
             $table->foreign('responsibility_center_id')
                 ->references('id')
                 ->on('responsibility_centers');
@@ -26,27 +26,27 @@ return new class extends Migration
             $table->date('inventory_date');
             $table->string('sai_no')->nullable();
             $table->date('sai_date')->nullable();
-            $table->uuid('requested_by_id')->nullable();
+            $table->uuid('requested_by_id')->nullable()->index();
             $table->foreign('requested_by_id')
                 ->references('id')
                 ->on('users');
             $table->date('requested_date')->nullable();
-            $table->uuid('sig_approved_by_id')->nullable();
+            $table->uuid('sig_approved_by_id')->nullable()->index();
             $table->foreign('sig_approved_by_id')
                 ->references('id')
                 ->on('signatories');
             $table->date('approved_date')->nullable();
-            $table->uuid('sig_issued_by_id')->nullable();
+            $table->uuid('sig_issued_by_id')->nullable()->index();
             $table->foreign('sig_issued_by_id')
                 ->references('id')
                 ->on('signatories');
             $table->date('issued_date')->nullable();
-            $table->uuid('received_by_id')->nullable();
+            $table->uuid('received_by_id')->nullable()->index();
             $table->foreign('received_by_id')
                 ->references('id')
                 ->on('users');
             $table->date('received_date')->nullable();
-            $table->string('status');
+            $table->string('status')->index();
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });

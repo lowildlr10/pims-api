@@ -87,6 +87,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
     {
         return DisbursementVoucher::with([
             'payee',
+            'tax_withholding',
             'responsibility_center:id,code',
             'purchase_order:id,po_no,total_amount',
             'obligation_request:id,obr_no',
@@ -152,6 +153,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
             $company = Company::first();
             $dv = DisbursementVoucher::with([
                 'payee:id,supplier_name,tin_no',
+                'tax_withholding',
                 'responsibility_center:id,code',
                 'purchase_order:id,po_no,total_amount',
                 'obligation_request:id,obr_no',
@@ -209,6 +211,14 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $explanation = trim(str_replace("\r", '<br />', $data->explanation));
         $explanation = str_replace("\n", '<br />', $explanation);
         $amount = number_format($data->total_amount, 2);
+
+        // Tax withholding computation
+        $taxWithholding = $data->tax_withholding;
+        $grossAmount = (float) $data->gross_amount;
+        $taxComputationHtml = '';
+        if ($taxWithholding && $grossAmount > 0) {
+            $taxComputationHtml = $this->buildTaxComputationHtml($taxWithholding, $grossAmount);
+        }
         $accountantCertifiedChoices = $data->accountant_certified_choices;
         $accountantName = $data->signatory_accountant?->user?->fullname ?? '';
         $accountantPosition = $data->signatory_accountant?->detail?->position ?? '';
@@ -512,7 +522,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
                 <td
                     style="border-right: 1px solid black"
                     width="84%"
-                >'.$explanation.'</td>
+                >'.$explanation.$taxComputationHtml.'</td>
 
                 <td
                     width="16%"
@@ -1047,5 +1057,71 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $pdfBase64 = base64_encode($pdfBlob);
 
         return $pdfBase64;
+    }
+
+    /**
+     * Build the tax computation HTML block for the DV explanation body.
+     *
+     * Formulas (Accounting Department - LGU Atok reference):
+     *
+     * Non-VAT (Goods/Services):
+     *   Gross Amount
+     *   Less: Deductions
+     *     EWT%  W/Tax  = gross × ewt_rate
+     *     P/Tax%        = gross × ptax_rate
+     *   Net Amount
+     *
+     * VAT (Goods/Services):
+     *   Gross Amount
+     *   Less: 12% VAT
+     *     (gross × 10/11.2 × 12%)  = vat
+     *     gross − vat               = base
+     *   Less: Deductions
+     *     EWT% W/Tax  = base × ewt_rate
+     *     5%   P/Tax  = base × ptax_rate
+     *   Net Amount
+     */
+    private function buildTaxComputationHtml(\App\Models\TaxWithholding $tax, float $gross): string
+    {
+        $fmt = fn (float $v) => number_format($v, 2);
+        $pct = fn (float $r) => number_format($r * 100, 0).'%';
+
+        $ewtRate = (float) $tax->ewt_rate;
+        $ptaxRate = (float) $tax->ptax_rate;
+
+        $html = '<br /><br />';
+
+        if ($tax->is_vat) {
+            // VAT computation: VAT = gross × 10/11.2 × 12% = gross × 12/112
+            $vat = round($gross * 10 / 11.2 * 0.12, 2);
+            $base = round($gross - $vat, 2);
+            $ewt = round($base * $ewtRate, 2);
+            $ptax = round($base * $ptaxRate, 2);
+            $totalDeductions = round($ewt + $ptax, 2);
+            $netAmount = round($gross - $totalDeductions, 2);
+
+            $html .= 'Gross Amount<br />';
+            $html .= 'Less: 12% VAT<br />';
+            $html .= '&nbsp;&nbsp;&nbsp;(P '.number_format($gross, 2).' x 10/11.2 x 12%) = '.$fmt($vat).'<br />';
+            $html .= '&nbsp;&nbsp;&nbsp;'.number_format($gross, 2).' - '.$fmt($vat).' = P '.$fmt($base).'<br />';
+            $html .= 'Less: Deductions:<br />';
+            $html .= '&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($base).' x '.$pct($ewtRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ewt).'<br />';
+            $html .= '&nbsp;&nbsp;&nbsp;5% P/Tax (P '.$fmt($base).' x '.$pct($ptaxRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ptax).'&nbsp;&nbsp;&nbsp;'.$fmt($totalDeductions).'<br />';
+            $html .= 'Net Amount: P '.$fmt($netAmount);
+        } else {
+            // Non-VAT computation: deductions directly on gross amount
+            $ewt = round($gross * $ewtRate, 2);
+            $ptax = round($gross * $ptaxRate, 2);
+            $totalDeductions = round($ewt + $ptax, 2);
+            $netAmount = round($gross - $totalDeductions, 2);
+
+            $html .= 'Gross Amount<br />';
+            $html .= 'Less: Deductions<br />';
+            $html .= '&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($gross).' x '.$pct($ewtRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ewt).'<br />';
+            $html .= '&nbsp;&nbsp;&nbsp;'.$pct($ptaxRate).' P/Tax (P '.$fmt($gross).' x '.$pct($ptaxRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ptax).'&nbsp;&nbsp;&nbsp;'.$fmt($totalDeductions).'<br />';
+            $html .= 'Net Amount: P '.$fmt($netAmount);
+        }
+
+        return $html;
     }
 }

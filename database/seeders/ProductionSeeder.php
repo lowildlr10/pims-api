@@ -22,6 +22,7 @@ class ProductionSeeder extends Seeder
             ProductionSeeders\PaperSizeSeeder::class,
             ProductionSeeders\ProcurementModeSeeder::class,
             ProductionSeeders\UnitIssueSeeder::class,
+            ProductionSeeders\TaxWithholdingSeeder::class,
         ]);
     }
 }

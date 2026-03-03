@@ -34,6 +34,7 @@ use App\Interfaces\RoleRepositoryInterface;
 use App\Interfaces\SectionRepositoryInterface;
 use App\Interfaces\SignatoryRepositoryInterface;
 use App\Interfaces\SupplierRepositoryInterface;
+use App\Interfaces\TaxWithholdingRepositoryInterface;
 use App\Interfaces\UnitIssueRepositoryInterface;
 use App\Interfaces\UserRepositoryInterface;
 use App\Models\PersonalAccessToken;
@@ -69,6 +70,7 @@ use App\Repositories\RoleRepository;
 use App\Repositories\SectionRepository;
 use App\Repositories\SignatoryRepository;
 use App\Repositories\SupplierRepository;
+use App\Repositories\TaxWithholdingRepository;
 use App\Repositories\UnitIssueRepository;
 use App\Repositories\UserRepository;
 use App\Services\AbstractQuotationService;
@@ -104,6 +106,7 @@ use App\Services\RoleService;
 use App\Services\SectionService;
 use App\Services\SignatoryService;
 use App\Services\SupplierService;
+use App\Services\TaxWithholdingService;
 use App\Services\UnitIssueService;
 use App\Services\UserService;
 use Illuminate\Routing\UrlGenerator;
@@ -223,6 +226,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(InventoryIssuanceService::class);
 
         $this->app->bind(MediaRepositoryInterface::class, MediaRepository::class);
+
+        $this->app->bind(TaxWithholdingRepositoryInterface::class, TaxWithholdingRepository::class);
+        $this->app->bind(TaxWithholdingService::class);
     }
 
     /**

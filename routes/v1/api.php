@@ -599,5 +599,21 @@ Route::prefix('v1')->group(function () {
                 ->middleware('ability:super:*,lib-unit-issue:*,lib-unit-issue:update')
                 ->name('update');
         });
+
+        // Library - Tax Withholdings
+        Route::name('tax-withholdings.')->prefix('/libraries/tax-withholdings')->group(function () {
+            Route::get('/', [LibraryControllers\TaxWithholdingController::class, 'index'])
+                ->middleware('ability:super:*,head:*,accountant:*,lib-tax-withholding:*,lib-tax-withholding:view,dv:view')
+                ->name('index');
+            Route::post('/', [LibraryControllers\TaxWithholdingController::class, 'store'])
+                ->middleware('ability:super:*,lib-tax-withholding:*,lib-tax-withholding:create')
+                ->name('store');
+            Route::get('/{taxWithholding}', [LibraryControllers\TaxWithholdingController::class, 'show'])
+                ->middleware('ability:super:*,head:*,accountant:*,lib-tax-withholding:*,lib-tax-withholding:view,dv:view')
+                ->name('show');
+            Route::put('/{taxWithholding}', [LibraryControllers\TaxWithholdingController::class, 'update'])
+                ->middleware('ability:super:*,lib-tax-withholding:*,lib-tax-withholding:update')
+                ->name('update');
+        });
     });
 });

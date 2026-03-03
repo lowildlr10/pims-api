@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('sections', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('section_name');
-            $table->uuid('department_id');
+            $table->uuid('department_id')->index();
             $table->foreign('department_id')
                 ->references('id')
                 ->on('departments');

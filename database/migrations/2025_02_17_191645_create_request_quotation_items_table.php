@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('request_quotation_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('request_quotation_id');
+            $table->uuid('request_quotation_id')->index();
             $table->foreign('request_quotation_id')
                 ->references('id')
                 ->on('request_quotations');
-            $table->uuid('pr_item_id');
+            $table->uuid('pr_item_id')->index();
             $table->foreign('pr_item_id')
                 ->references('id')
                 ->on('purchase_request_items');
-            $table->uuid('supplier_id')->nullable();
+            $table->uuid('supplier_id')->nullable()->index();
             $table->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');

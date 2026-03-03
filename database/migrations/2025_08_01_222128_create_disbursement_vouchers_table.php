@@ -13,51 +13,57 @@ return new class extends Migration
     {
         Schema::create('disbursement_vouchers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id')->nullable();
+            $table->uuid('purchase_request_id')->nullable()->index();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
-            $table->uuid('purchase_order_id')->nullable();
+            $table->uuid('purchase_order_id')->nullable()->index();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
-            $table->uuid('obligation_request_id');
+            $table->uuid('obligation_request_id')->index();
             $table->foreign('obligation_request_id')
                 ->references('id')
                 ->on('obligation_requests');
+            $table->uuid('tax_withholding_id')->nullable()->index();
+            $table->foreign('tax_withholding_id')
+                ->references('id')
+                ->on('tax_withholdings')
+                ->nullOnDelete();
             $table->enum('transaction_type', [
                 'procurement',
                 'bills_payment',
-            ])->default('procurement');
+            ])->default('procurement')->index();
             $table->string('dv_no');
             $table->enum('mode_payment', ['check', 'cash', 'other'])->nullable();
-            $table->string('payee_type')->nullable();
-            $table->uuid('payee_id')->nullable();
+            $table->string('payee_type')->nullable()->index();
+            $table->uuid('payee_id')->nullable()->index();
             $table->text('address')->nullable();
             $table->string('office')->nullable();
-            $table->uuid('responsibility_center_id')->nullable();
+            $table->uuid('responsibility_center_id')->nullable()->index();
             $table->foreign('responsibility_center_id')
                 ->references('id')
                 ->on('responsibility_centers');
             $table->text(column: 'explanation')->nullable();
             $table->decimal('total_amount', 20, 2)->default(0.00);
+            $table->decimal('gross_amount', 20, 2)->default(0.00);
             $table->json('accountant_certified_choices')
                 ->nullable()
                 ->default(json_encode([
                     'allotment_obligated' => false,
                     'document_complete' => false,
                 ]));
-            $table->uuid('sig_accountant_id')->nullable();
+            $table->uuid('sig_accountant_id')->nullable()->index();
             $table->foreign('sig_accountant_id')
                 ->references('id')
                 ->on('signatories');
             $table->date('accountant_signed_date')->nullable();
-            $table->uuid('sig_treasurer_id')->nullable();
+            $table->uuid('sig_treasurer_id')->nullable()->index();
             $table->foreign('sig_treasurer_id')
                 ->references('id')
                 ->on('signatories');
             $table->date('treasurer_signed_date')->nullable();
-            $table->uuid('sig_head_id')->nullable();
+            $table->uuid('sig_head_id')->nullable()->index();
             $table->foreign('sig_head_id')
                 ->references('id')
                 ->on('signatories');
@@ -71,7 +77,7 @@ return new class extends Migration
             $table->string('jev_no')->nullable();
             $table->date('jev_date')->nullable();
             $table->text('disapproved_reason')->nullable();
-            $table->string('status');
+            $table->string('status')->index();
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });

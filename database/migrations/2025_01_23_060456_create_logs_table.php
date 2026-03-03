@@ -13,17 +13,17 @@ return new class extends Migration
     {
         Schema::create('logs', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id')->nullable();
+            $table->uuid('user_id')->nullable()->index();
             $table->foreign('user_id')
                 ->references('id')
                 ->on('users');
-            $table->uuid('log_id')->nullable();
-            $table->string('log_module');
-            $table->enum('log_type', ['log', 'error'])->default('log');
+            $table->uuid('log_id')->nullable()->index();
+            $table->string('log_module')->index();
+            $table->enum('log_type', ['log', 'error'])->default('log')->index();
             $table->string('message');
             $table->text('details')->nullable();
             $table->json('data')->nullable();
-            $table->timestamp('logged_at');
+            $table->timestamp('logged_at')->index();
         });
     }
 

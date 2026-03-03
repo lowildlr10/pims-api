@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('province')->nullable();
             $table->string('municipality')->nullable();
             $table->string('company_type')->default('LGU');
-            $table->uuid('company_head_id')->nullable();
+            $table->uuid('company_head_id')->nullable()->index();
             $table->foreign('company_head_id')
                 ->references('id')
                 ->on('users');

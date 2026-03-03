@@ -79,6 +79,7 @@ class DisbursementVoucherController extends Controller
         return response()->json([
             'data' => new DisbursementVoucherResource($disbursementVoucher->load([
                 'payee:id,supplier_name,tin_no',
+                'tax_withholding',
                 'responsibility_center:id,code',
                 'purchase_order:id,po_no,total_amount',
                 'obligation_request:id,obr_no',
@@ -132,6 +133,7 @@ class DisbursementVoucherController extends Controller
      * @bodyParam or_other_document string nullable The OR/other document.
      * @bodyParam jev_no string nullable The JEV number.
      * @bodyParam jev_date date nullable The JEV date.
+     * @bodyParam tax_withholding_id string nullable The tax withholding ID.
      *
      * @response 200 {
      *   "data": {...},
@@ -166,10 +168,12 @@ class DisbursementVoucherController extends Controller
             'or_other_document' => 'nullable',
             'jev_no' => 'nullable',
             'jev_date' => 'nullable',
+            'tax_withholding_id' => 'nullable',
         ]);
 
         try {
             $dv = $this->service->update($disbursementVoucher, $validated);
+            $dv->load('tax_withholding');
 
             return response()->json([
                 'data' => new DisbursementVoucherResource($dv),

@@ -13,13 +13,13 @@ return new class extends Migration
     {
         Schema::create('purchase_request_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id');
+            $table->uuid('purchase_request_id')->index();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
             $table->smallInteger('item_sequence');
             $table->integer('quantity');
-            $table->uuid('unit_issue_id');
+            $table->uuid('unit_issue_id')->index();
             $table->foreign('unit_issue_id')
                 ->references('id')
                 ->on('unit_issues');
@@ -27,7 +27,7 @@ return new class extends Migration
             $table->integer('stock_no');
             $table->decimal('estimated_unit_cost', 20, 2);
             $table->decimal('estimated_cost', 20, 2);
-            $table->uuid('awarded_to_id')->nullable();
+            $table->uuid('awarded_to_id')->nullable()->index();
             $table->foreign('awarded_to_id')
                 ->references('id')
                 ->on('suppliers');

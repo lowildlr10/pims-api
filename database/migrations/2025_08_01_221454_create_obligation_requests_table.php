@@ -13,18 +13,18 @@ return new class extends Migration
     {
         Schema::create('obligation_requests', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id')->nullable();
+            $table->uuid('purchase_request_id')->nullable()->index();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
-            $table->uuid('purchase_order_id')->nullable();
+            $table->uuid('purchase_order_id')->nullable()->index();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
             $table->enum('transaction_type', [
                 'procurement',
                 'bills_payment',
-            ])->default('procurement');
+            ])->default('procurement')->index();
             $table->json('funding')
                 ->nullable()
                 ->default(json_encode([
@@ -33,12 +33,12 @@ return new class extends Migration
                     'gf_mdrrmf_5' => false,
                     'sef' => false,
                 ]));
-            $table->string('payee_type')->nullable();
-            $table->uuid('payee_id')->nullable();
+            $table->string('payee_type')->nullable()->index();
+            $table->uuid('payee_id')->nullable()->index();
             $table->string('obr_no');
             $table->string('office')->nullable();
             $table->text('address')->nullable();
-            $table->uuid('responsibility_center_id')->nullable();
+            $table->uuid('responsibility_center_id')->nullable()->index();
             $table->foreign('responsibility_center_id')
                 ->references('id')
                 ->on('responsibility_centers');
@@ -50,18 +50,18 @@ return new class extends Migration
                     'allotment_necessary' => false,
                     'document_valid' => false,
                 ]));
-            $table->uuid('sig_head_id')->nullable();
+            $table->uuid('sig_head_id')->nullable()->index();
             $table->foreign('sig_head_id')
                 ->references('id')
                 ->on('signatories');
             $table->date('head_signed_date')->nullable();
-            $table->uuid('sig_budget_id')->nullable();
+            $table->uuid('sig_budget_id')->nullable()->index();
             $table->foreign('sig_budget_id')
                 ->references('id')
                 ->on('signatories');
             $table->date('budget_signed_date')->nullable();
             $table->text('disapproved_reason')->nullable();
-            $table->string('status');
+            $table->string('status')->index();
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });

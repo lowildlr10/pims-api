@@ -237,6 +237,7 @@ class ObligationRequestService
             'office' => $obr->office,
             'address' => $obr->address ?? null,
             'responsibility_center_id' => $obr->responsibility_center_id,
+            'gross_amount' => $obr->total_amount ?? 0.00,
             'total_amount' => $obr->total_amount ?? 0.00,
             'explanation' => $obr->particulars,
         ]);

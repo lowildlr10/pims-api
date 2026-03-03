@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('obligation_request_fpps', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('obligation_request_id');
+            $table->uuid('obligation_request_id')->index();
             $table->foreign('obligation_request_id')
                 ->references('id')
                 ->on('obligation_requests');
-            $table->uuid('fpp_id');
+            $table->uuid('fpp_id')->index();
             $table->foreign('fpp_id')
                 ->references('id')
                 ->on('function_program_projects');

@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('inventory_supplies', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_order_id');
+            $table->uuid('purchase_order_id')->index();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
-            $table->uuid('po_item_id')->nullable();
+            $table->uuid('po_item_id')->nullable()->index();
             $table->foreign('po_item_id')
                 ->references('id')
                 ->on('purchase_order_items');
@@ -26,11 +26,11 @@ return new class extends Migration
             $table->string('upc')->nullable();
             $table->string('name')->nullable();
             $table->text('description')->nullable();
-            $table->uuid('item_classification_id')->nullable();
+            $table->uuid('item_classification_id')->nullable()->index();
             $table->foreign('item_classification_id')
                 ->references('id')
                 ->on('item_classifications');
-            $table->uuid('unit_issue_id');
+            $table->uuid('unit_issue_id')->index();
             $table->foreign('unit_issue_id')
                 ->references('id')
                 ->on('unit_issues');

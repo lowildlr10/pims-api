@@ -13,41 +13,41 @@ return new class extends Migration
     {
         Schema::create('purchase_orders', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id');
+            $table->uuid('purchase_request_id')->index();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
             $table->string('po_no');
             $table->string('po_date')->nullable();
-            $table->uuid('mode_procurement_id');
+            $table->uuid('mode_procurement_id')->index();
             $table->foreign('mode_procurement_id')
                 ->references('id')
                 ->on('procurement_modes');
-            $table->uuid('supplier_id');
+            $table->uuid('supplier_id')->index();
             $table->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');
-            $table->uuid('place_delivery_id')->nullable();
+            $table->uuid('place_delivery_id')->nullable()->index();
             $table->foreign('place_delivery_id')
                 ->references('id')
                 ->on('locations');
             $table->date('delivery_date')->nullable();
-            $table->uuid('delivery_term_id')->nullable();
+            $table->uuid('delivery_term_id')->nullable()->index();
             $table->foreign('delivery_term_id')
                 ->references('id')
                 ->on('delivery_terms');
-            $table->uuid('payment_term_id')->nullable();
+            $table->uuid('payment_term_id')->nullable()->index();
             $table->foreign('payment_term_id')
                 ->references('id')
                 ->on('payment_terms');
             $table->text('total_amount_words')->nullable();
             $table->decimal('total_amount', 20, 2)->default(0.00);
-            $table->uuid('sig_approval_id')->nullable();
+            $table->uuid('sig_approval_id')->nullable()->index();
             $table->foreign('sig_approval_id')
                 ->references('id')
                 ->on('signatories');
-            $table->enum('document_type', ['po', 'jo']);
-            $table->string('status');
+            $table->enum('document_type', ['po', 'jo'])->index();
+            $table->string('status')->index();
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });

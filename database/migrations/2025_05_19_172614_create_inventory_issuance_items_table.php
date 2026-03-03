@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('inventory_issuance_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('inventory_issuance_id');
+            $table->uuid('inventory_issuance_id')->index();
             $table->foreign('inventory_issuance_id')
                 ->references('id')
                 ->on('inventory_issuances');
-            $table->uuid('inventory_supply_id');
+            $table->uuid('inventory_supply_id')->index();
             $table->foreign('inventory_supply_id')
                 ->references('id')
                 ->on('inventory_supplies');

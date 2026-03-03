@@ -21,6 +21,7 @@ class DisbursementVoucher extends Model
         'purchase_request_id',
         'purchase_order_id',
         'obligation_request_id',
+        'tax_withholding_id',
         'transaction_type',
         'dv_no',
         'mode_payment',
@@ -30,6 +31,7 @@ class DisbursementVoucher extends Model
         'office',
         'responsibility_center_id',
         'explanation',
+        'gross_amount',
         'total_amount',
         'accountant_certified_choices',
         'sig_accountant_id',
@@ -113,7 +115,7 @@ class DisbursementVoucher extends Model
     }
 
     /**
-     * The disbursement voucher that belongs to purchase order.
+     * The disbursement voucher that belongs to an obligation request.
      */
     public function obligation_request(): BelongsTo
     {
@@ -121,7 +123,7 @@ class DisbursementVoucher extends Model
     }
 
     /**
-     * The disbursement voucher that belongs to purchase order.
+     * The disbursement voucher that belongs to a purchase order.
      */
     public function purchase_order(): BelongsTo
     {
@@ -129,10 +131,18 @@ class DisbursementVoucher extends Model
     }
 
     /**
-     * The disbursement voucher that belongs to purchase request.
+     * The disbursement voucher that belongs to a purchase request.
      */
     public function purchase_request(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
+    }
+
+    /**
+     * The disbursement voucher that belongs to a tax withholding type.
+     */
+    public function tax_withholding(): BelongsTo
+    {
+        return $this->belongsTo(TaxWithholding::class);
     }
 }

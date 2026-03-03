@@ -11,12 +11,14 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('responsibility_centers', function (Blueprint $table) {
+        Schema::create('tax_withholdings', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('code')->index();
-            $table->text('description')->nullable();
+            $table->string('name');
+            $table->string('type')->unique();
+            $table->boolean('is_vat')->default(false);
+            $table->decimal('ewt_rate', 5, 4)->default(0);
+            $table->decimal('ptax_rate', 5, 4)->default(0);
             $table->boolean('active')->default(true);
-            $table->timestamps();
         });
     }
 
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('responsibility_centers');
+        Schema::dropIfExists('tax_withholdings');
     }
 };

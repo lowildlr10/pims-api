@@ -32,6 +32,7 @@ class DatabaseSeeder extends Seeder
             AccountSeeder::class,
             UnitIssueSeeder::class,
             PurchaseRequestSeeder::class,
+            TaxWithholdingSeeder::class,
         ]);
     }
 }

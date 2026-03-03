@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('inspection_acceptance_reports', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id');
+            $table->uuid('purchase_request_id')->index();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
-            $table->uuid('purchase_order_id');
+            $table->uuid('purchase_order_id')->index();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
-            $table->uuid('supplier_id');
+            $table->uuid('supplier_id')->index();
             $table->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');
@@ -31,17 +31,17 @@ return new class extends Migration
             $table->string('invoice_date')->nullable();
             $table->string('inspected_date')->nullable();
             $table->boolean('inspected')->default(false);
-            $table->uuid('sig_inspection_id')->nullable();
+            $table->uuid('sig_inspection_id')->nullable()->index();
             $table->foreign('sig_inspection_id')
                 ->references('id')
                 ->on('signatories');
             $table->string('received_date')->nullable();
             $table->boolean('acceptance_completed')->nullable();
-            $table->uuid('acceptance_id')->nullable();
+            $table->uuid('acceptance_id')->nullable()->index();
             $table->foreign('acceptance_id')
                 ->references('id')
                 ->on('users');
-            $table->string('status');
+            $table->string('status')->index();
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });

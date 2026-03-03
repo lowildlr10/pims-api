@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('request_quotation_canvassers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('request_quotation_id');
+            $table->uuid('request_quotation_id')->index();
             $table->foreign('request_quotation_id')
                 ->references('id')
                 ->on('request_quotations');
-            $table->uuid('user_id');
+            $table->uuid('user_id')->index();
             $table->foreign('user_id')
                 ->references('id')
                 ->on('users');

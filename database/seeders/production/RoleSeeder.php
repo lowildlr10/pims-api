@@ -40,6 +40,7 @@ class RoleSeeder extends Seeder
                 'lib-signatory:view',
                 'lib-supplier:view',
                 'lib-unit-issue:view',
+                'lib-tax-withholding:view',
 
                 'company:*',
                 'system-log:*',
@@ -108,6 +109,7 @@ class RoleSeeder extends Seeder
                 'lib-signatory:*',
                 'lib-supplier:*',
                 'lib-unit-issue:*',
+                'lib-tax-withholding:*',
 
                 'company:*',
                 'system-log:*',
@@ -175,6 +177,7 @@ class RoleSeeder extends Seeder
                 'lib-signatory:view',
                 'lib-supplier:view',
                 'lib-unit-issue:view',
+                'lib-tax-withholding:*',
 
                 'system-log:*',
             ],
@@ -206,6 +209,7 @@ class RoleSeeder extends Seeder
                 'lib-signatory:view',
                 'lib-supplier:view',
                 'lib-unit-issue:view',
+                'lib-tax-withholding:*',
 
                 'system-log:*',
             ],

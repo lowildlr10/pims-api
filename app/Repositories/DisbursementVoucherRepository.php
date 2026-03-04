@@ -1089,7 +1089,10 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $ewtRate = (float) $tax->ewt_rate;
         $ptaxRate = (float) $tax->ptax_rate;
 
-        $html = '<br /><br />';
+        $grossFormatted = number_format($gross, 2);
+
+        $html = '<br />Attached are supporting papers with the amount of . . . . . . . . . . . . . . . . . . . . .<br /><br /><table>';
+        $html .= "<tr><td width=\"66%\" colspan=\"4\">Gross Amount</td><td align=\"right\" width=\"24%\">{$grossFormatted}</td></tr>";
 
         if ($tax->is_vat) {
             // VAT computation: VAT = gross × 10/11.2 × 12% = gross × 12/112
@@ -1100,14 +1103,40 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
             $totalDeductions = round($ewt + $ptax, 2);
             $netAmount = round($gross - $totalDeductions, 2);
 
-            $html .= 'Gross Amount<br />';
-            $html .= 'Less: 12% VAT<br />';
-            $html .= '&nbsp;&nbsp;&nbsp;(P '.number_format($gross, 2).' x 10/11.2 x 12%) = '.$fmt($vat).'<br />';
-            $html .= '&nbsp;&nbsp;&nbsp;'.number_format($gross, 2).' - '.$fmt($vat).' = P '.$fmt($base).'<br />';
-            $html .= 'Less: Deductions:<br />';
-            $html .= '&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($base).' x '.$pct($ewtRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ewt).'<br />';
-            $html .= '&nbsp;&nbsp;&nbsp;5% P/Tax (P '.$fmt($base).' x '.$pct($ptaxRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ptax).'&nbsp;&nbsp;&nbsp;'.$fmt($totalDeductions).'<br />';
-            $html .= 'Net Amount: P '.$fmt($netAmount);
+            $html .= '<tr><td colspan="5">Less: 12% VAT</td></tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;('.number_format($gross, 2).' x 10/11.2 x 12% =</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($vat).'</td>
+                <td width="4%">&nbsp;)</td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;('.number_format($gross, 2).' - '.$fmt($vat).' = P</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($base).'</td>
+                <td width="4%">&nbsp;)</td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr><td colspan="4">Less: Deductions:</td></tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($base).' x '.$pct($ewtRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($ewt).'</td>
+                <td width="4%"></td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;5% P/Tax (P '.$fmt($base).' x '.$pct($ptaxRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($ptax).'</td>
+                <td width="4%"></td>
+                <td align="right" width="24%" style="border-bottom: 1px solid black">'.$fmt($totalDeductions).'</td>
+            </tr>';
+            $html .= '<tr>
+                <td colspan="4" width="66%"></td>
+                <td align="right" width="24%" style="border: 1px solid black">'.$fmt($netAmount).'</td>
+            </tr>';
         } else {
             // Non-VAT computation: deductions directly on gross amount
             $ewt = round($gross * $ewtRate, 2);
@@ -1115,12 +1144,28 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
             $totalDeductions = round($ewt + $ptax, 2);
             $netAmount = round($gross - $totalDeductions, 2);
 
-            $html .= 'Gross Amount<br />';
-            $html .= 'Less: Deductions<br />';
-            $html .= '&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($gross).' x '.$pct($ewtRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ewt).'<br />';
-            $html .= '&nbsp;&nbsp;&nbsp;'.$pct($ptaxRate).' P/Tax (P '.$fmt($gross).' x '.$pct($ptaxRate).')&nbsp;&nbsp;&nbsp;'.$fmt($ptax).'&nbsp;&nbsp;&nbsp;'.$fmt($totalDeductions).'<br />';
-            $html .= 'Net Amount: P '.$fmt($netAmount);
+            $html .= '<tr><td colspan="5">Less: Deductions</td></tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($gross).' x '.$pct($ewtRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%">'.$fmt($ewt).'</td>
+                <td width="4%"></td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;'.$pct($ptaxRate).' P/Tax (P '.$fmt($gross).' x '.$pct($ptaxRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($ptax).'</td>
+                <td width="4%"></td>
+                <td align="right" width="24%" style="border-bottom: 1px solid black">'.$fmt($totalDeductions).'</td>
+            </tr>';
+            $html .= '<tr>
+                <td colspan="4" width="66%"></td>
+                <td align="right" width="24%" style="border-bottom: 2px double black">'.$fmt($netAmount).'</td>
+            </tr>';
         }
+
+        $html .= '</table>';
 
         return $html;
     }

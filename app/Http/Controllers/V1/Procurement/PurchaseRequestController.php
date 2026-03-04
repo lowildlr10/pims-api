@@ -75,6 +75,7 @@ class PurchaseRequestController extends Controller
      * @bodyParam sai_date date nullable The SAI date.
      * @bodyParam alobs_no string nullable The ALOBS number.
      * @bodyParam alobs_date date nullable The ALOBS date.
+     * @bodyParam notes string nullable Additional notes.
      * @bodyParam purpose string required The purpose of the PR.
      * @bodyParam funding_source_id string nullable The funding source ID.
      * @bodyParam requested_by_id string required The requestor user ID.
@@ -105,7 +106,7 @@ class PurchaseRequestController extends Controller
             'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
             'alobs_date' => 'nullable',
-            'notes' => 'string',
+            'notes' => 'nullable|string',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',
@@ -168,6 +169,7 @@ class PurchaseRequestController extends Controller
      * @bodyParam sai_date date nullable The SAI date.
      * @bodyParam alobs_no string nullable The ALOBS number.
      * @bodyParam alobs_date date nullable The ALOBS date.
+     * @bodyParam notes string nullable Additional notes.
      * @bodyParam purpose string required The purpose of the PR.
      * @bodyParam funding_source_id string nullable The funding source ID.
      * @bodyParam requested_by_id string required The requestor user ID.
@@ -193,7 +195,7 @@ class PurchaseRequestController extends Controller
             'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
             'alobs_date' => 'nullable',
-            'notes' => 'string',
+            'notes' => 'nullable|string',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',

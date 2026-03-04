@@ -151,7 +151,7 @@ endpoints:
         name: disbursementVoucher_id
         description: 'The ID of the disbursementVoucher.'
         required: true
-        example: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+        example: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -169,7 +169,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      disbursementVoucher_id: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+      disbursementVoucher_id: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -215,7 +215,7 @@ endpoints:
         name: disbursementVoucher_id
         description: 'The ID of the disbursementVoucher.'
         required: true
-        example: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+        example: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -233,7 +233,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      disbursementVoucher_id: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+      disbursementVoucher_id: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -481,6 +481,17 @@ endpoints:
         exampleWasSpecified: false
         nullable: true
         deprecated: false
+      tax_withholding_id:
+        custom: []
+        name: tax_withholding_id
+        description: 'nullable The tax withholding ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
     cleanBodyParameters:
       mode_payment: architecto
       office: architecto
@@ -504,6 +515,7 @@ endpoints:
       or_other_document: architecto
       jev_no: architecto
       jev_date: architecto
+      tax_withholding_id: architecto
     fileParameters: []
     responses:
       -
@@ -554,7 +566,7 @@ endpoints:
         name: disbursementVoucher_id
         description: 'The ID of the disbursementVoucher.'
         required: true
-        example: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+        example: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -572,7 +584,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      disbursementVoucher_id: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+      disbursementVoucher_id: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -628,7 +640,7 @@ endpoints:
         name: disbursementVoucher_id
         description: 'The ID of the disbursementVoucher.'
         required: true
-        example: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+        example: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -646,7 +658,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      disbursementVoucher_id: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+      disbursementVoucher_id: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -714,7 +726,7 @@ endpoints:
         name: disbursementVoucher_id
         description: 'The ID of the disbursementVoucher.'
         required: true
-        example: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+        example: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -732,7 +744,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      disbursementVoucher_id: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+      disbursementVoucher_id: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
       id: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -788,7 +800,7 @@ endpoints:
         name: disbursementVoucher_id
         description: 'The ID of the disbursementVoucher.'
         required: true
-        example: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+        example: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -806,7 +818,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      disbursementVoucher_id: 019cb3d5-7193-71bc-8dd5-3f2a484fbd7f
+      disbursementVoucher_id: 019cb81f-c77e-7213-9fc9-c4f52ee1926d
       id: architecto
     queryParameters: []
     cleanQueryParameters: []

@@ -410,7 +410,7 @@ endpoints:
         name: requestQuotation_id
         description: 'The ID of the requestQuotation.'
         required: true
-        example: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+        example: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -428,7 +428,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      requestQuotation_id: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+      requestQuotation_id: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
       requestQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -651,7 +651,7 @@ endpoints:
         name: requestQuotation_id
         description: 'The ID of the requestQuotation.'
         required: true
-        example: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+        example: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -669,7 +669,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      requestQuotation_id: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+      requestQuotation_id: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
       requestQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -725,7 +725,7 @@ endpoints:
         name: requestQuotation_id
         description: 'The ID of the requestQuotation.'
         required: true
-        example: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+        example: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -743,7 +743,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      requestQuotation_id: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+      requestQuotation_id: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
       requestQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -799,7 +799,7 @@ endpoints:
         name: requestQuotation_id
         description: 'The ID of the requestQuotation.'
         required: true
-        example: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+        example: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -817,7 +817,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      requestQuotation_id: 019cb2d1-78c6-7324-a8a7-060ba7e38c69
+      requestQuotation_id: 019cb7c1-d0a1-7328-9314-14e1a6d54dd0
       requestQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []

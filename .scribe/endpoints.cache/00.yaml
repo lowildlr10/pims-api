@@ -126,7 +126,7 @@ endpoints:
         name: company_type
         description: 'optional The company type.'
         required: false
-        example: architecto
+        example: aspernatur
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -193,7 +193,7 @@ endpoints:
       municipality: architecto
       province: architecto
       region: architecto
-      company_type: architecto
+      company_type: aspernatur
       company_head_id: architecto
       favicon: architecto
       company_logo: architecto

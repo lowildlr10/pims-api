@@ -200,7 +200,7 @@ endpoints:
         name: abstractQuotation_id
         description: 'The ID of the abstractQuotation.'
         required: true
-        example: 019cb2e4-5331-7171-acde-facc6257d59e
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -218,7 +218,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      abstractQuotation_id: 019cb2e4-5331-7171-acde-facc6257d59e
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
       abstractQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -456,7 +456,7 @@ endpoints:
         name: abstractQuotation_id
         description: 'The ID of the abstractQuotation.'
         required: true
-        example: 019cb2e4-5331-7171-acde-facc6257d59e
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -474,7 +474,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      abstractQuotation_id: 019cb2e4-5331-7171-acde-facc6257d59e
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
       abstractQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -530,7 +530,7 @@ endpoints:
         name: abstractQuotation_id
         description: 'The ID of the abstractQuotation.'
         required: true
-        example: 019cb2e4-5331-7171-acde-facc6257d59e
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -548,7 +548,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      abstractQuotation_id: 019cb2e4-5331-7171-acde-facc6257d59e
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
       abstractQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -604,7 +604,7 @@ endpoints:
         name: abstractQuotation_id
         description: 'The ID of the abstractQuotation.'
         required: true
-        example: 019cb2e4-5331-7171-acde-facc6257d59e
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -622,7 +622,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      abstractQuotation_id: 019cb2e4-5331-7171-acde-facc6257d59e
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
       abstractQuotation: architecto
     queryParameters: []
     cleanQueryParameters: []

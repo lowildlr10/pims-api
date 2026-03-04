@@ -177,7 +177,7 @@ endpoints:
         name: inventorySupply_id
         description: 'The ID of the inventorySupply.'
         required: true
-        example: 019cb36a-36de-70bf-a967-308984af2456
+        example: 019cb7ff-2244-71f2-86c2-71861f592818
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -195,7 +195,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inventorySupply_id: 019cb36a-36de-70bf-a967-308984af2456
+      inventorySupply_id: 019cb7ff-2244-71f2-86c2-71861f592818
       inventorySupply: architecto
     queryParameters: []
     cleanQueryParameters: []
@@ -241,7 +241,7 @@ endpoints:
         name: inventorySupply_id
         description: 'The ID of the inventorySupply.'
         required: true
-        example: 019cb36a-36de-70bf-a967-308984af2456
+        example: 019cb7ff-2244-71f2-86c2-71861f592818
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -259,7 +259,7 @@ endpoints:
         nullable: false
         deprecated: false
     cleanUrlParameters:
-      inventorySupply_id: 019cb36a-36de-70bf-a967-308984af2456
+      inventorySupply_id: 019cb7ff-2244-71f2-86c2-71861f592818
       inventorySupply: architecto
     queryParameters: []
     cleanQueryParameters: []

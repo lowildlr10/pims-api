@@ -48,7 +48,7 @@ class UnitIssueSeeder extends Seeder
         'bar',
         'kit',
         'tray',
-        'each'
+        'each',
     ];
 
     /**

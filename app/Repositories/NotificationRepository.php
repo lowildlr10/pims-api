@@ -16,19 +16,17 @@ use App\Notifications\PurchaseRequestNofications\CanvassingNotification;
 use App\Notifications\PurchaseRequestNofications\DisapprovedNotification as PurchaseRequestDisapprovedNotification;
 use App\Notifications\PurchaseRequestNofications\ForAbstractNotification;
 use App\Notifications\PurchaseRequestNofications\PendingNotification as PurchaseRequestPendingNotification;
-use Exception;
-use ValueError;
 
 class NotificationRepository implements NotificationRepositoryInterface
 {
-    public function notify(NotificationType $notificationType, array $data): void    
+    public function notify(NotificationType $notificationType, array $data): void
     {
         try {
             switch ($notificationType) {
                 case $notificationType::PR_PENDING:
                     $this->notifyPurchaseRequestPending($data['pr']);
                     break;
-                
+
                 case $notificationType::PR_APPROVED_CASH_AVAILABLE:
                     $this->notifyPurchaseRequestApprovedCashAvailable($data['pr']);
                     break;
@@ -60,13 +58,13 @@ class NotificationRepository implements NotificationRepositoryInterface
                 case $notificationType::PR_AWARDED:
                     $this->notifyAwarded($data['pr'], $data['aoq']);
                     break;
-                
+
                 default:
-                    # code...
+                    // code...
                     break;
             }
         } catch (\Throwable $th) {
-            //throw $th;
+            // throw $th;
         }
     }
 
@@ -84,7 +82,7 @@ class NotificationRepository implements NotificationRepositoryInterface
         $userIds = array_unique([
             $pr->requested_by_id,
             $pr->signatory_cash_available->user_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -111,7 +109,7 @@ class NotificationRepository implements NotificationRepositoryInterface
         $userIds = array_unique([
             $pr->requested_by_id,
             $pr->signatory_approval->user_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -132,7 +130,7 @@ class NotificationRepository implements NotificationRepositoryInterface
 
         $userIds = array_unique([
             $pr->requested_by_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -153,7 +151,7 @@ class NotificationRepository implements NotificationRepositoryInterface
 
         $userIds = array_unique([
             $pr->requested_by_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -174,7 +172,7 @@ class NotificationRepository implements NotificationRepositoryInterface
 
         $userIds = array_unique([
             $pr->requested_by_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -195,7 +193,7 @@ class NotificationRepository implements NotificationRepositoryInterface
 
         $userIds = array_unique([
             $pr->requested_by_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -216,7 +214,7 @@ class NotificationRepository implements NotificationRepositoryInterface
 
         $userIds = array_unique([
             $pr->requested_by_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -237,7 +235,7 @@ class NotificationRepository implements NotificationRepositoryInterface
 
         $userIds = array_unique([
             $pr->requested_by_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();
@@ -258,7 +256,7 @@ class NotificationRepository implements NotificationRepositoryInterface
 
         $userIds = array_unique([
             $pr->requested_by_id,
-            ...$notifiables
+            ...$notifiables,
         ]);
 
         $users = User::whereIn('id', $userIds)->get();

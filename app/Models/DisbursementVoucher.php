@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class DisbursementVoucher extends Model
 {
@@ -20,13 +21,17 @@ class DisbursementVoucher extends Model
         'purchase_request_id',
         'purchase_order_id',
         'obligation_request_id',
+        'tax_withholding_id',
+        'transaction_type',
         'dv_no',
         'mode_payment',
+        'payee_type',
         'payee_id',
         'address',
         'office',
         'responsibility_center_id',
         'explanation',
+        'gross_amount',
         'total_amount',
         'accountant_certified_choices',
         'sig_accountant_id',
@@ -45,7 +50,7 @@ class DisbursementVoucher extends Model
         'jev_date',
         'disapproved_reason',
         'status',
-        'status_timestamps'
+        'status_timestamps',
     ];
 
     /**
@@ -56,17 +61,25 @@ class DisbursementVoucher extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\DisbursementVoucherStatus::class,
+            'transaction_type' => \App\Enums\TransactionType::class,
             'accountant_certified_choices' => 'array',
             'status_timestamps' => 'array',
+            'accountant_signed_date' => 'datetime',
+            'treasurer_signed_date' => 'datetime',
+            'head_signed_date' => 'datetime',
+            'check_date' => 'datetime',
+            'received_date' => 'datetime',
+            'jev_date' => 'datetime',
         ];
     }
 
     /**
      * The disbursement voucher that has one payee.
      */
-    public function payee(): HasOne
+    public function payee(): MorphTo
     {
-        return $this->hasOne(Supplier::class, 'id', 'payee_id');
+        return $this->morphTo();
     }
 
     /**
@@ -102,7 +115,7 @@ class DisbursementVoucher extends Model
     }
 
     /**
-     * The disbursement voucher that belongs to purchase order.
+     * The disbursement voucher that belongs to an obligation request.
      */
     public function obligation_request(): BelongsTo
     {
@@ -110,7 +123,7 @@ class DisbursementVoucher extends Model
     }
 
     /**
-     * The disbursement voucher that belongs to purchase order.
+     * The disbursement voucher that belongs to a purchase order.
      */
     public function purchase_order(): BelongsTo
     {
@@ -118,10 +131,18 @@ class DisbursementVoucher extends Model
     }
 
     /**
-     * The disbursement voucher that belongs to purchase request.
+     * The disbursement voucher that belongs to a purchase request.
      */
     public function purchase_request(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
+    }
+
+    /**
+     * The disbursement voucher that belongs to a tax withholding type.
+     */
+    public function tax_withholding(): BelongsTo
+    {
+        return $this->belongsTo(TaxWithholding::class);
     }
 }

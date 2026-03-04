@@ -4,41 +4,54 @@ namespace App\Http\Controllers\V1\Account;
 
 use App\Enums\DocumentPrintType;
 use App\Http\Controllers\Controller;
-use App\Models\Designation;
-use App\Models\Position;
-use App\Models\Section;
+use App\Http\Resources\UserResource;
 use App\Models\User;
-use App\Repositories\LogRepository;
+use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Routing\Controllers\Middleware;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 use ValueError;
 
+/**
+ * @group Users
+ * APIs for managing users
+ */
 class UserController extends Controller
 {
-    private LogRepository $logRepository;
-
-    public function __construct(LogRepository $logRepository)
-    {
-        $this->logRepository = $logRepository;
-    }
+    public function __construct(
+        protected UserService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Users
+     *
+     * Retrieve a paginated list of users.
+     *
+     * @queryParam search string Search by name, email, username, etc.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_inactive boolean Show inactive users. Default false.
+     * @queryParam column_sort string Sort field. Default firstname.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam document string Filter by document type (pr).
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $user = Auth::user();
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_inactive',
+            'column_sort',
+            'sort_direction',
+        ]);
 
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'firstname');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
         $document = $request->get('document', '');
 
         try {
@@ -47,92 +60,49 @@ class UserController extends Controller
             $documentEnum = DocumentPrintType::UNDEFINED;
         }
 
-        $users = User::with([
-            'department:id,department_name',
-            'section:id,section_name',
-            'position:id,position_name',
-            'designation:id,designation_name',
-            'roles:id,role_name',
-        ]);
+        if ($documentEnum !== DocumentPrintType::UNDEFINED) {
+            $hasAccess = $this->service->checkDocumentAccess($document);
 
-        switch ($documentEnum) {
-            case DocumentPrintType::PR:
-                $canAccess = in_array(true, [
-                    $user->tokenCan('super:*'),
-                    $user->tokenCan('supply:*'),
-                ]);
-
-                if ($canAccess) {
-                } else {
-                    $users = $users->where('id', $user->id);
-                }
-                break;
-
-            default:
-                break;
-        }
-
-        if (! empty($search)) {
-            $users = $users->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('firstname', 'ILIKE', "%{$search}%")
-                    ->orWhere('middlename', 'ILIKE', "%{$search}%")
-                    ->orWhere('lastname', 'ILIKE', "%{$search}%")
-                    ->orWhere('email', 'ILIKE', "%{$search}%")
-                    ->orWhere('phone', 'ILIKE', "%{$search}%")
-                    ->orWhere('sex', 'ILIKE', "%{$search}%")
-                    ->orWhere('username', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('position', 'position_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('designation', 'designation_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('department', 'department_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('roles', 'role_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'fullname_formatted':
-                    $users = $users->orderBy('firstname', $sortDirection);
-                    break;
-                case 'department_section':
-                    $users = $users->orderBy('department_id', $sortDirection)
-                        ->orderBy('section_id', $sortDirection);
-                    break;
-                case 'position_designation':
-                    $users = $users->orderBy('position_id', $sortDirection)
-                        ->orderBy('designation_id', $sortDirection);
-                    break;
-                default:
-                    $users = $users->orderBy($columnSort, $sortDirection);
-                    break;
+            if (! $hasAccess) {
+                $filters['search'] = Auth::user()->id;
             }
         }
 
-        if ($paginated) {
-            return $users->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $users = $users->where('restricted', false);
-            }
+        $users = $this->service->getAll($filters);
 
-            $users = $showAll
-                ? $users->get()
-                : $users = $users->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $users,
-            ]);
-        }
+        return UserResource::collection($users);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create User
+     *
+     * Create a new user.
+     *
+     * @bodyParam employee_id string required The employee ID.
+     * @bodyParam firstname string required The first name.
+     * @bodyParam middlename string optional The middle name.
+     * @bodyParam lastname string required The last name.
+     * @bodyParam sex string required The sex (male/female).
+     * @bodyParam department_id string required The department ID.
+     * @bodyParam section_id string optional The section ID.
+     * @bodyParam position string required The position name.
+     * @bodyParam designation string optional The designation name.
+     * @bodyParam username string required The username.
+     * @bodyParam email string optional The email.
+     * @bodyParam phone string optional The phone number.
+     * @bodyParam password string required The password.
+     * @bodyParam restricted boolean required Whether the user is restricted.
+     * @bodyParam roles array required The role IDs.
+     *
+     * @response 201 {
+     *   "data": {...},
+     *   "message": "User registered successfully."
+     * }
      */
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'employee_id' => 'required|string',
+            'employee_id' => 'required|string|unique:users,employee_id',
             'firstname' => 'required|string',
             'middlename' => 'nullable|string',
             'lastname' => 'required|string',
@@ -145,104 +115,79 @@ class UserController extends Controller
             'email' => 'email|unique:users|nullable',
             'phone' => 'string|max:13|nullable',
             'password' => 'required|min:6',
-            'avatar' => 'nullable|string',
-            'signature' => 'nullable|string',
             'restricted' => 'required|boolean',
-            'allow_signature' => 'boolean',
             'roles' => 'required|array',
         ]);
-        $validated['restricted'] = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
 
         try {
-            $position = Position::updateOrCreate([
-                'position_name' => $validated['position'],
-            ], [
-                'position_name' => $validated['position'],
-            ]);
+            $user = $this->service->create($validated);
 
-            $designation = Designation::updateOrCreate([
-                'designation_name' => $validated['designation'],
-            ], [
-                'designation_name' => $validated['designation'],
-            ]);
-
-            $section = Section::find($validated['section_id']);
-
-            $user = User::create(array_merge(
-                $validated,
-                [
-                    'position_id' => $position->id,
-                    'designation_id' => $designation->id,
-                    'department_id' => $section->department_id,
-                    'section_id' => $section->id,
-                    'avatar' => null,
-                    'signature' => null,
-                    'password' => bcrypt($request->password),
-                ]
-            ));
-
-            $roles = $validated['roles'] ?? [];
-            $user->roles()->sync($roles);
-
-            $user->save();
-
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new UserResource($user),
                 'message' => 'User registered successfully.',
-                'log_id' => $user->id,
-                'log_module' => 'account-user',
-                'data' => $user,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'User registration failed.',
-                'details' => $th->getMessage(),
-                'log_module' => 'account-user',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('User registration failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'User registration failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $user,
-                'message' => 'User registered successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show User
+     *
+     * Get a specific user by ID.
+     *
+     * @urlParam id string required The user UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
      */
-    public function show(User $user): JsonResponse
+    public function show(string $id): JsonResponse
     {
-        $user->load([
-            'department:id,department_name',
-            'section:id,section_name',
-            'position:id,position_name',
-            'designation:id,designation_name',
-            'roles:id,role_name',
-        ]);
+        $user = $this->service->getById($id);
+
+        if (! $user) {
+            return response()->json(['message' => 'User not found.'], 404);
+        }
 
         return response()->json([
-            'data' => [
-                'data' => $user,
-            ],
+            'data' => new UserResource($user),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update User
+     *
+     * Update an existing user.
+     *
+     * @urlParam id string required The user UUID.
+     *
+     * @bodyParam update_type string The update type (account-management, profile, allow_signature).
+     * @bodyParam employee_id string required The employee ID.
+     * @bodyParam firstname string required The first name.
+     * @bodyParam lastname string required The last name.
+     * @bodyParam sex string required The sex.
+     * @bodyParam position string required The position name.
+     * @bodyParam designation string optional The designation name.
+     * @bodyParam username string required The username.
+     * @bodyParam email string optional The email.
+     * @bodyParam password string optional The password.
+     * @bodyParam restricted boolean The restricted status.
+     * @bodyParam roles array The role IDs.
+     * @bodyParam allow_signature boolean For allow_signature update type.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "User updated successfully."
+     * }
      */
-    public function update(Request $request, User $user): JsonResponse
+    public function update(Request $request, string $id): JsonResponse
     {
         $updateType = $request->get('update_type', 'account-management');
-
-        if ($updateType === 'account-management') {
-            new Middleware('ability:super:*,account-user:*,account-user:update');
-        }
 
         switch ($updateType) {
             case 'profile':
@@ -253,8 +198,8 @@ class UserController extends Controller
                     'sex' => 'required|string|in:male,female',
                     'position' => 'required',
                     'designation' => 'nullable',
-                    'username' => 'required|unique:users,username,'.$user->id,
-                    'email' => 'email|unique:users,email,'.$user->id.'|nullable',
+                    'username' => 'required|unique:users,username,'.$id,
+                    'email' => 'email|unique:users,email,'.$id.'|nullable',
                     'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                 ]);
@@ -264,12 +209,11 @@ class UserController extends Controller
                 $validated = $request->validate([
                     'allow_signature' => 'required|boolean',
                 ]);
-                $allowSignature = filter_var($validated['allow_signature'], FILTER_VALIDATE_BOOLEAN);
                 break;
 
             default:
                 $validated = $request->validate([
-                    'employee_id' => 'required|string',
+                    'employee_id' => 'required|string|unique:users,employee_id,'.$id,
                     'firstname' => 'required|string',
                     'middlename' => 'nullable|string',
                     'lastname' => 'required|string',
@@ -278,119 +222,39 @@ class UserController extends Controller
                     'section_id' => 'nullable',
                     'position' => 'required',
                     'designation' => 'nullable',
-                    'username' => 'required|unique:users,username,'.$user->id,
-                    'email' => 'email|unique:users,email,'.$user->id.'|nullable',
+                    'username' => 'required|unique:users,username,'.$id,
+                    'email' => 'email|unique:users,email,'.$id.'|nullable',
                     'phone' => 'nullable|string|max:13',
                     'password' => 'nullable|min:6',
                     'restricted' => 'required|boolean',
                     'roles' => 'required|array',
                 ]);
-                $restricted = filter_var($validated['restricted'], FILTER_VALIDATE_BOOLEAN);
                 break;
         }
 
         try {
-            if ($updateType === 'account-management' || $updateType === 'profile') {
-                $position = Position::updateOrCreate([
-                    'position_name' => $validated['position'],
-                ], [
-                    'position_name' => $validated['position'],
-                ]);
+            $user = $this->service->update($id, array_merge($validated, ['update_type' => $updateType]));
 
-                $designation = Designation::updateOrCreate([
-                    'designation_name' => $validated['designation'],
-                ], [
-                    'designation_name' => $validated['designation'],
-                ]);
-            }
+            $successMessage = match ($updateType) {
+                'allow_signature' => 'Signature allowed successfully.',
+                default => 'User updated successfully.',
+            };
 
-            if ($updateType === 'account-management') {
-                $roles = $validated['roles'] ?? [];
-                $user->roles()->sync($roles);
-            }
-
-            switch ($updateType) {
-                case 'profile':
-                    $password = $validated['password'];
-                    unset($validated['password']);
-                    $updateData = array_merge(
-                        $validated,
-                        [
-                            'position_id' => $position->id,
-                            'designation_id' => $designation->id,
-                        ],
-                        ! empty(trim($password))
-                            ? ['password' => bcrypt($password)]
-                            : []
-                    );
-                    break;
-
-                case 'allow_signature':
-                    $updateData = array_merge(
-                        $validated,
-                        [
-                            'allow_signature' => $allowSignature,
-                        ]
-                    );
-                    break;
-
-                default:
-                    $password = $validated['password'];
-                    unset($validated['password']);
-                    $updateData = array_merge(
-                        $validated,
-                        [
-                            'position_id' => $position->id,
-                            'designation_id' => $designation->id,
-                            'restricted' => $restricted,
-                        ],
-                        ! empty(trim($password))
-                            ? ['password' => bcrypt($password)]
-                            : []
-                    );
-                    $user->tokens()->delete();
-                    break;
-            }
-
-            $user->update($updateData);
+            return response()->json([
+                'data' => new UserResource($user),
+                'message' => $successMessage,
+            ]);
         } catch (\Throwable $th) {
-            if ($updateType === 'allow_signature') {
-                $errorMessage = 'Failed to allow signature. Please try again.';
-            } else {
-                $errorMessage = 'User update failed. Please try again.';
-            }
+            $errorMessage = match ($updateType) {
+                'allow_signature' => 'Failed to allow signature. Please try again.',
+                default => 'User update failed. Please try again.',
+            };
 
-            $this->logRepository->create([
-                'message' => $errorMessage,
-                'details' => $th->getMessage(),
-                'log_id' => $user->id,
-                'log_module' => 'account-user',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError($errorMessage, $th, $validated);
 
             return response()->json([
                 'message' => $errorMessage,
             ], 422);
         }
-
-        if ($updateType === 'allow_signature') {
-            $successMessage = 'Signature allowed successfully.';
-        } else {
-            $successMessage = 'User updated successfully.';
-        }
-
-        $this->logRepository->create([
-            'message' => $successMessage,
-            'log_id' => $user->id,
-            'log_module' => 'account_user',
-            'data' => $user,
-        ]);
-
-        return response()->json([
-            'data' => [
-                'data' => $request->except('password'),
-                'message' => $successMessage,
-            ],
-        ]);
     }
 }

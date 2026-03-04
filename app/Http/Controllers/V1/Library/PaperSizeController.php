@@ -3,67 +3,77 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\PaperSize;
-use App\Repositories\LogRepository;
+use App\Http\Resources\PaperSizeResource;
+use App\Services\PaperSizeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Paper Sizes
+ * APIs for managing paper sizes
+ */
 class PaperSizeController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(
+        protected PaperSizeService $service
+    ) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Paper Sizes
+     *
+     * Retrieve a paginated list of paper sizes.
+     *
+     * @queryParam search string Search by paper type, unit, width, or height.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items without pagination. Default false.
+     * @queryParam column_sort string Sort field. Default paper_type.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
+
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        $paperSizes = $this->service->getAll($filters);
+
+        return PaperSizeResource::collection($paperSizes);
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Paper Size
+     *
+     * Create a new paper size.
+     *
+     * @bodyParam paper_type string required The paper type name.
+     * @bodyParam unit string required The unit (mm, cm, in).
+     * @bodyParam width numeric required The width.
+     * @bodyParam height numeric required The height.
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "paper_type": "A4"
+     *   },
+     *   "message": "Paper type created successfully."
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'paper_type');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $paperSizes = PaperSize::query();
-
-        if (! empty($search)) {
-            $paperSizes = $paperSizes->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('paper_type', 'ILIKE', "%{$search}%")
-                    ->orWhere('unit', 'ILIKE', "%{$search}%")
-                    ->orWhere('width', 'ILIKE', "%{$search}%")
-                    ->orWhere('height', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            $paperSizes = $paperSizes->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $paperSizes->paginate($perPage);
-        } else {
-            $paperSizes = $showAll
-                ? $paperSizes->get()
-                : $paperSizes = $paperSizes->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $paperSizes,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'paper_type' => 'required|unique:paper_sizes,paper_type',
@@ -73,95 +83,87 @@ class PaperSizeController extends Controller
         ]);
 
         try {
-            $paperSize = PaperSize::create($validated);
+            $paperSize = $this->service->create($validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new PaperSizeResource($paperSize),
                 'message' => 'Paper type created successfully.',
-                'log_id' => $paperSize->id,
-                'log_module' => 'lib-paper-size',
-                'data' => $paperSize,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Paper type creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-paper-size',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Paper type creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Paper type creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $paperSize,
-                'message' => 'Paper type created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Paper Size
+     *
+     * Get a specific paper size by ID.
+     *
+     * @urlParam id string required The paper size UUID.
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "paper_type": "A4"
+     *   }
+     * }
      */
-    public function show(PaperSize $paperSize)
+    public function show(string $id): JsonResponse
     {
+        $paperSize = $this->service->getById($id);
+
+        if (! $paperSize) {
+            return response()->json(['message' => 'Paper type not found.'], 404);
+        }
+
         return response()->json([
-            'data' => [
-                'data' => $paperSize,
-            ],
+            'data' => new PaperSizeResource($paperSize),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Paper Size
+     *
+     * Update an existing paper size.
+     *
+     * @urlParam id string required The paper size UUID.
+     *
+     * @bodyParam paper_type string required The paper type name.
+     * @bodyParam unit string required The unit (mm, cm, in).
+     * @bodyParam width numeric required The width.
+     * @bodyParam height numeric required The height.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Paper type updated successfully."
+     * }
      */
-    public function update(Request $request, PaperSize $paperSize)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'paper_type' => 'required|unique:paper_sizes,paper_type,'.$paperSize->id,
+            'paper_type' => 'required|unique:paper_sizes,paper_type,'.$id,
             'unit' => 'required|in:mm,cm,in',
             'width' => 'required|numeric',
             'height' => 'required|numeric',
         ]);
 
         try {
-            $paperSize->update($validated);
+            $paperSize = $this->service->update($id, $validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new PaperSizeResource($paperSize),
                 'message' => 'Paper type updated successfully.',
-                'log_id' => $paperSize->id,
-                'log_module' => 'lib-paper-size',
-                'data' => $paperSize,
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Paper type update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $paperSize->id,
-                'log_module' => 'lib-paper-size',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Paper type update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Paper type update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $paperSize,
-                'message' => 'Paper type updated successfully.',
-            ],
-        ]);
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function delete(PaperSize $paperSize)
-    {
-        //
     }
 }

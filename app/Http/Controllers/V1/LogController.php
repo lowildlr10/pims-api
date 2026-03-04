@@ -3,79 +3,48 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Log;
-use App\Models\User;
+use App\Http\Resources\LogResource;
+use App\Services\LogService;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @group Logs
+ * APIs for managing system logs
+ */
 class LogController extends Controller
 {
+    public function __construct(protected LogService $service) {}
+
     /**
-     * Display a listing of the resource.
+     * List Logs
+     *
+     * Retrieve a paginated list of logs with optional filtering.
+     *
+     * @queryParam search string Search by log_id, log_module, log_type, message, details, or user name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam column_sort string Sort field. Default logged_at.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam log_id string Filter by specific log entity ID.
+     *
+     * @response 200 {"data": [...], "meta": {...}}
      */
-    public function index(Request $request): LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection
     {
         $user = Auth::user();
+        $isSuper = $user->tokenCan('super:*');
 
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $columnSort = $request->get('column_sort', 'logged_at');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $logId = $request->get('log_id', '');
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'column_sort',
+            'sort_direction',
+            'log_id',
+        ]);
 
-        $logs = Log::with('user:id,firstname,middlename,lastname');
+        $logs = $this->service->getAll($filters, $user->id, $isSuper);
 
-        if ($user->tokenCan('super:*')) {
-        } else {
-            if (empty($logId)) {
-                $logs = $logs->where('user_id', $user->id);
-            }
-        }
-
-        if (! empty($search) && empty($logId)) {
-            $logs = $logs->where(function ($query) use ($search) {
-                $query->where('log_id', 'ILIKE', "%{$search}%")
-                    ->orWhere('log_module', 'ILIKE', "%{$search}%")
-                    ->orWhere('log_type', 'ILIKE', "%{$search}%")
-                    ->orWhere('message', 'ILIKE', "%{$search}%")
-                    ->orWhere('details', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('user', 'middlename', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if ($logId) {
-            $logs = $logs->where('log_id', $logId);
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'user_formatted':
-                    $columnSort = '';
-                    $signatories = $logs->orderBy(
-                        User::select('firstname')->whereColumn('users.id', 'signatories.user_id')
-                    );
-                    break;
-                case 'log_module_formatted':
-                    $columnSort = 'log_module';
-                    break;
-                case 'log_type_formatted':
-                    $columnSort = 'log_type';
-                    break;
-                case 'logged_at_formatted':
-                    $columnSort = 'logged_at';
-                    break;
-                default:
-                    break;
-            }
-
-            if ($columnSort) {
-                $logs = $logs->orderBy($columnSort, $sortDirection);
-            }
-        }
-
-        return $logs->paginate($perPage);
+        return LogResource::collection($logs);
     }
 }

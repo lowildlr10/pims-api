@@ -3,166 +3,117 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\AccountClassification;
-use App\Repositories\LogRepository;
+use App\Http\Resources\AccountClassificationResource;
+use App\Services\AccountClassificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Account Classifications
+ * APIs for managing account classifications
+ */
 class AccountClassificationController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(protected AccountClassificationService $service) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Account Classifications
+     *
+     * Retrieve a paginated list of account classifications.
+     *
+     * @queryParam search string Search by classification name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items without pagination. Default false.
+     * @queryParam show_inactive boolean Show inactive classifications. Default false.
+     * @queryParam column_sort string Sort field. Default classification_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     *
+     * @response 200 {"data": [...], "meta": {...}}
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only(['search', 'per_page', 'show_all', 'show_inactive', 'column_sort', 'sort_direction', 'paginated']);
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        return AccountClassificationResource::collection($this->service->getAll($filters));
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Account Classification
+     *
+     * @bodyParam classification_name string required The classification name.
+     * @bodyParam active boolean required Whether active. Default true.
+     *
+     * @response 201 {"data": {"id": "uuid", "classification_name": "Name"}, "message": "Account classification created successfully."}
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'classification_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $accountClassifications = AccountClassification::query();
-
-        if (! empty($search)) {
-            $accountClassifications = $accountClassifications->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('classification_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'classification_name_formatted':
-                    $columnSort = 'classification_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $accountClassifications = $accountClassifications->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $accountClassifications->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $accountClassifications = $accountClassifications->where('active', true);
-            }
-
-            $accountClassifications = $showAll
-                ? $accountClassifications->get()
-                : $accountClassifications = $accountClassifications->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $accountClassifications,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:account_classifications,classification_name',
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $accountClassification = AccountClassification::create($validated);
-
-            $this->logRepository->create([
-                'message' => 'Account classification created successfully.',
-                'log_id' => $accountClassification->id,
-                'log_module' => 'lib-account-class',
-                'data' => $accountClassification,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Account classification creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-account-class',
-                'data' => $validated,
-            ], isError: true);
+            $accountClassification = $this->service->create($validated);
 
             return response()->json([
-                'message' => 'Account classification creation failed. Please try again.',
-            ], 422);
+                'data' => new AccountClassificationResource($accountClassification),
+                'message' => 'Account classification created successfully.',
+            ], 201);
+        } catch (\Throwable $th) {
+            $this->service->logError('Account classification creation failed.', $th, $validated);
+
+            return response()->json(['message' => 'Account classification creation failed. Please try again.'], 422);
+        }
+    }
+
+    /**
+     * Show Account Classification
+     *
+     * @urlParam id string required The account classification UUID.
+     *
+     * @response 200 {"data": {"id": "uuid", "classification_name": "Name"}}
+     */
+    public function show(string $id): JsonResponse
+    {
+        $accountClassification = $this->service->getById($id);
+        if (! $accountClassification) {
+            return response()->json(['message' => 'Account classification not found.'], 404);
         }
 
-        return response()->json([
-            'data' => [
-                'data' => $accountClassification,
-                'message' => 'Account classification created successfully.',
-            ],
-        ]);
+        return response()->json(['data' => new AccountClassificationResource($accountClassification)]);
     }
 
     /**
-     * Display the specified resource.
+     * Update Account Classification
+     *
+     * @urlParam id string required The account classification UUID.
+     *
+     * @bodyParam classification_name string required The classification name.
+     * @bodyParam active boolean required Whether active.
+     *
+     * @response 200 {"data": {...}, "message": "Account classification updated successfully."}
      */
-    public function show(AccountClassification $accountClassification)
-    {
-        return response()->json([
-            'data' => [
-                'data' => $accountClassification,
-            ],
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, AccountClassification $accountClassification)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'classification_name' => 'required|unique:account_classifications,classification_name,'.$accountClassification->id,
+            'classification_name' => 'required|unique:account_classifications,classification_name,'.$id,
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $accountClassification->update($validated);
-
-            $this->logRepository->create([
-                'message' => 'Section updated successfully.',
-                'log_id' => $accountClassification->id,
-                'log_module' => 'lib-account-class',
-                'data' => $accountClassification,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Section update failed.',
-                'details' => $th->getMessage(),
-                'log_id' => $accountClassification->id,
-                'log_module' => 'lib-account-class',
-                'data' => $validated,
-            ], isError: true);
+            $accountClassification = $this->service->update($id, $validated);
 
             return response()->json([
-                'message' => 'Account classification update failed. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'data' => [
-                'data' => $accountClassification,
+                'data' => new AccountClassificationResource($accountClassification),
                 'message' => 'Account classification updated successfully.',
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $th) {
+            $this->service->logError('Account classification update failed.', $th, $validated);
+
+            return response()->json(['message' => 'Account classification update failed. Please try again.'], 422);
+        }
     }
 }

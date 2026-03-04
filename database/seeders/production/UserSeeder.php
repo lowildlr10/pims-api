@@ -5,7 +5,6 @@ namespace Database\Seeders\Production;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Position;
-use App\Models\Role;
 use App\Models\Section;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -17,8 +16,7 @@ class UserSeeder extends Seeder
         [
             'position_name' => 'System Administrator',
             'designation_name' => 'System Administrator',
-            'department_name' => 'Information and Communications Technology Office',
-            'section_name' => 'Systems Development',
+            'department_name' => 'Office of the MSWDO',
             'role_name' => 'Administrator',
             'employee_id' => '1111',
             'firstname' => 'System',
@@ -49,10 +47,10 @@ class UserSeeder extends Seeder
             $department = Department::create([
                 'department_name' => $user['department_name'],
             ]);
-            $section = Section::create([
+            $section = isset($user['section_name']) ? Section::create([
                 'department_id' => $department->id,
                 'section_name' => $user['section_name'],
-            ]);
+            ]) : null;
 
             $user = User::create([
                 'employee_id' => $user['employee_id'],
@@ -60,7 +58,7 @@ class UserSeeder extends Seeder
                 'lastname' => $user['lastname'],
                 'sex' => $user['sex'],
                 'department_id' => $department->id,
-                'section_id' => $section->id,
+                'section_id' => $section?->id,
                 'position_id' => $position->id,
                 'designation_id' => $designation->id,
                 'username' => $user['username'],

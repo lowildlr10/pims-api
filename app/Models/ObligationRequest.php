@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class ObligationRequest extends Model
 {
@@ -20,7 +21,9 @@ class ObligationRequest extends Model
     protected $fillable = [
         'purchase_request_id',
         'purchase_order_id',
+        'transaction_type',
         'funding',
+        'payee_type',
         'payee_id',
         'obr_no',
         'office',
@@ -35,7 +38,7 @@ class ObligationRequest extends Model
         'budget_signed_date',
         'disapproved_reason',
         'status',
-        'status_timestamps'
+        'status_timestamps',
     ];
 
     /**
@@ -46,18 +49,22 @@ class ObligationRequest extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\ObligationRequestStatus::class,
+            'transaction_type' => \App\Enums\TransactionType::class,
             'funding' => 'array',
             'compliance_status' => 'array',
             'status_timestamps' => 'array',
+            'head_signed_date' => 'datetime',
+            'budget_signed_date' => 'datetime',
         ];
     }
 
     /**
      * The obligation request that has one payee.
      */
-    public function payee(): HasOne
+    public function payee(): MorphTo
     {
-        return $this->hasOne(Supplier::class, 'id', 'payee_id');
+        return $this->morphTo();
     }
 
     /**

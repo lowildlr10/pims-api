@@ -1,0 +1,70 @@
+name: 'Library - Payees'
+description: 'APIs for retrieving payees (suppliers and users combined)'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/libraries/payees
+    metadata:
+      custom: []
+      groupName: 'Library - Payees'
+      groupDescription: 'APIs for retrieving payees (suppliers and users combined)'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Payees'
+      description: 'Retrieve a combined list of suppliers and users as payees.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by name.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      show_inactive:
+        custom: []
+        name: show_inactive
+        description: 'Include inactive suppliers. Default false.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      show_inactive: false
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [
+              {"id": "uuid", "name": "Supplier Name", "type": "App\\Models\\Supplier", "payee_value": "App\\Models\\Supplier:uuid"},
+              {"id": "uuid", "name": "User Full Name", "type": "App\\Models\\User", "payee_value": "App\\Models\\User:uuid"}
+            ]
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

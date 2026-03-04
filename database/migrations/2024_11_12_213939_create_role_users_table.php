@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('role_users', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('user_id');
+            $table->uuid('user_id')->index();
             $table->foreign('user_id')
                 ->references('id')
                 ->on('users');
-            $table->uuid('role_id');
+            $table->uuid('role_id')->index();
             $table->foreign('role_id')
                 ->references('id')
                 ->on('roles');

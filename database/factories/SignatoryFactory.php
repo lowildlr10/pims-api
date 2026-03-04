@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 class SignatoryFactory extends Factory
 {
     protected $model = Signatory::class;
-    
+
     /**
      * Define the model's default state.
      *

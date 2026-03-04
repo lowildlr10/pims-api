@@ -2,7 +2,6 @@
 
 namespace App\Helpers;
 
-use Illuminate\Support\Facades\Storage;
 use TCPDF;
 
 class TextHelper
@@ -14,7 +13,7 @@ class TextHelper
         $currentLine = '';
 
         foreach ($words as $word) {
-            $testLine = $currentLine === '' ? $word : $currentLine . ' ' . $word;
+            $testLine = $currentLine === '' ? $word : $currentLine.' '.$word;
             $testWidth = $pdf->GetStringWidth($testLine);
 
             if ($testWidth <= $maxWidth) {

@@ -8,4 +8,14 @@ enum ObligationRequestStatus: string
     case PENDING = 'pending';
     case DISAPPROVED = 'disapproved';
     case OBLIGATED = 'obligated';
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::DRAFT => 'Draft',
+            self::PENDING => 'Pending for Obligation',
+            self::DISAPPROVED => 'Disapproved',
+            self::OBLIGATED => 'Obligated',
+        };
+    }
 }

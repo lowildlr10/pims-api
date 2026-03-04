@@ -3,82 +3,51 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\Account;
-use App\Repositories\LogRepository;
+use App\Http\Resources\AccountResource;
+use App\Services\AccountService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Accounts
+ * APIs for managing accounts
+ */
 class AccountController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(protected AccountService $service) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Accounts
+     *
+     * @queryParam search string Search by account title, code, description, or classification.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items. Default false.
+     * @queryParam show_inactive boolean Show inactive. Default false.
+     * @queryParam column_sort string Sort field. Default code.
+     * @queryParam sort_direction string Sort direction. Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only(['search', 'per_page', 'show_all', 'show_inactive', 'column_sort', 'sort_direction', 'paginated']);
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        return AccountResource::collection($this->service->getAll($filters));
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Account
+     *
+     * @bodyParam classification_id string required The classification ID.
+     * @bodyParam account_title string required The account title.
+     * @bodyParam code string required The code.
+     * @bodyParam description string optional The description.
+     * @bodyParam active boolean required Whether active. Default true.
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'code');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $accounts = Account::query()->with('classification');
-
-        if (! empty($search)) {
-            $accounts = $accounts->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('account_title', 'ILIKE', "%{$search}%")
-                    ->orWhere('code', 'ILIKE', "%{$search}%")
-                    ->orWhere('description', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('classification', 'classification_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'code_formatted':
-                    $columnSort = 'code';
-                    break;
-                case 'classification_name':
-                    $columnSort = 'classification.classification_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $accounts = $accounts->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $accounts->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $accounts = $accounts->where('active', true);
-            }
-
-            $accounts = $showAll
-                ? $accounts->get()
-                : $accounts = $accounts->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $accounts,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'classification_id' => 'required',
@@ -87,96 +56,66 @@ class AccountController extends Controller
             'description' => 'nullable',
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $account = Account::create($validated);
-
-            $this->logRepository->create([
-                'message' => 'Account created successfully.',
-                'log_id' => $account->id,
-                'log_module' => 'lib-account',
-                'data' => $account,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Account creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-account',
-                'data' => $validated,
-            ], isError: true);
+            $account = $this->service->create($validated);
 
             return response()->json([
-                'message' => 'Account creation failed. Please try again.',
-            ], 422);
+                'data' => new AccountResource($account),
+                'message' => 'Account created successfully.',
+            ], 201);
+        } catch (\Throwable $th) {
+            $this->service->logError('Account creation failed.', $th, $validated);
+
+            return response()->json(['message' => 'Account creation failed. Please try again.'], 422);
+        }
+    }
+
+    /**
+     * Show Account
+     *
+     * @urlParam id string required The UUID.
+     */
+    public function show(string $id): JsonResponse
+    {
+        $account = $this->service->getById($id);
+        if (! $account) {
+            return response()->json(['message' => 'Account not found.'], 404);
         }
 
-        return response()->json([
-            'data' => [
-                'data' => $account,
-                'message' => 'Account created successfully.',
-            ],
-        ]);
+        return response()->json(['data' => new AccountResource($account)]);
     }
 
     /**
-     * Display the specified resource.
+     * Update Account
+     *
+     * @urlParam id string required The UUID.
+     *
+     * @bodyParam classification_id string required The classification ID.
+     * @bodyParam account_title string required The account title.
+     * @bodyParam code string required The code.
+     * @bodyParam description string optional The description.
+     * @bodyParam active boolean required Whether active.
      */
-    public function show(Account $account)
-    {
-        $account->load('classification');
-
-        return response()->json([
-            'data' => [
-                'data' => $account,
-            ],
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Account $account)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'classification_id' => 'required',
             'account_title' => 'required|string',
-            'code' => 'required|unique:accounts,code,'.$account->id,
+            'code' => 'required|unique:accounts,code,'.$id,
             'description' => 'nullable',
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $account->update($validated);
-
-            $this->logRepository->create([
-                'message' => 'Section updated successfully.',
-                'log_id' => $account->id,
-                'log_module' => 'lib-account',
-                'data' => $account,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Section update failed.',
-                'details' => $th->getMessage(),
-                'log_id' => $account->id,
-                'log_module' => 'lib-account',
-                'data' => $validated,
-            ], isError: true);
+            $account = $this->service->update($id, $validated);
 
             return response()->json([
-                'message' => 'Account update failed. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'data' => [
-                'data' => $account,
+                'data' => new AccountResource($account),
                 'message' => 'Account updated successfully.',
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $th) {
+            $this->service->logError('Account update failed.', $th, $validated);
+
+            return response()->json(['message' => 'Account update failed. Please try again.'], 422);
+        }
     }
 }

@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('funding_sources', function (Blueprint $table) {
             $table->uuid('id')->primary();
             $table->string('title');
-            $table->uuid('location_id')->nullable();
+            $table->uuid('location_id')->nullable()->index();
             $table->foreign('location_id')
                 ->references('id')
                 ->on('locations');

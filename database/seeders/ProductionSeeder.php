@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use Database\Seeders\Production as ProductionSeeders;
+use Illuminate\Database\Seeder;
 
 class ProductionSeeder extends Seeder
 {
@@ -22,6 +22,7 @@ class ProductionSeeder extends Seeder
             ProductionSeeders\PaperSizeSeeder::class,
             ProductionSeeders\ProcurementModeSeeder::class,
             ProductionSeeders\UnitIssueSeeder::class,
+            ProductionSeeders\TaxWithholdingSeeder::class,
         ]);
     }
 }

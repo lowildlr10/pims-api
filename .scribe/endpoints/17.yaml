@@ -1,0 +1,534 @@
+name: 'Inspection and Acceptance Reports'
+description: 'APIs for managing inspection and acceptance reports'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/inspection-acceptance-reports
+    metadata:
+      custom: []
+      groupName: 'Inspection and Acceptance Reports'
+      groupDescription: 'APIs for managing inspection and acceptance reports'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Inspection and Acceptance Reports'
+      description: 'Retrieve a paginated list of inspection and acceptance reports.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by IAR number, invoice number, etc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Number of items per page. Default: 50.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      show_all:
+        custom: []
+        name: show_all
+        description: 'Show all results without pagination. Default: false.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      column_sort:
+        custom: []
+        name: column_sort
+        description: 'Sort field. Default: iar_no.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      sort_direction:
+        custom: []
+        name: sort_direction
+        description: 'Sort direction (asc/desc). Default: desc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      paginated:
+        custom: []
+        name: paginated
+        description: 'Return paginated results. Default: true.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      per_page: 16
+      show_all: false
+      column_sort: architecto
+      sort_direction: architecto
+      paginated: false
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [...],
+            "links": {...},
+            "meta": {...}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/inspection-acceptance-reports/{inspectionAcceptanceReport}'
+    metadata:
+      custom: []
+      groupName: 'Inspection and Acceptance Reports'
+      groupDescription: 'APIs for managing inspection and acceptance reports'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Inspection and Acceptance Report'
+      description: 'Display the specified inspection and acceptance report.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      inspectionAcceptanceReport:
+        custom: []
+        name: inspectionAcceptanceReport
+        description: ''
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The inspection and acceptance report UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      inspectionAcceptanceReport: architecto
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...}
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "message": "Inspection and Acceptance Report not found."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/inspection-acceptance-reports/{inspectionAcceptanceReport_id}'
+    metadata:
+      custom: []
+      groupName: 'Inspection and Acceptance Reports'
+      groupDescription: 'APIs for managing inspection and acceptance reports'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update Inspection and Acceptance Report'
+      description: 'Update the specified inspection and acceptance report.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      inspectionAcceptanceReport_id:
+        custom: []
+        name: inspectionAcceptanceReport_id
+        description: 'The ID of the inspectionAcceptanceReport.'
+        required: true
+        example: 019cb7fb-e336-7216-ba8c-ea30f69ad48d
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The inspection and acceptance report UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      inspectionAcceptanceReport_id: 019cb7fb-e336-7216-ba8c-ea30f69ad48d
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      iar_date:
+        custom: []
+        name: iar_date
+        description: 'The IAR date.'
+        required: true
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      invoice_no:
+        custom: []
+        name: invoice_no
+        description: 'The invoice number.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      invoice_date:
+        custom: []
+        name: invoice_date
+        description: 'The invoice date.'
+        required: true
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      inspected_date:
+        custom: []
+        name: inspected_date
+        description: 'nullable The inspected date.'
+        required: false
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      inspected:
+        custom: []
+        name: inspected
+        description: 'nullable Whether items have been inspected.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_inspection_id:
+        custom: []
+        name: sig_inspection_id
+        description: 'nullable The signatory for inspection ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      acceptance_id:
+        custom: []
+        name: acceptance_id
+        description: 'nullable The acceptance user ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      received_date:
+        custom: []
+        name: received_date
+        description: 'nullable The received date.'
+        required: false
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      acceptance_completed:
+        custom: []
+        name: acceptance_completed
+        description: 'nullable Whether acceptance is completed.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      iar_date: architecto
+      invoice_no: architecto
+      invoice_date: architecto
+      inspected_date: architecto
+      inspected: false
+      sig_inspection_id: architecto
+      acceptance_id: architecto
+      received_date: architecto
+      acceptance_completed: false
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Inspection and acceptance report updated successfully."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Inspection and acceptance report update failed."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/inspection-acceptance-reports/{inspectionAcceptanceReport_id}/pending'
+    metadata:
+      custom: []
+      groupName: 'Inspection and Acceptance Reports'
+      groupDescription: 'APIs for managing inspection and acceptance reports'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mark as Pending for Inspection'
+      description: 'Mark the inspection and acceptance report as pending for inspection.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      inspectionAcceptanceReport_id:
+        custom: []
+        name: inspectionAcceptanceReport_id
+        description: 'The ID of the inspectionAcceptanceReport.'
+        required: true
+        example: 019cb7fb-e336-7216-ba8c-ea30f69ad48d
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The inspection and acceptance report UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      inspectionAcceptanceReport_id: 019cb7fb-e336-7216-ba8c-ea30f69ad48d
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Inspection & acceptance report successfully marked as pending for inspection."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Failed to set the inspection & acceptance report to pending for inspection."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/inspection-acceptance-reports/{inspectionAcceptanceReport_id}/inspect'
+    metadata:
+      custom: []
+      groupName: 'Inspection and Acceptance Reports'
+      groupDescription: 'APIs for managing inspection and acceptance reports'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Mark as Inspected'
+      description: 'Mark the inspection and acceptance report as inspected and create obligation request.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      inspectionAcceptanceReport_id:
+        custom: []
+        name: inspectionAcceptanceReport_id
+        description: 'The ID of the inspectionAcceptanceReport.'
+        required: true
+        example: 019cb7fb-e336-7216-ba8c-ea30f69ad48d
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      id:
+        custom: []
+        name: id
+        description: 'The inspection and acceptance report UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      inspectionAcceptanceReport_id: 019cb7fb-e336-7216-ba8c-ea30f69ad48d
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      items:
+        custom: []
+        name: items
+        description: 'The inspected items (required for PO type).'
+        required: true
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      items:
+        - architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Inspection & acceptance report successfully marked as inspected."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Failed to set the inspection & acceptance report to inspected."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

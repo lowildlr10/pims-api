@@ -2,16 +2,14 @@
 
 namespace Database\Factories;
 
-use App\Models\{
-    Department,
-    Section,
-    FundingSource,
-    User,
-    SignatoryDetail,
-    UnitIssue,
-    PurchaseRequest,
-    PurchaseRequestItem
-};
+use App\Models\Department;
+use App\Models\FundingSource;
+use App\Models\PurchaseRequest;
+use App\Models\PurchaseRequestItem;
+use App\Models\Section;
+use App\Models\SignatoryDetail;
+use App\Models\UnitIssue;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -44,7 +42,7 @@ class PurchaseRequestFactory extends Factory
             ->first()?->signatory;
 
         $now = now();
-        
+
         $year = $this->faker->numberBetween(2020, now()->year);
         $month = str_pad($this->faker->numberBetween(1, 12), 2, '0', STR_PAD_LEFT);
         $day = $this->faker->numberBetween(1, cal_days_in_month(CAL_GREGORIAN, $month, $year));
@@ -53,7 +51,7 @@ class PurchaseRequestFactory extends Factory
         static $sequenceTracker = [];
 
         $key = "{$year}-{$month}";
-        if (!isset($sequenceTracker[$key])) {
+        if (! isset($sequenceTracker[$key])) {
             $sequenceTracker[$key] = 1;
         } else {
             $sequenceTracker[$key]++;
@@ -109,7 +107,7 @@ class PurchaseRequestFactory extends Factory
                     'description' => $this->faker->sentence(),
                     'stock_no' => $i + 1,
                     'estimated_unit_cost' => $unitCost,
-                    'estimated_cost' => $estimatedCost
+                    'estimated_cost' => $estimatedCost,
                 ]);
 
                 $totalCost += $estimatedCost;

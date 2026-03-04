@@ -45,7 +45,14 @@ class InventoryIssuance extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\InventoryIssuanceStatus::class,
             'status_timestamps' => 'array',
+            'inventory_date' => 'datetime',
+            'sai_date' => 'datetime',
+            'requested_date' => 'datetime',
+            'approved_date' => 'datetime',
+            'issued_date' => 'datetime',
+            'received_date' => 'datetime',
         ];
     }
 

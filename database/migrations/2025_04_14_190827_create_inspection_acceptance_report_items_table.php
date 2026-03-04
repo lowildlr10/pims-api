@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('inspection_acceptance_report_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('inspection_acceptance_report_id');
+            $table->uuid('inspection_acceptance_report_id')->index();
             $table->foreign('inspection_acceptance_report_id')
                 ->references('id')
                 ->on('inspection_acceptance_reports');
-            $table->uuid('pr_item_id');
+            $table->uuid('pr_item_id')->index();
             $table->foreign('pr_item_id')
                 ->references('id')
                 ->on('purchase_request_items');
-            $table->uuid('po_item_id');
+            $table->uuid('po_item_id')->index();
             $table->foreign('po_item_id')
                 ->references('id')
                 ->on('purchase_order_items');

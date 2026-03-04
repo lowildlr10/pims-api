@@ -1,0 +1,656 @@
+name: 'Abstract Quotations'
+description: 'APIs for managing abstract of quotations/bids'
+endpoints:
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/abstract-quotations
+    metadata:
+      custom: []
+      groupName: 'Abstract Quotations'
+      groupDescription: 'APIs for managing abstract of quotations/bids'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'List Abstract Quotations'
+      description: 'Retrieve a paginated list of purchase requests with abstract quotations.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters:
+      search:
+        custom: []
+        name: search
+        description: 'Search by PR number, purpose, etc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      per_page:
+        custom: []
+        name: per_page
+        description: 'Number of items per page. Default: 50.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      show_all:
+        custom: []
+        name: show_all
+        description: 'Show all results without pagination. Default: false.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      column_sort:
+        custom: []
+        name: column_sort
+        description: 'Sort field. Default: pr_no.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      sort_direction:
+        custom: []
+        name: sort_direction
+        description: 'Sort direction (asc/desc). Default: desc.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      paginated:
+        custom: []
+        name: paginated
+        description: 'Return paginated results. Default: true.'
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanQueryParameters:
+      search: architecto
+      per_page: 16
+      show_all: false
+      column_sort: architecto
+      sort_direction: architecto
+      paginated: false
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": [...],
+            "links": {...},
+            "meta": {...}
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/abstract-quotations/{abstractQuotation}'
+    metadata:
+      custom: []
+      groupName: 'Abstract Quotations'
+      groupDescription: 'APIs for managing abstract of quotations/bids'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Get Abstract Quotation'
+      description: 'Display the specified abstract quotation.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      abstractQuotation:
+        custom: []
+        name: abstractQuotation
+        description: 'The abstract quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      abstractQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...}
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 404
+        content: |-
+          {
+            "message": "Abstract quotation not found."
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/abstract-quotations/{abstractQuotation_id}'
+    metadata:
+      custom: []
+      groupName: 'Abstract Quotations'
+      groupDescription: 'APIs for managing abstract of quotations/bids'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Update Abstract Quotation'
+      description: 'Update the specified abstract quotation in storage.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      abstractQuotation_id:
+        custom: []
+        name: abstractQuotation_id
+        description: 'The ID of the abstractQuotation.'
+        required: true
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      abstractQuotation:
+        custom: []
+        name: abstractQuotation
+        description: 'The abstract quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+      abstractQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      bids_awards_committee_id:
+        custom: []
+        name: bids_awards_committee_id
+        description: 'The BAC ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      mode_procurement_id:
+        custom: []
+        name: mode_procurement_id
+        description: 'The mode of procurement ID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      solicitation_no:
+        custom: []
+        name: solicitation_no
+        description: 'The solicitation number.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      solicitation_date:
+        custom: []
+        name: solicitation_date
+        description: 'The solicitation date.'
+        required: true
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      opened_on:
+        custom: []
+        name: opened_on
+        description: 'nullable The date opened.'
+        required: false
+        example: architecto
+        type: date
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      bac_action:
+        custom: []
+        name: bac_action
+        description: 'nullable The BAC action.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_twg_chairperson_id:
+        custom: []
+        name: sig_twg_chairperson_id
+        description: 'nullable The TWG chairperson signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_twg_member_1_id:
+        custom: []
+        name: sig_twg_member_1_id
+        description: 'nullable The TWG member 1 signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_twg_member_2_id:
+        custom: []
+        name: sig_twg_member_2_id
+        description: 'nullable The TWG member 2 signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_chairman_id:
+        custom: []
+        name: sig_chairman_id
+        description: 'nullable The chairman signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_vice_chairman_id:
+        custom: []
+        name: sig_vice_chairman_id
+        description: 'nullable The vice chairman signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_member_1_id:
+        custom: []
+        name: sig_member_1_id
+        description: 'nullable The member 1 signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_member_2_id:
+        custom: []
+        name: sig_member_2_id
+        description: 'nullable The member 2 signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      sig_member_3_id:
+        custom: []
+        name: sig_member_3_id
+        description: 'nullable The member 3 signatory ID.'
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      items:
+        custom: []
+        name: items
+        description: 'The AOQ items.'
+        required: true
+        example:
+          - architecto
+        type: 'string[]'
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      bids_awards_committee_id: architecto
+      mode_procurement_id: architecto
+      solicitation_no: architecto
+      solicitation_date: architecto
+      opened_on: architecto
+      bac_action: architecto
+      sig_twg_chairperson_id: architecto
+      sig_twg_member_1_id: architecto
+      sig_twg_member_2_id: architecto
+      sig_chairman_id: architecto
+      sig_vice_chairman_id: architecto
+      sig_member_1_id: architecto
+      sig_member_2_id: architecto
+      sig_member_3_id: architecto
+      items:
+        - architecto
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Abstract of bids and quotation updated successfully."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/abstract-quotations/{abstractQuotation_id}/revert'
+    metadata:
+      custom: []
+      groupName: 'Abstract Quotations'
+      groupDescription: 'APIs for managing abstract of quotations/bids'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Revert Abstract Quotation'
+      description: 'Revert changes for this abstract quotation to draft status.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      abstractQuotation_id:
+        custom: []
+        name: abstractQuotation_id
+        description: 'The ID of the abstractQuotation.'
+        required: true
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      abstractQuotation:
+        custom: []
+        name: abstractQuotation
+        description: 'The abstract quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+      abstractQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Changes for this abstract of bids and quotation successfully reverted."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/abstract-quotations/{abstractQuotation_id}/pending'
+    metadata:
+      custom: []
+      groupName: 'Abstract Quotations'
+      groupDescription: 'APIs for managing abstract of quotations/bids'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Set Abstract Quotation as Pending'
+      description: 'Mark the abstract quotation as pending.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      abstractQuotation_id:
+        custom: []
+        name: abstractQuotation_id
+        description: 'The ID of the abstractQuotation.'
+        required: true
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      abstractQuotation:
+        custom: []
+        name: abstractQuotation
+        description: 'The abstract quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+      abstractQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Abstract of bids and quotation successfully marked as Pending."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/abstract-quotations/{abstractQuotation_id}/approve'
+    metadata:
+      custom: []
+      groupName: 'Abstract Quotations'
+      groupDescription: 'APIs for managing abstract of quotations/bids'
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Approve Abstract Quotation'
+      description: 'Mark the abstract quotation as approved.'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      abstractQuotation_id:
+        custom: []
+        name: abstractQuotation_id
+        description: 'The ID of the abstractQuotation.'
+        required: true
+        example: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      abstractQuotation:
+        custom: []
+        name: abstractQuotation
+        description: 'The abstract quotation UUID.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      abstractQuotation_id: 019cb7c9-93bb-72e4-bca2-d2b4fc1858bf
+      abstractQuotation: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 200
+        content: |-
+          {
+            "data": {...},
+            "message": "Abstract of bids and quotation successfully marked as Approved."
+          }
+        headers: []
+        description: ''
+      -
+        custom: []
+        status: 422
+        content: |-
+          {
+            "message": "Error message"
+          }
+        headers: []
+        description: ''
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null

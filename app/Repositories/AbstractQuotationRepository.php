@@ -261,7 +261,8 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -279,7 +280,8 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->SetFont($this->fontArialBold, 'B', 10);
@@ -480,10 +482,10 @@ class AbstractQuotationRepository implements AbstractQuotationRepositoryInterfac
             if ($index === 0) {
                 $pdf->Cell(
                     $pageWidth * (0.38 * (($supplierHeadersCount > 3 ? 0.71 : 0.66) / $supplierHeadersCount)),
-                    0, 
+                    0,
                     'P'.number_format($supplierHeader->total_cost, 2),
-                    1, 
-                    count($supplierHeaders) === 1 ? 1 : 0, 
+                    1,
+                    count($supplierHeaders) === 1 ? 1 : 0,
                     'L'
                 );
 

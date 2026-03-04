@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('responsibility_centers', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('code');
+            $table->string('code')->index();
             $table->text('description')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();

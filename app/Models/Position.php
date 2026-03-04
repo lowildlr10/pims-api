@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Position extends Model
 {
-    use HasUuids, HasFactory;
+    use HasFactory, HasUuids;
 
     /**
      * The attributes that are mass assignable.

@@ -2,219 +2,119 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
-use App\Enums\InspectionAcceptanceReportStatus;
-use App\Enums\PurchaseOrderStatus;
-use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\InspectionAcceptanceReportResource;
 use App\Models\InspectionAcceptanceReport;
-use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequestItem;
-use App\Models\Supplier;
-use App\Models\User;
-use App\Repositories\InventorySupplyRepository;
-use App\Repositories\LogRepository;
-use App\Repositories\ObligationRequestRepository;
+use App\Services\InspectionAcceptanceReportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Inspection and Acceptance Reports
+ * APIs for managing inspection and acceptance reports
+ */
 class InspectionAcceptanceReportController extends Controller
 {
-    protected LogRepository $logRepository;
-
-    protected InventorySupplyRepository $inventorySupplyRepository;
-
-    protected ObligationRequestRepository $obligationRequestRepository;
-
     public function __construct(
-        LogRepository $logRepository,
-        InventorySupplyRepository $inventorySupplyRepository,
-        ObligationRequestRepository $obligationRequestRepository
-    ) {
-        $this->logRepository = $logRepository;
-        $this->inventorySupplyRepository = $inventorySupplyRepository;
-        $this->obligationRequestRepository = $obligationRequestRepository;
-    }
+        protected InspectionAcceptanceReportService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Inspection and Acceptance Reports
+     *
+     * Retrieve a paginated list of inspection and acceptance reports.
+     *
+     * @queryParam search string Search by IAR number, invoice number, etc.
+     * @queryParam per_page int Number of items per page. Default: 50.
+     * @queryParam show_all boolean Show all results without pagination. Default: false.
+     * @queryParam column_sort string Sort field. Default: iar_no.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default: desc.
+     * @queryParam paginated boolean Return paginated results. Default: true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "links": {...},
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
-        $user = Auth::user();
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
 
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'iar_no');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $inspectionAcceptanceReport = InspectionAcceptanceReport::query()
-            ->select([
-                'id',
-                'purchase_order_id',
-                'supplier_id',
-                'iar_no',
-                'iar_date',
-                'sig_inspection_id',
-                'status',
-            ])
-            ->with([
-                'purchase_order:id,po_no,supplier_id',
-                'supplier:id,supplier_name',
-                'signatory_inspection.user:id,firstname,middlename,lastname',
-                'signatory_inspection.detail' => function ($query) {
-                    $query->where('document', 'iar')
-                        ->where('signatory_type', '	inspection');
-                },
-            ]);
-
-        if ($user->tokenCan('super:*')
-            || $user->tokenCan('head:*')
-            || $user->tokenCan('supply:*')
-            || $user->tokenCan('budget:*')
-            || $user->tokenCan('accountant:*')
-        ) {
-        } else {
-            $inspectionAcceptanceReport = $inspectionAcceptanceReport
-                ->whereRelation('purchase_request', function ($query) use ($user) {
-                $query->where('requested_by_id', $user->id);
-            });
-        }
-
-        if (! empty($search)) {
-            $inspectionAcceptanceReport->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('iar_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('iar_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('invoice_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('inspected_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('inspected', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('signatory_inspection.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('acceptance', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('purchase_order', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                            ->orWhere('po_no', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('supplier', function ($query) use ($search) {
-                        $query->where('supplier_name', 'ILIKE', "%{$search}%");
-                    });
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'iar_no':
-                    $inspectionAcceptanceReport = $inspectionAcceptanceReport->orderByRaw("CAST(REPLACE(iar_no, '-', '') AS INTEGER) {$sortDirection}");
-                    break;
-
-                case 'iar_date_formatted':
-                    $inspectionAcceptanceReport = $inspectionAcceptanceReport->orderBy('iar_date', $sortDirection);
-                    break;
-
-                case 'po_no':
-                    $inspectionAcceptanceReport = $inspectionAcceptanceReport->orderBy(
-                        PurchaseOrder::select('po_no')->whereColumn('purchase_orders.id', 'inspection_acceptance_reports.purchase_order_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'supplier':
-                    $inspectionAcceptanceReport = $inspectionAcceptanceReport->orderBy(
-                        Supplier::select('supplier_name')->whereColumn('suppliers.id', 'inspection_acceptance_reports.supplier_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'signatory_inspection':
-                    $inspectionAcceptanceReport = $inspectionAcceptanceReport->orderBy(
-                        User::select('firstname')
-                            ->join('signatories', 'signatories.user_id', '=', 'users.id')
-                            ->whereColumn('signatories.id', 'inspection_acceptance_reports.sig_inspection_id')
-                            ->limit(1),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'status_formatted':
-                    $inspectionAcceptanceReport = $inspectionAcceptanceReport->orderBy('status', $sortDirection);
-                    break;
-
-                default:
-                    $inspectionAcceptanceReport = $inspectionAcceptanceReport->orderBy($columnSort, $sortDirection);
-                    break;
-            }
-        }
+        $paginated = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $result = $this->service->getAll($filters);
 
         if ($paginated) {
-            return $inspectionAcceptanceReport->paginate($perPage);
-        } else {
-            $inspectionAcceptanceReport = $showAll
-                ? $inspectionAcceptanceReport->get()
-                : $inspectionAcceptanceReport = $inspectionAcceptanceReport->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $inspectionAcceptanceReport,
-            ]);
+            return InspectionAcceptanceReportResource::collection($result);
         }
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
-    {
-        $inspectionAcceptanceReport->load([
-            'supplier:id,supplier_name',
-            'items' => function ($query) {
-                $query->orderBy(
-                    PurchaseRequestItem::select('item_sequence')
-                        ->whereColumn(
-                            'inspection_acceptance_report_items.pr_item_id', 'purchase_request_items.id'
-                        ),
-                    'asc'
-                );
-            },
-            'items.pr_item:id,unit_issue_id,item_sequence,quantity,stock_no',
-            'items.pr_item.unit_issue:id,unit_name',
-            'items.po_item:id,purchase_order_id,description,brand_model,unit_cost,total_cost',
-            'signatory_inspection:id,user_id',
-            'signatory_inspection.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_inspection.detail' => function ($query) {
-                $query->where('document', 'iar')
-                    ->where('signatory_type', '	inspection');
-            },
-            'acceptance:id,firstname,middlename,lastname,allow_signature,signature,position_id,designation_id',
-            'acceptance.position:id,position_name',
-            'acceptance.designation:id,designation_name',
-            'purchase_request:id,section_id',
-            'purchase_request.section:id,section_name',
-            'purchase_order:id,po_no,po_date,document_type',
-        ]);
 
         return response()->json([
-            'data' => [
-                'data' => $inspectionAcceptanceReport,
-            ],
+            'data' => InspectionAcceptanceReportResource::collection($result),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Get Inspection and Acceptance Report
+     *
+     * Display the specified inspection and acceptance report.
+     *
+     * @urlParam id string required The inspection and acceptance report UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
+     * @response 404 {
+     *   "message": "Inspection and Acceptance Report not found."
+     * }
+     */
+    public function show(string $id): JsonResponse
+    {
+        $iar = $this->service->getById($id);
+
+        if (! $iar) {
+            return response()->json(['message' => 'Inspection and Acceptance Report not found.'], 404);
+        }
+
+        return response()->json([
+            'data' => new InspectionAcceptanceReportResource($iar),
+        ]);
+    }
+
+    /**
+     * Update Inspection and Acceptance Report
+     *
+     * Update the specified inspection and acceptance report.
+     *
+     * @urlParam id string required The inspection and acceptance report UUID.
+     *
+     * @bodyParam iar_date date required The IAR date.
+     * @bodyParam invoice_no string required The invoice number.
+     * @bodyParam invoice_date date required The invoice date.
+     * @bodyParam inspected_date date nullable The inspected date.
+     * @bodyParam inspected boolean nullable Whether items have been inspected.
+     * @bodyParam sig_inspection_id string nullable The signatory for inspection ID.
+     * @bodyParam acceptance_id string nullable The acceptance user ID.
+     * @bodyParam received_date date nullable The received date.
+     * @bodyParam acceptance_completed boolean nullable Whether acceptance is completed.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inspection and acceptance report updated successfully."
+     * }
+     * @response 422 {
+     *   "message": "Inspection and acceptance report update failed."
+     * }
      */
     public function update(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
     {
-        $user = Auth::user();
-
         $validated = $request->validate([
             'iar_date' => 'required',
             'invoice_no' => 'required',
@@ -235,276 +135,95 @@ class InspectionAcceptanceReportController extends Controller
             : null;
 
         try {
-            $message = 'Inspection and acceptance report updated successfully.';
-
-            $inspectionAcceptanceReport->update($validated);
-
-            $inspectionAcceptanceReport->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inspectionAcceptanceReport->id,
-                'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport,
-            ]);
+            $iar = $this->service->update($inspectionAcceptanceReport, $validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $inspectionAcceptanceReport,
-                    'message' => $message,
-                ],
+                'data' => new InspectionAcceptanceReportResource($iar),
+                'message' => 'Inspection and acceptance report updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Inspection and acceptance repor update failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $inspectionAcceptanceReport->id,
-                'log_module' => 'iar',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Inspection and acceptance report update failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => 'Inspection and acceptance report update failed. Please try again.',
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Mark as Pending for Inspection
+     *
+     * Mark the inspection and acceptance report as pending for inspection.
+     *
+     * @urlParam id string required The inspection and acceptance report UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inspection & acceptance report successfully marked as pending for inspection."
+     * }
+     * @response 422 {
+     *   "message": "Failed to set the inspection & acceptance report to pending for inspection."
+     * }
      */
     public function pending(InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
     {
         try {
-            $message = 'Inspection & acceptance report successfully marked as pending for inspection.';
-
-            $currentStatus = InspectionAcceptanceReportStatus::from($inspectionAcceptanceReport->status);
-
-            if ($currentStatus !== InspectionAcceptanceReportStatus::DRAFT) {
-                $message =
-                    'Failed to set the inspection & accpetance report to pending for inspection.
-                    It may already be set to pending or processing status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $inspectionAcceptanceReport->id,
-                    'log_module' => 'iar',
-                    'data' => $inspectionAcceptanceReport,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder = PurchaseOrder::find($inspectionAcceptanceReport->purchase_order_id);
-
-            if ($purchaseOrder) {
-                $purchaseOrder->update([
-                    'status' => PurchaseOrderStatus::FOR_INSPECTION,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'for_inspection_at', $purchaseOrder->status_timestamps
-                    ),
-                ]);
-
-                $this->logRepository->create([
-                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                        ' order successfully marked as to for inspection.',
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ]);
-            }
-
-            $inspectionAcceptanceReport->update([
-                'status' => InspectionAcceptanceReportStatus::PENDING,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'pending_at', $inspectionAcceptanceReport->status_timestamps
-                ),
-            ]);
-
-            $inspectionAcceptanceReport->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inspectionAcceptanceReport->id,
-                'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport,
-            ]);
+            $iar = $this->service->pending($inspectionAcceptanceReport);
 
             return response()->json([
-                'data' => [
-                    'data' => $inspectionAcceptanceReport,
-                    'message' => $message,
-                ],
+                'data' => new InspectionAcceptanceReportResource($iar),
+                'message' => 'Inspection & acceptance report successfully marked as pending for inspection.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Inspection & acceptance report failed to marked as pending for inspection.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $inspectionAcceptanceReport->id,
-                'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport,
-            ], isError: true);
+            $this->service->logError('Inspection & acceptance report failed to mark as pending for inspection.', $th, $inspectionAcceptanceReport->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Mark as Inspected
+     *
+     * Mark the inspection and acceptance report as inspected and create obligation request.
+     *
+     * @urlParam id string required The inspection and acceptance report UUID.
+     *
+     * @bodyParam items array required The inspected items (required for PO type).
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Inspection & acceptance report successfully marked as inspected."
+     * }
+     * @response 422 {
+     *   "message": "Failed to set the inspection & acceptance report to inspected."
+     * }
      */
-    public function inspect(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport)
+    public function inspect(Request $request, InspectionAcceptanceReport $inspectionAcceptanceReport): JsonResponse
     {
         $inspectionAcceptanceReport->load([
             'purchase_order',
-            'purchase_order.supplier'
+            'purchase_order.supplier',
         ]);
 
-        $validated = $inspectionAcceptanceReport->purchase_order->document_type === 'po' 
-            ? $request->validate([
-                'items' => 'required|array|min:1',
-            ]) : [
-                'items' => []
-            ];
+        $items = $inspectionAcceptanceReport->purchase_order->document_type === 'po'
+            ? $request->validate(['items' => 'required|array|min:1'])['items']
+            : [];
 
         try {
-            $message = 'Inspection & acceptance report successfully marked as inspected.';
-
-            $currentStatus = InspectionAcceptanceReportStatus::from($inspectionAcceptanceReport->status);
-
-            if ($currentStatus !== InspectionAcceptanceReportStatus::PENDING) {
-                $message =
-                    'Failed to set the inspection & accpetance report to inspected.
-                    It may still be on draft or already on processing status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $inspectionAcceptanceReport->id,
-                    'log_module' => 'iar',
-                    'data' => $inspectionAcceptanceReport,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            if (empty($inspectionAcceptanceReport->sig_inspection_id)) {
-                $message = 'Failed to set the inspection & acceptance report to inspected. '.
-                    'Please select a signatory for inspection.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $inspectionAcceptanceReport->id,
-                    'log_module' => 'iar',
-                    'data' => [
-                        'iar' => $inspectionAcceptanceReport,
-                        'supplies' => $request->all(),
-                    ],
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            // Save inspected items to inventory property and supplies
-            foreach ($validated['items'] ?? [] as $key => $item) {
-                $supply = $this->inventorySupplyRepository->storeUpdate(array_merge(
-                    $item,
-                    ['item_sequence' => $key]
-                ));
-
-                $this->logRepository->create([
-                    'message' => 'Supply created successfully.',
-                    'log_id' => $supply->id,
-                    'log_module' => 'inv-supply',
-                    'data' => $supply,
-                ]);
-            }
-
-            // Create an obligation request
-            $obligationRequest = $this->obligationRequestRepository->storeUpdate([
-                'purchase_request_id' => $inspectionAcceptanceReport->purchase_request_id,
-                'purchase_order_id'   => $inspectionAcceptanceReport->purchase_order_id,
-                'payee_id'            => $inspectionAcceptanceReport->purchase_order->supplier_id,
-                'address'             => $inspectionAcceptanceReport->purchase_order->supplier->address ?? null,
-                'total_amount'        => $inspectionAcceptanceReport->purchase_order->total_amount ?? 0.00,
-            ]);
-
-            $this->logRepository->create([
-                'message' => 'Obligation request created successfully.',
-                'log_id' => $obligationRequest->id,
-                'log_module' => 'obr',
-                'data' => $obligationRequest,
-            ]);
-
-            $purchaseOrder = PurchaseOrder::find($inspectionAcceptanceReport->purchase_order_id);
-
-            if ($purchaseOrder) {
-                $purchaseOrder->update([
-                    'status' => PurchaseOrderStatus::INSPECTED,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'inspected_at', $purchaseOrder->status_timestamps
-                    ),
-                ]);
-
-                $this->logRepository->create([
-                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                        ' order successfully marked as to inspected.',
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ]);
-            }
-
-            $inspectionAcceptanceReport->update([
-                'status' => InspectionAcceptanceReportStatus::INSPECTED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'inspected_at', $inspectionAcceptanceReport->status_timestamps
-                ),
-            ]);
-
-            $inspectionAcceptanceReport->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $inspectionAcceptanceReport->id,
-                'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport,
-            ]);
+            $iar = $this->service->inspect($inspectionAcceptanceReport, $items);
 
             return response()->json([
-                'data' => [
-                    'data' => $inspectionAcceptanceReport,
-                    'message' => $message,
-                ],
+                'data' => new InspectionAcceptanceReportResource($iar),
+                'message' => 'Inspection & acceptance report successfully marked as inspected.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Inspection & acceptance report failed to marked as inspected.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $inspectionAcceptanceReport->id,
-                'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport,
-            ], isError: true);
+            $this->service->logError('Inspection & acceptance report failed to mark as inspected.', $th, $inspectionAcceptanceReport->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
-
-    /**
-     * Update the status of the specified resource in storage.
-     */
-    // public function accept(InspectionAcceptanceReport $inspectionAcceptanceReport)
-    // {
-
-    // }
 }

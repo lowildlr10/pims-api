@@ -3,166 +3,162 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\UnitIssue;
-use App\Repositories\LogRepository;
+use App\Http\Resources\UnitIssueResource;
+use App\Services\UnitIssueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Unit Issues
+ * APIs for managing unit issues
+ */
 class UnitIssueController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(
+        protected UnitIssueService $service
+    ) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Unit Issues
+     *
+     * Retrieve a paginated list of unit issues.
+     *
+     * @queryParam search string Search by unit name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items without pagination. Default false.
+     * @queryParam show_inactive boolean Show inactive unit issues. Default false.
+     * @queryParam column_sort string Sort field. Default unit_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'show_inactive',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
+
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        $unitIssues = $this->service->getAll($filters);
+
+        return UnitIssueResource::collection($unitIssues);
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Unit Issue
+     *
+     * Create a new unit of issue.
+     *
+     * @bodyParam unit_name string required The unit name.
+     * @bodyParam active boolean required Whether the unit issue is active. Default true.
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "unit_name": "Piece"
+     *   },
+     *   "message": "Unit of issue created successfully."
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'unit_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $unitIssues = UnitIssue::query();
-
-        if (! empty($search)) {
-            $unitIssues = $unitIssues->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('unit_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'unit_name_formatted':
-                    $columnSort = 'unit_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $unitIssues = $unitIssues->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $unitIssues->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $unitIssues = $unitIssues->where('active', true);
-            }
-
-            $unitIssues = $showAll
-                ? $unitIssues->get()
-                : $unitIssues = $unitIssues->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $unitIssues,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'unit_name' => 'required|unique:unit_issues,unit_name',
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $unitIssue = UnitIssue::create($validated);
+            $unitIssue = $this->service->create($validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new UnitIssueResource($unitIssue),
                 'message' => 'Unit of issue created successfully.',
-                'log_id' => $unitIssue->id,
-                'log_module' => 'lib-unit-issue',
-                'data' => $unitIssue,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Unit of issue creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-unit-issue',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Unit of issue creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Unit of issue creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $unitIssue,
-                'message' => 'Unit of issue created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Unit Issue
+     *
+     * Get a specific unit of issue by ID.
+     *
+     * @urlParam id string required The unit issue UUID.
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "unit_name": "Piece"
+     *   }
+     * }
      */
-    public function show(UnitIssue $unitIssue)
+    public function show(string $id): JsonResponse
     {
+        $unitIssue = $this->service->getById($id);
+
+        if (! $unitIssue) {
+            return response()->json(['message' => 'Unit of issue not found.'], 404);
+        }
+
         return response()->json([
-            'data' => [
-                'data' => $unitIssue,
-            ],
+            'data' => new UnitIssueResource($unitIssue),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Unit Issue
+     *
+     * Update an existing unit of issue.
+     *
+     * @urlParam id string required The unit issue UUID.
+     *
+     * @bodyParam unit_name string required The unit name.
+     * @bodyParam active boolean required Whether the unit issue is active.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Unit of issue updated successfully."
+     * }
      */
-    public function update(Request $request, UnitIssue $unitIssue)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'unit_name' => 'required|unique:unit_issues,unit_name,'.$unitIssue->id,
+            'unit_name' => 'required|unique:unit_issues,unit_name,'.$id,
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $unitIssue->update($validated);
+            $unitIssue = $this->service->update($id, $validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new UnitIssueResource($unitIssue),
                 'message' => 'Unit of issue updated successfully.',
-                'log_id' => $unitIssue->id,
-                'log_module' => 'lib-unit-issue',
-                'data' => $unitIssue,
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Unit of issue update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $unitIssue->id,
-                'log_module' => 'lib-unit-issue',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Unit of issue update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Unit of issue update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $unitIssue,
-                'message' => 'Unit of issue updated successfully.',
-            ],
-        ]);
     }
 }

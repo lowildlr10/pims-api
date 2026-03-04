@@ -13,11 +13,11 @@ return new class extends Migration
     {
         Schema::create('purchase_order_items', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_order_id');
+            $table->uuid('purchase_order_id')->index();
             $table->foreign('purchase_order_id')
                 ->references('id')
                 ->on('purchase_orders');
-            $table->uuid('pr_item_id');
+            $table->uuid('pr_item_id')->index();
             $table->foreign('pr_item_id')
                 ->references('id')
                 ->on('purchase_request_items');

@@ -246,6 +246,10 @@ class MediaRepository implements MediaRepositoryInterface
                     break;
             }
 
+            if (empty($data) && $type === FileUploadType::FAVICON) {
+                return 'favicon.ico';
+            }
+
             if (empty($data)) {
                 throw new \Exception('File not found.', 404);
             }

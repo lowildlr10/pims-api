@@ -3,166 +3,107 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\ItemClassification;
-use App\Repositories\LogRepository;
+use App\Http\Resources\ItemClassificationResource;
+use App\Services\ItemClassificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Item Classifications
+ * APIs for managing item classifications
+ */
 class ItemClassificationController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(protected ItemClassificationService $service) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Item Classifications
+     *
+     * @queryParam search string Search by classification name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items. Default false.
+     * @queryParam show_inactive boolean Show inactive. Default false.
+     * @queryParam column_sort string Sort field. Default classification_name.
+     * @queryParam sort_direction string Sort direction. Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only(['search', 'per_page', 'show_all', 'show_inactive', 'column_sort', 'sort_direction', 'paginated']);
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        return ItemClassificationResource::collection($this->service->getAll($filters));
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Item Classification
+     *
+     * @bodyParam classification_name string required The classification name.
+     * @bodyParam active boolean required Whether active. Default true.
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'classification_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $itemClassifications = ItemClassification::query();
-
-        if (! empty($search)) {
-            $itemClassifications = $itemClassifications->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('classification_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'classification_name_formatted':
-                    $columnSort = 'classification_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $itemClassifications = $itemClassifications->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $itemClassifications->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $itemClassifications = $itemClassifications->where('active', true);
-            }
-
-            $itemClassifications = $showAll
-                ? $itemClassifications->get()
-                : $itemClassifications = $itemClassifications->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $itemClassifications,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'classification_name' => 'required|unique:item_classifications,classification_name',
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $itemClassifications = ItemClassification::create($validated);
-
-            $this->logRepository->create([
-                'message' => 'Item classification created successfully.',
-                'log_id' => $itemClassifications->id,
-                'log_module' => 'lib-item-class',
-                'data' => $itemClassifications,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Item classification creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-item-class',
-                'data' => $validated,
-            ], isError: true);
+            $itemClassification = $this->service->create($validated);
 
             return response()->json([
-                'message' => 'Item classification creation failed. Please try again.',
-            ], 422);
+                'data' => new ItemClassificationResource($itemClassification),
+                'message' => 'Item classification created successfully.',
+            ], 201);
+        } catch (\Throwable $th) {
+            $this->service->logError('Item classification creation failed.', $th, $validated);
+
+            return response()->json(['message' => 'Item classification creation failed. Please try again.'], 422);
+        }
+    }
+
+    /**
+     * Show Item Classification
+     *
+     * @urlParam id string required The UUID.
+     */
+    public function show(string $id): JsonResponse
+    {
+        $itemClassification = $this->service->getById($id);
+        if (! $itemClassification) {
+            return response()->json(['message' => 'Item classification not found.'], 404);
         }
 
-        return response()->json([
-            'data' => [
-                'data' => $itemClassifications,
-                'message' => 'Item classification created successfully.',
-            ],
-        ]);
+        return response()->json(['data' => new ItemClassificationResource($itemClassification)]);
     }
 
     /**
-     * Display the specified resource.
+     * Update Item Classification
+     *
+     * @urlParam id string required The UUID.
+     *
+     * @bodyParam classification_name string required The classification name.
+     * @bodyParam active boolean required Whether active.
      */
-    public function show(ItemClassification $itemClassification)
-    {
-        return response()->json([
-            'data' => [
-                'data' => $itemClassification,
-            ],
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, ItemClassification $itemClassification)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'classification_name' => 'required|unique:item_classifications,classification_name,'.$itemClassification->id,
+            'classification_name' => 'required|unique:item_classifications,classification_name,'.$id,
             'active' => 'required|boolean',
         ]);
-
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $itemClassification->update($validated);
-
-            $this->logRepository->create([
-                'message' => 'Item classification updated successfully.',
-                'log_id' => $itemClassification->id,
-                'log_module' => 'lib-item-class',
-                'data' => $itemClassification,
-            ]);
-        } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Item classification update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $itemClassification->id,
-                'log_module' => 'lib-item-class',
-                'data' => $validated,
-            ], isError: true);
+            $itemClassification = $this->service->update($id, $validated);
 
             return response()->json([
-                'message' => 'Item classification update failed. Please try again.',
-            ], 422);
-        }
-
-        return response()->json([
-            'data' => [
-                'data' => $itemClassification,
+                'data' => new ItemClassificationResource($itemClassification),
                 'message' => 'Item classification updated successfully.',
-            ],
-        ]);
+            ]);
+        } catch (\Throwable $th) {
+            $this->service->logError('Item classification update failed.', $th, $validated);
+
+            return response()->json(['message' => 'Item classification update failed. Please try again.'], 422);
+        }
     }
 }

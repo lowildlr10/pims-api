@@ -38,16 +38,92 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
+    public function getAll(array $filters, ?string $userId = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $query = DisbursementVoucher::query()
+            ->select([
+                'id',
+                'purchase_order_id',
+                'payee_type',
+                'payee_id',
+                'dv_no',
+                'explanation',
+                'transaction_type',
+                'status',
+            ])
+            ->with([
+                'purchase_order:id,po_no',
+                'payee',
+            ]);
+
+        if ($userId) {
+            $query->whereRelation('purchase_request', function ($query) use ($userId) {
+                $query->where('requested_by_id', $userId);
+            });
+        }
+
+        $search = $filters['search'] ?? '';
+        if (! empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                    ->orWhere('dv_no', 'ILIKE', "%{$search}%")
+                    ->orWhere('office', 'ILIKE', "%{$search}%")
+                    ->orWhere('address', 'ILIKE', "%{$search}%")
+                    ->orWhere('explanation', 'ILIKE', "%{$search}%")
+                    ->orWhere('status', 'ILIKE', "%{$search}%")
+                    ->orWhereRaw('CAST(obligation_request_id AS TEXT) = ?', [$search])
+                    ->orWhereRaw('CAST(purchase_order_id AS TEXT) = ?', [$search]);
+            });
+        }
+
+        $columnSort = $filters['column_sort'] ?? 'dv_no';
+        $sortDirection = $filters['sort_direction'] ?? 'desc';
+        $perPage = $filters['per_page'] ?? 50;
+
+        return $query->orderBy($columnSort, $sortDirection)->paginate($perPage);
+    }
+
+    public function getById(string $id): ?DisbursementVoucher
+    {
+        return DisbursementVoucher::with([
+            'payee',
+            'tax_withholding',
+            'responsibility_center:id,code',
+            'purchase_order:id,po_no,total_amount',
+            'obligation_request:id,obr_no',
+            'signatory_accountant:id,user_id',
+            'signatory_accountant.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_accountant.detail' => function ($query) {
+                $query->where('document', 'dv')
+                    ->where('signatory_type', 'accountant');
+            },
+            'signatory_treasurer:id,user_id',
+            'signatory_treasurer.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_treasurer.detail' => function ($query) {
+                $query->where('document', 'dv')
+                    ->where('signatory_type', 'treasurer');
+            },
+            'signatory_head:id,user_id',
+            'signatory_head.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_head.detail' => function ($query) {
+                $query->where('document', 'dv')
+                    ->where('signatory_type', 'head');
+            },
+        ])->find($id);
+    }
+
     public function storeUpdate(array $data, ?DisbursementVoucher $disbursementVoucher = null): DisbursementVoucher
     {
         if (! empty($disbursementVoucher)) {
             $disbursementVoucher->update($data);
         } else {
+            $dvNo = $data['dv_no'] ?? $this->generateNewDvNumber();
+
             $disbursementVoucher = DisbursementVoucher::create(
                 array_merge(
                     $data,
                     [
-                        'dv_no' => $this->generateNewDvNumber(),
+                        'dv_no' => $dvNo,
                         'status' => DisbursementVoucherStatus::DRAFT,
                         'status_timestamps' => StatusTimestampsHelper::generate(
                             'draft_at', null
@@ -77,6 +153,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
             $company = Company::first();
             $dv = DisbursementVoucher::with([
                 'payee:id,supplier_name,tin_no',
+                'tax_withholding',
                 'responsibility_center:id,code',
                 'purchase_order:id,po_no,total_amount',
                 'obligation_request:id,obr_no',
@@ -97,7 +174,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
                 'signatory_head.detail' => function ($query) {
                     $query->where('document', 'dv')
                         ->where('signatory_type', 'head');
-                }
+                },
             ])->find($dvId);
 
             $filename = "DV-{$dv->dv_no}.pdf";
@@ -134,35 +211,43 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $explanation = trim(str_replace("\r", '<br />', $data->explanation));
         $explanation = str_replace("\n", '<br />', $explanation);
         $amount = number_format($data->total_amount, 2);
+
+        // Tax withholding computation
+        $taxWithholding = $data->tax_withholding;
+        $grossAmount = (float) $data->gross_amount;
+        $taxComputationHtml = '';
+        if ($taxWithholding && $grossAmount > 0) {
+            $taxComputationHtml = $this->buildTaxComputationHtml($taxWithholding, $grossAmount);
+        }
         $accountantCertifiedChoices = $data->accountant_certified_choices;
         $accountantName = $data->signatory_accountant?->user?->fullname ?? '';
         $accountantPosition = $data->signatory_accountant?->detail?->position ?? '';
-        $accountantSignedDate = $data->accountant_signed_date 
-            ? date_format(date_create($data->accountant_signed_date), 'M j, Y') 
+        $accountantSignedDate = $data->accountant_signed_date
+            ? date_format(date_create($data->accountant_signed_date), 'M j, Y')
             : '';
         $treasurerName = $data->signatory_treasurer?->user?->fullname ?? '';
         $treasurerPosition = $data->signatory_treasurer?->detail?->position ?? '';
-        $treasurerSignedDate = $data->treasurer_signed_date 
-            ? date_format(date_create($data->treasurer_signed_date), 'M j, Y') 
+        $treasurerSignedDate = $data->treasurer_signed_date
+            ? date_format(date_create($data->treasurer_signed_date), 'M j, Y')
             : '';
         $headName = $data->signatory_head?->user?->fullname ?? '';
         $headPosition = $data->signatory_head?->detail?->position ?? '';
-        $headSignedDate = $data->head_signed_date 
-            ? date_format(date_create($data->head_signed_date), 'M j, Y') 
+        $headSignedDate = $data->head_signed_date
+            ? date_format(date_create($data->head_signed_date), 'M j, Y')
             : '';
         $checkNo = $data->check_no ?? '';
         $bankName = $data->bank_name ?? '';
-        $checkDate = $data->check_date 
-            ? date_format(date_create($data->check_date), 'M j, Y') 
+        $checkDate = $data->check_date
+            ? date_format(date_create($data->check_date), 'M j, Y')
             : '';
         $receivedName = $data->received_name ?? '';
         $receivedDate = $data->received_date
-            ? date_format(date_create($data->received_date), 'M j, Y') 
+            ? date_format(date_create($data->received_date), 'M j, Y')
             : '';
         $orOtherDocument = $data->or_other_document ?? '';
         $jevNo = $data->jev_no ?? '';
         $jevDate = $data->jev_date
-            ? date_format(date_create($data->jev_date), 'M j, Y') 
+            ? date_format(date_create($data->jev_date), 'M j, Y')
             : '';
 
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
@@ -204,7 +289,8 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -222,7 +308,8 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->setCellHeightRatio(1.6);
@@ -239,12 +326,12 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $pdf->SetFont($this->fontArialBold, 'B', 14);
         $pdf->setCellHeightRatio(1.25);
         $deptHeight = $pdf->getStringHeight($pageWidth * 0.7, "\nDISBURSEMENT VOUCHER\n");
-        
+
         $pdf->SetFont('Times', '', 14);
         $pdf->MultiCell(
-            $pageWidth * 0.7, 
-            $deptHeight, 
-            'DISBURSEMENT VOUCHER', 
+            $pageWidth * 0.7,
+            $deptHeight,
+            'DISBURSEMENT VOUCHER',
             'L', 'C', 0, 0,
             maxh: $deptHeight,
             valign: 'M'
@@ -355,7 +442,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $subTitleHeight = max($deptTitleHeight2, $deptTitleHeight3);
         $officeCodeHeight = max($deptOfficeHeight, $deptCodeHeight);
         $addressHeight = max(
-            $deptHeight, 
+            $deptHeight,
             $deptTitleHeight1 + $subTitleHeight + $officeCodeHeight
         );
 
@@ -428,19 +515,19 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $pdf->Ln(0);
 
         $htmlTable = '
-            <table 
+            <table
                 style="border-left: 1px solid black; border-right: 1px solid black;"
                 cellpadding="2"
             ><tbody><tr>
                 <td
                     style="border-right: 1px solid black"
                     width="84%"
-                >'. $explanation .'</td>
+                >'.$explanation.$taxComputationHtml.'</td>
 
                 <td
                     width="16%"
                     align="right"
-                >P'. $amount .'</td>
+                >P'.$amount.'</td>
             </tr>
             <tr>
                 <td
@@ -459,7 +546,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $pdf->Ln(0);
 
         $htmlTable = '
-            <table 
+            <table
                 style="border-left: 1px solid black; border-right: 1px solid black;"
                 cellpadding="2"
             ><tbody><tr>
@@ -472,7 +559,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
                     style="border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black; font-weight: bold;"
                     width="16%"
                     align="right"
-                >P'. $amount .'</td>
+                >P'.$amount.'</td>
             </tr>
             <tr>
                 <td
@@ -502,7 +589,8 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         $pdf->Ln(0);
 
@@ -511,7 +599,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $pdf->Cell($pageWidth * 0.03, 0, 'A', 1, 0, 'C');
         $pdf->setCellHeightRatio(1.7);
         $pdf->SetFont('Times', 'BI', 9);
-        $pdf->Cell($pageWidth * 0.47, 0, " Certified:", 'LT', 0);
+        $pdf->Cell($pageWidth * 0.47, 0, ' Certified:', 'LT', 0);
         $pdf->setCellHeightRatio(1.6);
         $pdf->SetFont('Times', '', 10);
         $pdf->Cell($pageWidth * 0.03, 0, 'B', 1, 0, 'C');
@@ -689,7 +777,7 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $pdf->Cell($pageWidth * 0.03, 0, 'C', 1, 0, 'C');
         $pdf->setCellHeightRatio(1.8);
         $pdf->SetFont('Times', 'BI', 9);
-        $pdf->Cell($pageWidth * 0.47, 0, " Approved Payment", 'LT', 0);
+        $pdf->Cell($pageWidth * 0.47, 0, ' Approved Payment', 'LT', 0);
         $pdf->setCellHeightRatio(1.6);
         $pdf->SetFont('Times', '', 10);
         $pdf->Cell($pageWidth * 0.03, 0, 'D', 1, 0, 'C');
@@ -721,27 +809,27 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $x = $pdf->GetX();
         $y = $pdf->GetY();
         $pdf->MultiCell(
-            $pageWidth * 0.13, $titleHeight, 'Check No.', 'LT', 'L', 
+            $pageWidth * 0.13, $titleHeight, 'Check No.', 'LT', 'L',
             ln: 0,
             maxh: $titleHeight,
             valign: 'M'
         );
         $pdf->SetFont('Times', '', 9);
         $pdf->MultiCell(
-            $pageWidth * 0.25, $titleHeight, 'Bank Name', 'LT', 'L', 
+            $pageWidth * 0.25, $titleHeight, 'Bank Name', 'LT', 'L',
             ln: 0,
             maxh: $titleHeight,
             valign: 'M'
         );
         $pdf->SetFont('Times', 'I', 9);
         $pdf->MultiCell(
-            $pageWidth * 0.12, $titleHeight, 'Date', 'LTR', 'L', 
+            $pageWidth * 0.12, $titleHeight, 'Date', 'LTR', 'L',
             ln: 0,
             maxh: $titleHeight,
             valign: 'M'
         );
         $pdf->MultiCell(
-            $pageWidth * 0.13, $valueHeight, $checkNo, 'L', 'L', 
+            $pageWidth * 0.13, $valueHeight, $checkNo, 'L', 'L',
             ln: 0,
             x: $x,
             y: $y + $titleHeight,
@@ -750,14 +838,14 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         );
         $pdf->SetFont('Times', '', 9);
         $pdf->MultiCell(
-            $pageWidth * 0.25, $valueHeight, $bankName, 'L', 'L', 
+            $pageWidth * 0.25, $valueHeight, $bankName, 'L', 'L',
             ln: 0,
             maxh: $valueHeight,
             valign: 'M'
         );
         $pdf->SetFont('Times', 'I', 9);
         $pdf->MultiCell(
-            $pageWidth * 0.12, $valueHeight, $checkDate, 'LR', 'L', 
+            $pageWidth * 0.12, $valueHeight, $checkDate, 'LR', 'L',
             maxh: $valueHeight,
             valign: 'M'
         );
@@ -969,5 +1057,116 @@ class DisbursementVoucherRepository implements DisbursementVoucherInterface
         $pdfBase64 = base64_encode($pdfBlob);
 
         return $pdfBase64;
+    }
+
+    /**
+     * Build the tax computation HTML block for the DV explanation body.
+     *
+     * Formulas (Accounting Department - LGU Atok reference):
+     *
+     * Non-VAT (Goods/Services):
+     *   Gross Amount
+     *   Less: Deductions
+     *     EWT%  W/Tax  = gross × ewt_rate
+     *     P/Tax%        = gross × ptax_rate
+     *   Net Amount
+     *
+     * VAT (Goods/Services):
+     *   Gross Amount
+     *   Less: 12% VAT
+     *     (gross × 10/11.2 × 12%)  = vat
+     *     gross − vat               = base
+     *   Less: Deductions
+     *     EWT% W/Tax  = base × ewt_rate
+     *     5%   P/Tax  = base × ptax_rate
+     *   Net Amount
+     */
+    private function buildTaxComputationHtml(\App\Models\TaxWithholding $tax, float $gross): string
+    {
+        $fmt = fn (float $v) => number_format($v, 2);
+        $pct = fn (float $r) => number_format($r * 100, 0).'%';
+
+        $ewtRate = (float) $tax->ewt_rate;
+        $ptaxRate = (float) $tax->ptax_rate;
+
+        $grossFormatted = number_format($gross, 2);
+
+        $html = '<br />Attached are supporting papers with the amount of . . . . . . . . . . . . . . . . . . . . .<br /><br /><table>';
+        $html .= "<tr><td width=\"66%\" colspan=\"4\">Gross Amount</td><td align=\"right\" width=\"24%\">{$grossFormatted}</td></tr>";
+
+        if ($tax->is_vat) {
+            // VAT computation: VAT = gross × 10/11.2 × 12% = gross × 12/112
+            $vat = round($gross * 10 / 11.2 * 0.12, 2);
+            $base = round($gross - $vat, 2);
+            $ewt = round($base * $ewtRate, 2);
+            $ptax = round($base * $ptaxRate, 2);
+            $totalDeductions = round($ewt + $ptax, 2);
+            $netAmount = round($gross - $totalDeductions, 2);
+
+            $html .= '<tr><td colspan="5">Less: 12% VAT</td></tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;('.number_format($gross, 2).' x 10/11.2 x 12% =</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($vat).'</td>
+                <td width="4%">&nbsp;)</td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;('.number_format($gross, 2).' - '.$fmt($vat).' = P</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($base).'</td>
+                <td width="4%">&nbsp;)</td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr><td colspan="4">Less: Deductions:</td></tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($base).' x '.$pct($ewtRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($ewt).'</td>
+                <td width="4%"></td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;5% P/Tax (P '.$fmt($base).' x '.$pct($ptaxRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($ptax).'</td>
+                <td width="4%"></td>
+                <td align="right" width="24%" style="border-bottom: 1px solid black">'.$fmt($totalDeductions).'</td>
+            </tr>';
+            $html .= '<tr>
+                <td colspan="4" width="66%"></td>
+                <td align="right" width="24%" style="border: 1px solid black">'.$fmt($netAmount).'</td>
+            </tr>';
+        } else {
+            // Non-VAT computation: deductions directly on gross amount
+            $ewt = round($gross * $ewtRate, 2);
+            $ptax = round($gross * $ptaxRate, 2);
+            $totalDeductions = round($ewt + $ptax, 2);
+            $netAmount = round($gross - $totalDeductions, 2);
+
+            $html .= '<tr><td colspan="5">Less: Deductions</td></tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;'.$pct($ewtRate).' W/Tax (P '.$fmt($gross).' x '.$pct($ewtRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%">'.$fmt($ewt).'</td>
+                <td width="4%"></td>
+                <td width="24%"></td>
+            </tr>';
+            $html .= '<tr>
+                <td width="40%">&nbsp;&nbsp;&nbsp;'.$pct($ptaxRate).' P/Tax (P '.$fmt($gross).' x '.$pct($ptaxRate).')</td>
+                <td width="1%"></td>
+                <td align="right" width="21%" style="border-bottom: 1px solid black">'.$fmt($ptax).'</td>
+                <td width="4%"></td>
+                <td align="right" width="24%" style="border-bottom: 1px solid black">'.$fmt($totalDeductions).'</td>
+            </tr>';
+            $html .= '<tr>
+                <td colspan="4" width="66%"></td>
+                <td align="right" width="24%" style="border-bottom: 2px double black">'.$fmt($netAmount).'</td>
+            </tr>';
+        }
+
+        $html .= '</table>';
+
+        return $html;
     }
 }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('signatory_details', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('signatory_id');
+            $table->uuid('signatory_id')->index();
             $table->foreign('signatory_id')
                 ->references('id')
                 ->on('signatories');

@@ -2,282 +2,139 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
-use App\Enums\PurchaseOrderStatus;
-use App\Enums\PurchaseRequestStatus;
-use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
-use App\Models\FundingSource;
+use App\Http\Resources\PurchaseOrderResource;
+use App\Http\Resources\PurchaseRequestResource;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequest;
-use App\Models\PurchaseRequestItem;
-use App\Models\User;
-use App\Repositories\InspectionAcceptanceReportRepository;
-use App\Repositories\LogRepository;
-use App\Repositories\PurchaseOrderRepository;
+use App\Services\PurchaseOrderService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * @group Purchase Orders
+ * APIs for managing purchase orders
+ */
 class PurchaseOrderController extends Controller
 {
-    private LogRepository $logRepository;
-
-    private PurchaseOrderRepository $purchaseOrderRepository;
-
-    private InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository;
-
     public function __construct(
-        LogRepository $logRepository,
-        PurchaseOrderRepository $purchaseOrderRepository,
-        InspectionAcceptanceReportRepository $inspectionAcceptanceReportRepository
-    ) {
-        $this->logRepository = $logRepository;
-        $this->purchaseOrderRepository = $purchaseOrderRepository;
-        $this->inspectionAcceptanceReportRepository = $inspectionAcceptanceReportRepository;
-    }
+        protected PurchaseOrderService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Purchase Orders
+     *
+     * Retrieve a paginated list of purchase orders grouped by PR.
+     *
+     * @queryParam search string Search by PR number, PO number, etc.
+     * @queryParam per_page int Number of items per page. Default: 50.
+     * @queryParam grouped boolean Group results by PR. Default: true.
+     * @queryParam has_supplies_only boolean Show only POs with supplies. Default: false.
+     * @queryParam show_all boolean Show all results without pagination. Default: false.
+     * @queryParam column_sort string Sort field. Default: pr_no.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default: desc.
+     * @queryParam paginated boolean Return paginated results. Default: true.
+     * @queryParam status string Filter by status (comma-separated).
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "links": {...},
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'grouped',
+            'has_supplies_only',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+            'status',
+        ]);
+
+        $grouped = filter_var($filters['grouped'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $paginated = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
         $user = Auth::user();
 
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $grouped = filter_var($request->get('grouped', true), FILTER_VALIDATE_BOOLEAN);
-        $hasSuppliesOnly = filter_var($request->get('has_supplies_only', false), FILTER_VALIDATE_BOOLEAN);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'pr_no');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-        $status = $request->get('status', '');
-        $statusFilters = !empty($status) ? explode(',', $status) : [];
-
         if (! $grouped) {
-            $purchaseOrders = PurchaseOrder::query()
-                ->select('id', 'po_no')
-                ->whereNotIn('status', [
-                    PurchaseOrderStatus::PENDING,
-                    PurchaseOrderStatus::APPROVED,
-                    PurchaseOrderStatus::ISSUED,
-                    PurchaseOrderStatus::FOR_DELIVERY,
-                    PurchaseOrderStatus::DELIVERED,
-                ]);
-
-            if (! empty($search)) {
-                $purchaseOrders = $purchaseOrders->where(function ($query) use ($search) {
-                    $query->where('po_no', 'ILIKE', "%{$search}%");
-                });
-            }
-
-            if ($hasSuppliesOnly) {
-                $purchaseOrders = $purchaseOrders->has('supplies');
-            }
-
-            $purchaseOrders = $showAll
-                ? $purchaseOrders->get()
-                : $purchaseOrders = $purchaseOrders->limit($perPage)->get();
+            $results = $this->service->getAllUngrouped($filters);
 
             return response()->json([
-                'data' => $purchaseOrders,
+                'data' => PurchaseOrderResource::collection($results),
             ]);
         }
 
-        $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
-            ->with([
-                'funding_source:id,title',
-                'requestor:id,firstname,lastname',
-                'pos' => function ($query) {
-                    $query->select(
-                        'id',
-                        'purchase_request_id',
-                        'po_no',
-                        'po_date',
-                        'mode_procurement_id',
-                        'supplier_id',
-                        'total_amount',
-                        'status'
-                    )
-                        ->orderByRaw("CAST(REPLACE(po_no, '-', '') AS VARCHAR) asc");
-                },
-                'pos.mode_procurement:id,mode_name',
-                'pos.supplier:id,supplier_name',
-            ])->whereIn('status', [
-                PurchaseRequestStatus::PARTIALLY_AWARDED,
-                PurchaseRequestStatus::AWARDED,
-                PurchaseRequestStatus::COMPLETED,
-            ]);
-
-        if ($user->tokenCan('super:*')
-            || $user->tokenCan('head:*')
-            || $user->tokenCan('supply:*')
-            || $user->tokenCan('budget:*')
-            || $user->tokenCan('accountant:*')
-        ) {
-        } else {
-            $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
-        }
-
-        if (! empty($search)) {
-            $purchaseRequests = $purchaseRequests->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('pr_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('pr_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('sai_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('sai_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('alobs_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('purpose', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('funding_source', 'title', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('requestor', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_cash_available.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_approval.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('pos', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                            ->orWhere('po_no', 'ILIKE', "%{$search}%")
-                            ->orWhere('document_type', 'ILIKE', "%{$search}%")
-                            ->orWhere('status', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('pos.supplier', function ($query) use ($search) {
-                        $query->where('supplier_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('pos.mode_procurement', function ($query) use ($search) {
-                        $query->where('mode_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('pos.place_delivery', function ($query) use ($search) {
-                        $query->where('location_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('pos.delivery_term', function ($query) use ($search) {
-                        $query->where('term_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('pos.payment_term', function ($query) use ($search) {
-                        $query->where('term_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('pos.signatory_approval.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    });
-            });
-        }
-
-         if (count($statusFilters) > 0) {
-            $purchaseRequests = $purchaseRequests->whereRelation('pos', function ($query) use ($statusFilters) {
-                $query->whereIn('status', $statusFilters);
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'pr_no':
-                    $purchaseRequests = $purchaseRequests->orderByRaw("CAST(REPLACE(pr_no, '-', '') AS INTEGER) {$sortDirection}");
-                    break;
-
-                case 'pr_date_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('pr_date', $sortDirection);
-                    break;
-
-                case 'funding_source_title':
-                    $purchaseRequests = $purchaseRequests->orderBy(
-                        FundingSource::select('title')->whereColumn('funding_sources.id', 'purchase_requests.funding_source_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'purpose_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('purpose', $sortDirection);
-                    break;
-
-                case 'requestor_fullname':
-                    $purchaseRequests = $purchaseRequests->orderBy(
-                        User::select('firstname')->whereColumn('users.id', 'purchase_requests.requested_by_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'status_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('status', $sortDirection);
-                    break;
-
-                default:
-                    $purchaseRequests = $purchaseRequests->orderBy($columnSort, $sortDirection);
-                    break;
-            }
-        }
+        $result = $this->service->getAll($filters, $user);
 
         if ($paginated) {
-            return $purchaseRequests->paginate($perPage);
-        } else {
-            $purchaseRequests = $showAll
-                ? $purchaseRequests->get()
-                : $purchaseRequests = $purchaseRequests->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $purchaseRequests,
-            ]);
+            return PurchaseRequestResource::collection($result);
         }
-    }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(PurchaseOrder $purchaseOrder)
-    {
-        $purchaseOrder->load([
-            'supplier:id,supplier_name,address,tin_no',
-            'mode_procurement:id,mode_name',
-            'place_delivery:id,location_name',
-            'delivery_term:id,term_name',
-            'payment_term:id,term_name',
-            'items' => function ($query) {
-                $query->orderBy(
-                    PurchaseRequestItem::select('item_sequence')
-                        ->whereColumn(
-                            'purchase_order_items.pr_item_id', 'purchase_request_items.id'
-                        ),
-                    'asc'
-                );
-            },
-            'items.pr_item:id,unit_issue_id,item_sequence,quantity,description,stock_no',
-            'items.pr_item.unit_issue:id,unit_name',
-            'signatory_approval:id,user_id',
-            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_approval.detail' => function ($query) {
-                $query->where('document', 'po')
-                    ->where('signatory_type', '	authorized_official');
-            },
-            'purchase_request:id,department_id,section_id,sai_no,sai_date,requested_by_id,purpose',
-            'purchase_request.department:id,department_name',
-            'purchase_request.section:id,section_name',
-            'purchase_request.requestor:id,firstname,middlename,lastname',
-            'obligation_request',
-            'disbursement_voucher'
-        ]);
+        $showAll = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $results = $showAll ? $result->get() : $result->limit($filters['per_page'] ?? 50)->get();
 
         return response()->json([
-            'data' => [
-                'data' => $purchaseOrder,
-            ],
+            'data' => PurchaseRequestResource::collection($results),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Get Purchase Order
+     *
+     * Display the specified purchase order.
+     *
+     * @urlParam purchaseOrder string required The purchase order UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
+     * @response 404 {
+     *   "message": "Purchase order not found."
+     * }
      */
-    public function update(Request $request, PurchaseOrder $purchaseOrder)
+    public function show(string $id): JsonResponse
+    {
+        $purchaseOrder = $this->service->getById($id);
+
+        if (! $purchaseOrder) {
+            return response()->json(['message' => 'Purchase order not found.'], 404);
+        }
+
+        return response()->json([
+            'data' => new PurchaseOrderResource($purchaseOrder),
+        ]);
+    }
+
+    /**
+     * Update Purchase Order
+     *
+     * Update the specified purchase order in storage.
+     *
+     * @urlParam purchaseOrder string required The purchase order UUID.
+     *
+     * @bodyParam po_date date required The PO date.
+     * @bodyParam place_delivery string required The place of delivery.
+     * @bodyParam delivery_date date required The delivery date.
+     * @bodyParam delivery_term string required The delivery term.
+     * @bodyParam payment_term string required The payment term.
+     * @bodyParam total_amount_words string required The total amount in words.
+     * @bodyParam sig_approval_id string required The approval signatory ID.
+     * @bodyParam items array required The PO items.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase order updated successfully."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
+     */
+    public function update(Request $request, PurchaseOrder $purchaseOrder): JsonResponse
     {
         $validated = $request->validate([
             'po_date' => 'required',
@@ -291,395 +148,182 @@ class PurchaseOrderController extends Controller
         ]);
 
         try {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order updated successfully.';
-
-            $this->purchaseOrderRepository->storeUpdate($validated, $purchaseOrder);
-
-            $purchaseOrder->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ]);
+            $purchaseOrder = $this->service->createOrUpdate($validated, $purchaseOrder);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseOrder,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseOrderResource($purchaseOrder->load('items')),
+                'message' => 'Purchase order updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order update failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Purchase order update failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Set Purchase Order as Pending
+     *
+     * Mark the purchase order as pending for approval.
+     *
+     * @urlParam purchaseOrder string required The purchase order UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase order successfully marked as Pending."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function pending(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order successfully marked as pending for approval.';
-
-            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
-
-            if ($currentStatus !== PurchaseOrderStatus::DRAFT) {
-                $message =
-                    'Failed to set the '.($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').' Order to
-                    pending for approval. It may already be set to pending or processing status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder->update([
-                'status' => PurchaseOrderStatus::PENDING,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'pending_at', $purchaseOrder->status_timestamps
-                ),
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ]);
-
-            $purchaseOrder->load('items');
+            $purchaseOrder = $this->service->pending($purchaseOrder);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseOrder,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseOrderResource($purchaseOrder->load('items')),
+                'message' => 'Purchase order successfully marked as "Pending".',
             ]);
         } catch (\Throwable $th) {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order failed to marked as pending for approval.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ], isError: true);
+            $this->service->logError('Purchase order pending failed.', $th, $purchaseOrder->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Approve Purchase Order
+     *
+     * Mark the purchase order as approved.
+     *
+     * @urlParam purchaseOrder string required The purchase order UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase order successfully marked as Approved."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function approve(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order successfully marked as "Approved".';
-
-            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
-
-            if ($currentStatus !== PurchaseOrderStatus::PENDING) {
-                $message =
-                    'Failed to set the '.($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').' Order to
-                    pending for approval. It may already be set to approved or processing or still in draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder->update([
-                'status' => PurchaseOrderStatus::APPROVED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'approved_at', $purchaseOrder->status_timestamps
-                ),
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ]);
-
-            $purchaseOrder->load('items');
+            $purchaseOrder = $this->service->approve($purchaseOrder);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseOrder,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseOrderResource($purchaseOrder->load('items')),
+                'message' => 'Purchase order successfully marked as "Approved".',
             ]);
         } catch (\Throwable $th) {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order failed to marked as "Approved".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ], isError: true);
+            $this->service->logError('Purchase order approval failed.', $th, $purchaseOrder->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Issue Purchase Order
+     *
+     * Issue the purchase order to supplier.
+     *
+     * @urlParam purchaseOrder string required The purchase order UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase order successfully issued to supplier."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function issue(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order successfully issued to supplier.';
-
-            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
-
-            if ($currentStatus !== PurchaseOrderStatus::APPROVED) {
-                $message =
-                    'Failed to set the '.($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').' Order to
-                    issued. It may already be issued or still in draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder->update([
-                'status' => PurchaseOrderStatus::ISSUED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'issued_at', $purchaseOrder->status_timestamps
-                ),
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ]);
-
-            $purchaseOrder->load('items');
+            $purchaseOrder = $this->service->issue($purchaseOrder);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseOrder,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseOrderResource($purchaseOrder->load('items')),
+                'message' => 'Purchase order successfully issued to supplier.',
             ]);
         } catch (\Throwable $th) {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order failed to marked as "Issued".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ], isError: true);
+            $this->service->logError('Purchase order issue failed.', $th, $purchaseOrder->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Receive Purchase Order
+     *
+     * Mark the purchase order as received/for delivery.
+     *
+     * @urlParam purchaseOrder string required The purchase order UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase order successfully received and marked as For Delivery."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function receive(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order successfully received and marked as "For Delivery".';
-
-            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
-
-            if ($currentStatus !== PurchaseOrderStatus::ISSUED) {
-                $message =
-                    'Failed to receive and set the '.($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                    ' Order to marked as "For Delivery". It may already be for delivery or processing or still in
-                    draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder->update([
-                'status' => PurchaseOrderStatus::FOR_DELIVERY,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'for_delivery_at', $purchaseOrder->status_timestamps
-                ),
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ]);
-
-            $purchaseOrder->load('items');
+            $purchaseOrder = $this->service->receive($purchaseOrder);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseOrder,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseOrderResource($purchaseOrder->load('items')),
+                'message' => 'Purchase order successfully received and marked as "For Delivery".',
             ]);
         } catch (\Throwable $th) {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order failed to received and marked as "For Delivery".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ], isError: true);
+            $this->service->logError('Purchase order receive failed.', $th, $purchaseOrder->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Mark Purchase Order as Delivered
+     *
+     * Mark the purchase order as delivered and create IAR.
+     *
+     * @urlParam purchaseOrder string required The purchase order UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase order successfully set to Delivered."
+     * }
+     * @response 422 {
+     *   "message": "Error message"
+     * }
      */
     public function delivered(PurchaseOrder $purchaseOrder): JsonResponse
     {
         try {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order successfully set to "Delivered".';
-
-            $currentStatus = PurchaseOrderStatus::from($purchaseOrder->status);
-
-            if ($currentStatus !== PurchaseOrderStatus::FOR_DELIVERY) {
-                $message =
-                    'Failed to set the '.($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').' Order to
-                    received. It may already be delivered or processing or still in draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder->load('items');
-
-            // Save to IAR module
-            $inspectionAcceptanceReport = $this->inspectionAcceptanceReportRepository->storeUpdate([
-                'purchase_request_id' => $purchaseOrder->purchase_request_id,
-                'purchase_order_id' => $purchaseOrder->id,
-                'supplier_id' => $purchaseOrder->supplier_id,
-                'items' => $purchaseOrder->items->map(function ($item) {
-                    return [
-                        'pr_item_id' => $item->pr_item_id,
-                        'po_item_id' => $item->id,
-                    ];
-                }),
-            ]);
-            $this->logRepository->create([
-                'message' => 'Inspection Acceptance Report created successfully.',
-                'log_id' => $inspectionAcceptanceReport->id,
-                'log_module' => 'iar',
-                'data' => $inspectionAcceptanceReport,
-            ]);
-
-            $purchaseOrder->update([
-                'status' => PurchaseOrderStatus::DELIVERED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'delivered_at', $purchaseOrder->status_timestamps
-                ),
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ]);
+            $purchaseOrder = $this->service->delivered($purchaseOrder);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseOrder,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseOrderResource($purchaseOrder->load('items')),
+                'message' => 'Purchase order successfully set to "Delivered".',
             ]);
         } catch (\Throwable $th) {
-            $message = ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                ' order failed to marked as "Delivered".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseOrder->id,
-                'log_module' => 'po',
-                'data' => $purchaseOrder,
-            ], isError: true);
+            $this->service->logError('Purchase order delivery failed.', $th, $purchaseOrder->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }

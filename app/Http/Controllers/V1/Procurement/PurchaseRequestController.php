@@ -2,179 +2,102 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
-use App\Enums\AbstractQuotationStatus;
-use App\Enums\NotificationType;
-use App\Enums\PurchaseRequestStatus;
-use App\Enums\RequestQuotationStatus;
-use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
-use App\Models\AbstractQuotation;
-use App\Models\AbstractQuotationDetail;
-use App\Models\FundingSource;
+use App\Http\Resources\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
-use App\Models\PurchaseRequestItem;
-use App\Models\RequestQuotation;
-use App\Models\User;
-use App\Repositories\AbstractQuotationRepository;
-use App\Repositories\LogRepository;
-use App\Repositories\NotificationRepository;
-use App\Repositories\PurchaseOrderRepository;
-use App\Repositories\PurchaseRequestRepository;
-use Carbon\Carbon;
+use App\Services\PurchaseRequestService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Purchase Requests
+ * APIs for managing purchase requests
+ */
 class PurchaseRequestController extends Controller
 {
-    private LogRepository $logRepository;
-
-    private PurchaseRequestRepository $purchaseRequestRepository;
-
-    private AbstractQuotationRepository $abstractQuotationRepository;
-
-    private PurchaseOrderRepository $purchaseOrderRepository;
-
-    private NotificationRepository $notificationRepository;
-
     public function __construct(
-        LogRepository $logRepository,
-        PurchaseRequestRepository $purchaseRequestRepository,
-        AbstractQuotationRepository $abstractQuotationRepository,
-        PurchaseOrderRepository $purchaseOrderRepository,
-        NotificationRepository $notificationRepository
-    ) {
-        $this->logRepository = $logRepository;
-        $this->purchaseRequestRepository = $purchaseRequestRepository;
-        $this->abstractQuotationRepository = $abstractQuotationRepository;
-        $this->purchaseOrderRepository = $purchaseOrderRepository;
-        $this->notificationRepository = $notificationRepository;
-    }
+        protected PurchaseRequestService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Purchase Requests
+     *
+     * Retrieve a paginated list of purchase requests.
+     *
+     * @queryParam search string Search by PR number, purpose, etc.
+     * @queryParam per_page int Number of items per page. Default: 50.
+     * @queryParam show_all boolean Show all results without pagination. Default: false.
+     * @queryParam column_sort string Sort field. Default: pr_no.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default: desc.
+     * @queryParam paginated boolean Return paginated results. Default: true.
+     * @queryParam status string Filter by status (comma-separated).
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "links": {...},
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
-        $user = Auth::user();
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+            'status',
+        ]);
 
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'pr_no');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-        $status = $request->get('status', '');
-        $statusFilters = !empty($status) ? explode(',', $status) : [];
-
-        $purchaseRequests = PurchaseRequest::query()
-            ->select('id', 'pr_no', 'pr_date', 'funding_source_id', 'purpose', 'status', 'requested_by_id')
-            ->with([
-                'funding_source:id,title',
-                'requestor:id,firstname,lastname',
-            ]);
-
-        if ($user->tokenCan('super:*')
-            || $user->tokenCan('head:*')
-            || $user->tokenCan('supply:*')
-            || $user->tokenCan('budget:*')
-            || $user->tokenCan('accountant:*')
-        ) {
-        } else {
-            $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
-        }
-
-        if (! empty($search)) {
-            $purchaseRequests = $purchaseRequests->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('pr_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('pr_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('sai_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('sai_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('alobs_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('alobs_date', 'ILIKE', "%{$search}%")
-                    ->orWhere('purpose', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('funding_source', 'title', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('section', 'section_name', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('requestor', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_cash_available.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_approval.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    });
-            });
-        }
-        
-        if (count($statusFilters) > 0) {
-            $purchaseRequests = $purchaseRequests->whereIn('status', $statusFilters);
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'pr_no':
-                    $purchaseRequests = $purchaseRequests->orderByRaw("CAST(REPLACE(pr_no, '-', '') AS INTEGER) {$sortDirection}");
-                    break;
-
-                case 'pr_date_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('pr_date', $sortDirection);
-                    break;
-
-                case 'funding_source_title':
-                    $purchaseRequests = $purchaseRequests->orderBy(
-                        FundingSource::select('title')->whereColumn('funding_sources.id', 'purchase_requests.funding_source_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'purpose_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('purpose', $sortDirection);
-                    break;
-
-                case 'requestor_fullname':
-                    $purchaseRequests = $purchaseRequests->orderBy(
-                        User::select('firstname')->whereColumn('users.id', 'purchase_requests.requested_by_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'status_formatted':
-                    $purchaseRequests = $purchaseRequests->orderBy('status', $sortDirection);
-                    break;
-
-                default:
-                    $purchaseRequests = $purchaseRequests->orderBy($columnSort, $sortDirection);
-                    break;
-            }
-        }
+        $paginated = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $result = $this->service->getAll($filters);
 
         if ($paginated) {
-            return $purchaseRequests->paginate($perPage);
-        } else {
-            $purchaseRequests = $showAll
-                ? $purchaseRequests->get()
-                : $purchaseRequests = $purchaseRequests->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $purchaseRequests,
-            ]);
+            return PurchaseRequestResource::collection($result);
         }
+
+        return response()->json([
+            'data' => PurchaseRequestResource::collection($result),
+        ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create Purchase Request
+     *
+     * Create a new purchase request.
+     *
+     * @bodyParam department_id string required The department ID.
+     * @bodyParam section_id string nullable The section ID.
+     * @bodyParam pr_date date required The PR date.
+     * @bodyParam sai_no string nullable The SAI number.
+     * @bodyParam sai_date date nullable The SAI date.
+     * @bodyParam alobs_no string nullable The ALOBS number.
+     * @bodyParam alobs_date date nullable The ALOBS date.
+     * @bodyParam notes string nullable Additional notes.
+     * @bodyParam purpose string required The purpose of the PR.
+     * @bodyParam funding_source_id string nullable The funding source ID.
+     * @bodyParam requested_by_id string required The requestor user ID.
+     * @bodyParam sig_cash_availability_id string nullable The signatory for cash availability ID.
+     * @bodyParam sig_approved_by_id string nullable The signatory for approval ID.
+     * @bodyParam items array required The PR items.
+     * @bodyParam items.*.quantity integer required Item quantity.
+     * @bodyParam items.*.unit_issue_id string required Unit of issue ID.
+     * @bodyParam items.*.description string required Item description.
+     * @bodyParam items.*.stock_no string nullable Stock number.
+     * @bodyParam items.*.estimated_unit_cost float required Estimated unit cost.
+     *
+     * @response 201 {
+     *   "data": {...},
+     *   "message": "Purchase request created successfully."
+     * }
+     * @response 422 {
+     *   "message": "Purchase request creation failed."
+     * }
      */
     public function store(Request $request): JsonResponse
     {
-        $user = Auth::user();
-
         $validated = $request->validate([
             'department_id' => 'required',
             'section_id' => 'nullable',
@@ -183,6 +106,7 @@ class PurchaseRequestController extends Controller
             'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
             'alobs_date' => 'nullable',
+            'notes' => 'nullable|string',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',
@@ -192,144 +116,77 @@ class PurchaseRequestController extends Controller
         ]);
 
         try {
-            $message = 'Purchase request created successfully.';
-
-            $canAccess = in_array(true, [
-                $user->tokenCan('super:*'),
-                $user->tokenCan('supply:*'),
-            ]);
-
-            if ($canAccess) {
-            } else {
-                if ($validated['requested_by_id'] !== $user->id) {
-                    $message = 'Purchase request creation failed. User is not authorized to create purchase requests for others.';
-                    $this->logRepository->create([
-                        'message' => $message,
-                        'log_module' => 'pr',
-                        'data' => $validated,
-                    ], isError: true);
-
-                    return response()->json([
-                        'message' => $message,
-                    ], 422);
-                }
-            }
-
-            $purchaseRequest = PurchaseRequest::create(array_merge(
-                $validated,
-                [
-                    'pr_no' => $this->purchaseRequestRepository->generateNewPrNumber(),
-                    'status' => PurchaseRequestStatus::DRAFT,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'draft_at', null
-                    ),
-                ]
-            ));
-
-            $totalEstimatedCost = 0;
-
-            foreach ($validated['items'] ?? [] as $key => $item) {
-                $quantity = intval($item['quantity']);
-                $unitCost = floatval($item['estimated_unit_cost']);
-                $cost = round($quantity * $unitCost, 2);
-
-                PurchaseRequestItem::create([
-                    'purchase_request_id' => $purchaseRequest->id,
-                    'item_sequence' => $key,
-                    'quantity' => $quantity,
-                    'unit_issue_id' => $item['unit_issue_id'],
-                    'description' => $item['description'],
-                    'stock_no' => (int) $item['stock_no'] ?? $key + 1,
-                    'estimated_unit_cost' => $unitCost,
-                    'estimated_cost' => $cost,
-                ]);
-
-                $totalEstimatedCost += $cost;
-            }
-
-            $purchaseRequest->update([
-                'total_estimated_cost' => $totalEstimatedCost,
-            ]);
-
-            $purchaseRequest->items = $validated['items'] ?? [];
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->create($validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
-            ]);
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request created successfully.',
+            ], 201);
         } catch (\Throwable $th) {
-            $message = 'Purchase request creation failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_module' => 'pr',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Purchase request creation failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Display the specified resource.
+     * Get Purchase Request
+     *
+     * Display the specified purchase request.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
      */
-    public function show(PurchaseRequest $purchaseRequest): JsonResponse
+    public function show(string $id): JsonResponse
     {
-        $purchaseRequest->load([
-            'funding_source:id,title,location_id',
-            'funding_source.location:id,location_name',
-            'department:id,department_name',
-            'section:id,section_name',
+        $purchaseRequest = $this->service->getById($id);
 
-            'items' => function ($query) {
-                $query->orderBy('item_sequence');
-            },
-            'items.unit_issue:id,unit_name',
-
-            'requestor:id,firstname,lastname,position_id,allow_signature,signature',
-            'requestor.position:id,position_name',
-
-            'signatory_cash_available:id,user_id',
-            'signatory_cash_available.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_cash_available.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'cash_availability');
-            },
-
-            'signatory_approval:id,user_id',
-            'signatory_approval.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_approval.detail' => function ($query) {
-                $query->where('document', 'pr')
-                    ->where('signatory_type', 'approved_by');
-            },
-        ]);
+        if (! $purchaseRequest) {
+            return response()->json(['message' => 'Purchase request not found.'], 404);
+        }
 
         return response()->json([
-            'data' => [
-                'data' => $purchaseRequest,
-            ],
+            'data' => new PurchaseRequestResource($purchaseRequest),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Purchase Request
+     *
+     * Update the specified purchase request in storage.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @bodyParam department_id string required The department ID.
+     * @bodyParam section_id string nullable The section ID.
+     * @bodyParam pr_date date required The PR date.
+     * @bodyParam sai_no string nullable The SAI number.
+     * @bodyParam sai_date date nullable The SAI date.
+     * @bodyParam alobs_no string nullable The ALOBS number.
+     * @bodyParam alobs_date date nullable The ALOBS date.
+     * @bodyParam notes string nullable Additional notes.
+     * @bodyParam purpose string required The purpose of the PR.
+     * @bodyParam funding_source_id string nullable The funding source ID.
+     * @bodyParam requested_by_id string required The requestor user ID.
+     * @bodyParam sig_cash_availability_id string nullable The signatory for cash availability ID.
+     * @bodyParam sig_approved_by_id string nullable The signatory for approval ID.
+     * @bodyParam items array required The PR items.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request updated successfully."
+     * }
+     * @response 422 {
+     *   "message": "Purchase request update failed."
+     * }
      */
     public function update(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
-
         $validated = $request->validate([
             'department_id' => 'required',
             'section_id' => 'nullable',
@@ -338,6 +195,7 @@ class PurchaseRequestController extends Controller
             'sai_date' => 'nullable',
             'alobs_no' => 'nullable|string',
             'alobs_date' => 'nullable',
+            'notes' => 'nullable|string',
             'purpose' => 'required|string',
             'funding_source_id' => 'nullable|string',
             'requested_by_id' => 'required|string',
@@ -347,929 +205,269 @@ class PurchaseRequestController extends Controller
         ]);
 
         try {
-            $message = 'Purchase request updated successfully.';
-
-            $canAccess = in_array(true, [
-                $user->tokenCan('super:*'),
-                $user->tokenCan('supply:*'),
-            ]);
-
-            if ($canAccess) {
-            } else {
-                if ($purchaseRequest->requested_by_id !== $user->id) {
-                    $message =
-                        'Purchase request update failed. User is not authorized to update purchase requests for others.';
-                    $this->logRepository->create([
-                        'message' => $message,
-                        'log_id' => $purchaseRequest->id,
-                        'log_module' => 'pr',
-                        'data' => $validated,
-                    ], isError: true);
-
-                    return response()->json([
-                        'message' => $message,
-                    ], 422);
-                }
-            }
-
-            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
-
-            if ($currentStatus === PurchaseRequestStatus::CANCELLED
-                || $currentStatus === PurchaseRequestStatus::FOR_CANVASSING
-                || $currentStatus === PurchaseRequestStatus::FOR_RECANVASSING
-                || $currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
-                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED
-                || $currentStatus === PurchaseRequestStatus::AWARDED
-                || $currentStatus === PurchaseRequestStatus::COMPLETED) {
-                $message = 'Purchase request update failed, already processing or cancelled.';
-
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $validated,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $status = $currentStatus;
-
-            if ($currentStatus === PurchaseRequestStatus::DRAFT
-                || $currentStatus === PurchaseRequestStatus::DISAPPROVED) {
-                $status = PurchaseRequestStatus::DRAFT;
-
-                $totalEstimatedCost = 0;
-
-                PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
-                    ->delete();
-
-                foreach ($validated['items'] ?? [] as $key => $item) {
-                    $quantity = intval($item['quantity']);
-                    $unitCost = floatval($item['estimated_unit_cost']);
-                    $cost = round($quantity * $unitCost, 2);
-
-                    PurchaseRequestItem::create([
-                        'purchase_request_id' => $purchaseRequest->id,
-                        'item_sequence' => $key,
-                        'quantity' => $quantity,
-                        'unit_issue_id' => $item['unit_issue_id'],
-                        'description' => $item['description'],
-                        'stock_no' => (int) $item['stock_no'] ?? $key + 1,
-                        'estimated_unit_cost' => $unitCost,
-                        'estimated_cost' => $cost,
-                    ]);
-
-                    $totalEstimatedCost += $cost;
-                }
-
-                $purchaseRequest->update([
-                    'total_estimated_cost' => $totalEstimatedCost,
-                    'status' => $status,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'draft_at', null
-                    ),
-                ]);
-            }
-
-            $purchaseRequest->update($validated);
-
-            $purchaseRequest->load('items');
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->update($purchaseRequest, $validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Purchase request update failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Purchase request update failed.', $th, $validated);
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Submit for Approval
+     *
+     * Mark the purchase request as pending for approval.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request has been successfully marked as Pending."
+     * }
      */
     public function submitForApproval(PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
-
         try {
-            $message = 'Purchase request has been successfully marked as "Pending".';
-
-            $canAccess = in_array(true, [
-                $user->tokenCan('super:*'),
-                $user->tokenCan('supply:*'),
-            ]);
-
-            if ($canAccess) {
-            } else {
-                if ($purchaseRequest->requested_by_id !== $user->id) {
-                    $message =
-                        'Purchase request submit failed.
-                    User is not authorized to submit purchase requests for others.';
-                    $this->logRepository->create([
-                        'message' => $message,
-                        'log_id' => $purchaseRequest->id,
-                        'log_module' => 'pr',
-                        'data' => $purchaseRequest,
-                    ], isError: true);
-
-                    return response()->json([
-                        'message' => $message,
-                    ], 422);
-                }
-            }
-
-            $purchaseRequest->update([
-                'disapproved_reason' => null,
-                'status' => PurchaseRequestStatus::PENDING,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'pending_at', $purchaseRequest->status_timestamps
-                ),
-            ]);
-
-            $this->notificationRepository->notify(NotificationType::PR_PENDING, [
-                'pr' => $purchaseRequest
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->submitForApproval($purchaseRequest);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request has been successfully marked as "Pending".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Purchase request submission for approval failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Purchase request submission for approval failed.', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Approve for Cash Availability
+     *
+     * Mark the purchase request as approved for cash availability.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request has been successfully marked as Approved for Cash Availability."
+     * }
      */
     public function approveForCashAvailability(PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
-
         try {
-            $message = 'Purchase request has been successfully marked as "Approved for Cash Availability".';
-
-            $canAccess = in_array(true, [
-                $user->tokenCan('super:*'),
-                $user->tokenCan('supply:*'),
-                $user->tokenCan('budget:*'),
-                $user->tokenCan('accountant:*'),
-                $user->tokenCan('cashier:*'),
-                $user->tokenCan('pr:*'),
-                $user->tokenCan('pr:approve-cash-available'),
-            ]);
-
-            if ($canAccess) {
-            } else {
-                $message =
-                    'Purchase request approval for cash availability failed.
-                    User is not authorized.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseRequest->update([
-                'status' => PurchaseRequestStatus::APPROVED_CASH_AVAILABLE,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'approved_cash_available_at', $purchaseRequest->status_timestamps
-                ),
-            ]);
-
-            $this->notificationRepository->notify(NotificationType::PR_APPROVED_CASH_AVAILABLE, [
-                'pr' => $purchaseRequest
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->approveForCashAvailability($purchaseRequest);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request has been successfully marked as "Approved for Cash Availability".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Purchase request approval for cash availability failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Purchase request approval for cash availability failed.', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Approve Purchase Request
+     *
+     * Mark the purchase request as approved.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request has been successfully marked as Approved."
+     * }
      */
     public function approve(PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
-
         try {
-            $message = 'Purchase request has been successfully marked as "Approved".';
-
-            $canAccess = in_array(true, [
-                $user->tokenCan('super:*'),
-                $user->tokenCan('supply:*'),
-                $user->tokenCan('head:*'),
-                $user->tokenCan('pr:*'),
-                $user->tokenCan('pr:approve'),
-            ]);
-
-            if ($canAccess) {
-            } else {
-                $message = 'Purchase request approve failed. User is not authorized.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseRequest->update([
-                'status' => PurchaseRequestStatus::APPROVED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'approved_at', $purchaseRequest->status_timestamps
-                ),
-            ]);
-
-            $this->notificationRepository->notify(NotificationType::PR_APPROVED, [
-                'pr' => $purchaseRequest
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->approve($purchaseRequest);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request has been successfully marked as "Approved".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Purchase request approval failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Purchase request approval failed.', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Disapprove Purchase Request
+     *
+     * Mark the purchase request as disapproved.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @bodyParam disapproved_reason string nullable The reason for disapproval.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request has been successfully marked as Disapproved."
+     * }
      */
     public function disapprove(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
+        $validated = $request->validate([
+            'disapproved_reason' => 'nullable|string',
+        ]);
 
         try {
-            $validated = $request->validate([
-                'disapproved_reason' => 'nullable|string',
-            ]);
-
-            $message = 'Purchase request has been successfully marked as "Disapproved".';
-
-            $canAccess = in_array(true, [
-                $user->tokenCan('super:*'),
-                $user->tokenCan('supply:*'),
-                $user->tokenCan('head:*'),
-                $user->tokenCan('pr:*'),
-                $user->tokenCan('pr:disapprove'),
-            ]);
-
-            if ($canAccess) {
-            } else {
-                $message = 'Purchase request disapprove failed. User is not authorized.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseRequest->update([
-                'disapproved_reason' => $validated['disapproved_reason'] ?? null,
-                'status' => PurchaseRequestStatus::DISAPPROVED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'disapproved_at', $purchaseRequest->status_timestamps
-                ),
-            ]);
-
-            $this->notificationRepository->notify(NotificationType::PR_DISAPPROVED, [
-                'pr' => $purchaseRequest
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $validated['disapproved_reason'] ? 'Reason: '.$validated['disapproved_reason'] : null,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->disapprove($purchaseRequest, $validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request has been successfully marked as "Disapproved".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Purchase request disapproval failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Purchase request disapproval failed.', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Cancel Purchase Request
+     *
+     * Mark the purchase request as cancelled.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request successfully marked as Cancelled."
+     * }
      */
     public function cancel(PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
-
         try {
-            $message = 'Purchase request successfully marked as "Cancelled".';
-
-            $canAccess = in_array(true, [
-                $user->tokenCan('super:*'),
-                $user->tokenCan('supply:*'),
-                $user->tokenCan('pr:*'),
-                $user->tokenCan('pr:cancel'),
-            ]);
-
-            if ($canAccess) {
-            } else {
-                if ($purchaseRequest->requested_by_id !== $user->id) {
-                    $message = 'Purchase request cancel failed. User is not authorized to cancel purchase requests for others.';
-                    $this->logRepository->create([
-                        'message' => $message,
-                        'log_id' => $purchaseRequest->id,
-                        'log_module' => 'pr',
-                        'data' => $purchaseRequest,
-                    ], isError: true);
-
-                    return response()->json([
-                        'message' => $message,
-                    ], 422);
-                }
-            }
-
-            $purchaseRequest->update([
-                'status' => PurchaseRequestStatus::CANCELLED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'cancelled_at', $purchaseRequest->status_timestamps
-                ),
-            ]);
-
-            $this->notificationRepository->notify(NotificationType::PR_CANCELLED, [
-                'pr' => $purchaseRequest
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->cancel($purchaseRequest);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request successfully marked as "Cancelled".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Purchase request cancellation failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Purchase request cancellation failed.', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Issue All Draft RFQs
+     *
+     * Mark all draft RFQs for this purchase request as canvassing.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "message": "RFQs for this purchase request successfully marked as Canvassing."
+     * }
      */
     public function issueAllDraftRfq(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
-
         try {
-            $message = 'RFQs for this purchase request successfully marked as "Canvassing".';
-            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
-
-            $rfqDraft = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
-                ->whereIn('status', [
-                    RequestQuotationStatus::DRAFT,
-                ]);
-            $rfqDraftCount = $rfqDraft->count();
-            $rfqDraft = $rfqDraft->get();
-
-            if ($rfqDraftCount === 0) {
-                $message = 'No RFQs to issue because all have been given to canvassers or none were created from this PR.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $rfqDraft,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            foreach ($rfqDraft as $key => $rfq) {
-                $rfq->update([
-                    'status' => RequestQuotationStatus::CANVASSING,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'canvassing_at', $rfq->status_timestamps
-                    ),
-                ]);
-
-                $this->logRepository->create([
-                    'message' => 'Request for quotation successfully marked as "Canvassing".',
-                    'log_id' => $rfq->id,
-                    'log_module' => 'rfq',
-                    'data' => $rfq,
-                ]);
-            }
-
-            if ($currentStatus === PurchaseRequestStatus::APPROVED
-                || $currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
-                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
-                $purchaseRequest->update([
-                    'status' => PurchaseRequestStatus::FOR_CANVASSING,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'canvassing_at', $purchaseRequest->status_timestamps
-                    ),
-                ]);
-            }
+            $rfqDraft = $this->service->issueAllDraftRfq($purchaseRequest);
 
             return response()->json([
-                'data' => [
-                    'data' => $rfqDraft,
-                    'message' => $message,
-                ],
+                'data' => $rfqDraft,
+                'message' => 'RFQs for this purchase request successfully marked as "Canvassing".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Failed to mark the purchase request as "For Abstract".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Failed to issue draft RFQs.', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Approve Request Quotations
+     *
+     * Mark approved request quotations and create an abstract of quotations.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @bodyParam mode_procurement_id string required The mode of procurement ID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request successfully marked as For Abstract."
+     * }
      */
     public function approveRequestQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
+        $validated = $request->validate([
+            'mode_procurement_id' => 'required|uuid',
+        ]);
 
         try {
-            $message = 'Purchase request successfully marked as "For Abstract".';
-            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
-
-            if ($currentStatus === PurchaseRequestStatus::FOR_CANVASSING
-                || $currentStatus === PurchaseRequestStatus::FOR_RECANVASSING) {
-            } else {
-                $message = 'Failed to mark the purchase request as "For Abstract" because it is already set to this status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $rfqProcessing = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
-                ->whereIn('status', [
-                    RequestQuotationStatus::CANVASSING,
-                    RequestQuotationStatus::DRAFT,
-                ])
-                ->where('batch', $purchaseRequest->rfq_batch);
-            $rfqProcessingCount = $rfqProcessing->count();
-            $rfqProcessing = $rfqProcessing->get();
-
-            $rfqCompleted = RequestQuotation::where('purchase_request_id', $purchaseRequest->id)
-                ->where('status', RequestQuotationStatus::COMPLETED)
-                ->where('batch', $purchaseRequest->rfq_batch);
-            $rfqCompletedCount = $rfqCompleted->count();
-            $rfqCompleted = $rfqCompleted->get();
-
-            if ($rfqProcessingCount > 0) {
-                $message = 'Failed to mark the purchase request as "For Abstract" due to pending RFQs in canvassing or draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $rfqProcessing,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            if ($rfqCompletedCount === 0) {
-                $message = 'Cannot mark as "For Abstract" because no RFQ has been completed';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $rfqCompleted,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $rfqNumbers = $rfqCompleted->pluck('rfq_no')->unique();
-
-            if ($rfqNumbers->count() > 1) {
-                $message = 'Cannot mark as "For Abstract" because RFQs have different RFQ numbers.';
-                
-                $this->logRepository->create([
-                    'message' => $message,
-                    'details' => $rfqNumbers->implode(', '),
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $rfqCompleted,
-                ], isError: true);
-
-                return response()->json([
-                    'message' =>  $message,
-                ], 422);
-            }
-
-            $purchaseRequest->update([
-                'rfq_batch' => $purchaseRequest->rfq_batch + 1,
-                'approved_rfq_at' => Carbon::now(),
-                'status' => PurchaseRequestStatus::FOR_ABSTRACT,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'approved_rfq_at', $purchaseRequest->status_timestamps
-                ),
-            ]);
-
-            $prReturnData = $purchaseRequest;
-            $purchaseRequest->load('items');
-
-            $abstractQuotation = $this->abstractQuotationRepository->storeUpdate([
-                'purchase_request_id' => $purchaseRequest->id,
-                'solicitation_no' => isset($rfqCompleted[0]->rfq_no)
-                    ? $rfqCompleted[0]->rfq_no : '',
-                'solicitation_date' => Carbon::now()->toDateString(),
-                'items' => $purchaseRequest->items->map(function (PurchaseRequestItem $item) use ($rfqCompleted) {
-                    return [
-                        'pr_item_id' => $item->id,
-                        'included' => empty($item->awarded_to) ? true : false,
-                        'document_type' => 'po',
-                        'details' => $rfqCompleted->map(function (RequestQuotation $rfq) use ($item) {
-                            $rfq->load([
-                                'items' => function ($query) use ($item) {
-                                    $query->where('pr_item_id', $item->id);
-                                },
-                            ]);
-                            $rfqItem = $rfq->items[0];
-
-                            return [
-                                'quantity' => $item->quantity,
-                                'supplier_id' => $rfqItem->supplier_id,
-                                'brand_model' => $rfqItem->brand_model,
-                                'unit_cost' => $rfqItem->unit_cost,
-                            ];
-                        }),
-                    ];
-                }),
-            ]);
-
-            $this->notificationRepository->notify(NotificationType::PR_FOR_ABSTRACT, [
-                'pr' => $purchaseRequest, 'rfq' => $rfqCompleted[0]
-            ]);
-
-            $this->logRepository->create([
-                'message' => 'Abstract of quotation created successfully.',
-                'log_id' => $abstractQuotation->id,
-                'log_module' => 'aoq',
-                'data' => $abstractQuotation,
-            ]);
-
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $prReturnData,
-            ]);
+            $purchaseRequest = $this->service->approveRequestQuotations($purchaseRequest, $validated);
 
             return response()->json([
-                'data' => [
-                    'data' => $prReturnData,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request successfully marked as "For Abstract".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Failed to mark the purchase request as "For Abstract".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Failed to mark the purchase request as "For Abstract".', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Award Abstract Quotations
+     *
+     * Award approved abstract quotations and create purchase orders.
+     *
+     * @urlParam purchaseRequest string required The purchase request UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Purchase request successfully marked as Awarded."
+     * }
      */
     public function awardAbstractQuotations(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
     {
-        $user = Auth::user();
-
         try {
-            $message = 'Purchase request successfully marked as ';
-            $currentStatus = PurchaseRequestStatus::from($purchaseRequest->status);
-
-            if ($currentStatus === PurchaseRequestStatus::FOR_ABSTRACT
-                || $currentStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
-            } else {
-                $message = 'Failed to award the approved Abstract of Quotation(s) because it is already set to this status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                    'data' => $purchaseRequest,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $prStatus = PurchaseRequestStatus::AWARDED;
-            $aoqApproved = AbstractQuotation::with('items')
-                ->where('purchase_request_id', $purchaseRequest->id)
-                ->where('status', AbstractQuotationStatus::APPROVED);
-            $aoqApprovedCount = $aoqApproved->count();
-            $aoqApproved = $aoqApproved->get();
-
-            if ($aoqApprovedCount === 0) {
-                $message = 'Nothing to award. The Abstract of Quotation(s) may still be pending or have already been awarded.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $purchaseRequest->id,
-                    'log_module' => 'pr',
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            foreach ($aoqApproved ?? [] as $aoq) {
-                $poData = [];
-                $poItems = [];
-
-                foreach ($aoq->items ?? [] as $item) {
-                    if (empty($item->awardee_id)) {
-                        continue;
-                    }
-
-                    $prItem = PurchaseRequestItem::find($item->pr_item_id);
-                    $prItem->update([
-                        'awarded_to_id' => $item->awardee_id,
-                    ]);
-
-                    $aorItemDetail = AbstractQuotationDetail::where('abstract_quotation_id', $aoq->id)
-                        ->where('aoq_item_id', $item->id)
-                        ->where('supplier_id', $item->awardee_id)
-                        ->first();
-
-                    $poItems[$item->awardee_id][$item->document_type][] = [
-                        'pr_item_id' => $prItem->id,
-                        'brand_model' => $aorItemDetail->brand_model,
-                        'description' => $aorItemDetail->brand_model
-                            ? "{$prItem->description}\n{$aorItemDetail->brand_model}"
-                            : $prItem->description,
-                        'unit_cost' => $aorItemDetail->unit_cost,
-                        'total_cost' => $aorItemDetail->total_cost,
-                    ];
-
-                    $poData[$item->awardee_id][$item->document_type] = [
-                        'purchase_request_id' => $purchaseRequest->id,
-                        'mode_procurement_id' => $aoq->mode_procurement_id,
-                        'supplier_id' => $item->awardee_id,
-                        'document_type' => $item?->document_type ?? 'po',
-                        'items' => $poItems[$item->awardee_id][$item->document_type],
-                    ];
-                }
-
-                foreach ($poData ?? [] as $poDocs) {
-                    foreach ($poDocs as $data) {
-                        $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($data);
-                        $this->logRepository->create([
-                            'message' => 'Purchase Order created successfully.',
-                            'log_id' => $purchaseOrder->id,
-                            'log_module' => 'po',
-                            'data' => $purchaseOrder,
-                        ]);
-                    }
-                }
-
-                $aoq->update([
-                    'status' => AbstractQuotationStatus::AWARDED,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'awarded_at', $aoq->status_timestamps
-                    ),
-                ]);
-
-                $this->logRepository->create([
-                    'message' => 'Abstract of quotation awarded successfully.',
-                    'log_id' => $aoq->id,
-                    'log_module' => 'aoq',
-                    'data' => $aoq,
-                ]);
-            }
-
-            $countItems = PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
-                ->count();
-            $countAwardedItems = PurchaseRequestItem::where('purchase_request_id', $purchaseRequest->id)
-                ->whereNotNull('awarded_to_id')
-                ->count();
-
-            if ($countAwardedItems !== $countItems) {
-                $prStatus = PurchaseRequestStatus::PARTIALLY_AWARDED;
-            }
-
-            $purchaseRequest->update([
-                'status' => $prStatus,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    $prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED
-                        ? 'partially_awarded_at' : 'awarded_at',
-                    $purchaseRequest->status_timestamps
-                ),
-            ]);
-
-            if ($prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED) {
-                $this->notificationRepository->notify(NotificationType::PR_PARTIALLY_AWARDED, [
-                    'pr' => $purchaseRequest, 'aoq' => $aoqApproved[0]
-                ]);
-            } else {
-                $this->notificationRepository->notify(NotificationType::PR_AWARDED, [
-                    'pr' => $purchaseRequest, 'aoq' => $aoqApproved[0]
-                ]);
-            }
-
-            $this->logRepository->create([
-                'message' => $message.($prStatus === PurchaseRequestStatus::PARTIALLY_AWARDED ? '"Partially Awarded".' : '"Awarded".'),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ]);
+            $purchaseRequest = $this->service->awardAbstractQuotations($purchaseRequest);
 
             return response()->json([
-                'data' => [
-                    'data' => $purchaseRequest,
-                    'message' => $message,
-                ],
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase request successfully awarded.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Failed to award the approved Abstract of Quotation(s).';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $purchaseRequest->id,
-                'log_module' => 'pr',
-                'data' => $purchaseRequest,
-            ], isError: true);
+            $this->service->logError('Failed to award the approved Abstract of Quotation(s).', $th, $purchaseRequest->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }

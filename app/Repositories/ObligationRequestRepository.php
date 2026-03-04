@@ -10,6 +10,8 @@ use App\Models\Company;
 use App\Models\ObligationRequest;
 use App\Models\ObligationRequestAccount;
 use App\Models\ObligationRequestFpp;
+use App\Models\Supplier;
+use App\Models\User;
 use Illuminate\Support\Collection;
 use TCPDF;
 use TCPDF_FONTS;
@@ -41,8 +43,79 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $this->fontArialNarrowBold = TCPDF_FONTS::addTTFfont('fonts/arialnb.ttf', 'TrueTypeUnicode', '', 96);
     }
 
+    public function getAll(array $filters, ?string $userId = null): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $query = ObligationRequest::query()
+            ->select([
+                'id',
+                'purchase_order_id',
+                'payee_type',
+                'payee_id',
+                'obr_no',
+                'particulars',
+                'transaction_type',
+                'status',
+            ])
+            ->with([
+                'purchase_order:id,po_no',
+                'payee',
+            ]);
+
+        if ($userId) {
+            $query->whereRelation('purchase_request', function ($query) use ($userId) {
+                $query->where('requested_by_id', $userId);
+            });
+        }
+
+        $search = $filters['search'] ?? '';
+        if (! empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->whereRaw('CAST(id AS TEXT) = ?', [$search])
+                    ->orWhere('obr_no', 'ILIKE', "%{$search}%")
+                    ->orWhere('office', 'ILIKE', "%{$search}%")
+                    ->orWhere('address', 'ILIKE', "%{$search}%")
+                    ->orWhere('particulars', 'ILIKE', "%{$search}%")
+                    ->orWhere('status', 'ILIKE', "%{$search}%")
+                    ->orWhereRaw('CAST(purchase_order_id AS TEXT) = ?', [$search]);
+            });
+        }
+
+        $columnSort = $filters['column_sort'] ?? 'obr_no';
+        $sortDirection = $filters['sort_direction'] ?? 'desc';
+        $perPage = $filters['per_page'] ?? 50;
+
+        return $query->orderBy($columnSort, $sortDirection)->paginate($perPage);
+    }
+
+    public function getById(string $id): ?ObligationRequest
+    {
+        return ObligationRequest::with([
+            'payee',
+            'responsibility_center:id,code',
+            'purchase_order:id,po_no,total_amount',
+            'signatory_budget:id,user_id',
+            'signatory_budget.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_budget.detail' => function ($query) {
+                $query->where('document', 'obr')
+                    ->where('signatory_type', 'budget');
+            },
+            'signatory_head:id,user_id',
+            'signatory_head.user:id,firstname,middlename,lastname,allow_signature,signature',
+            'signatory_head.detail' => function ($query) {
+                $query->where('document', 'obr')
+                    ->where('signatory_type', 'head');
+            },
+            'fpps',
+            'fpps.fpp',
+            'accounts',
+            'accounts.account',
+        ])->find($id);
+    }
+
     public function storeUpdate(array $data, ?ObligationRequest $obligationRequest = null): ObligationRequest
     {
+        $data = $this->resolvePayeeType($data);
+
         if (! empty($obligationRequest)) {
             $obligationRequest->update($data);
         } else {
@@ -73,14 +146,29 @@ class ObligationRequestRepository implements ObligationRequestInterface
         return $obligationRequest;
     }
 
+    private function resolvePayeeType(array $data): array
+    {
+        if (empty($data['payee_id']) || ! empty($data['payee_type'])) {
+            return $data;
+        }
+
+        if (Supplier::where('id', $data['payee_id'])->exists()) {
+            $data['payee_type'] = 'App\\Models\\Supplier';
+        } elseif (User::where('id', $data['payee_id'])->exists()) {
+            $data['payee_type'] = 'App\\Models\\User';
+        }
+
+        return $data;
+    }
+
     private function storeUpdateFpps(Collection $fpps, ObligationRequest $obligationRequest): void
     {
         ObligationRequestFpp::where('obligation_request_id', $obligationRequest->id)->delete();
-        
+
         foreach ($fpps as $fppId) {
             ObligationRequestFpp::create([
                 'obligation_request_id' => $obligationRequest->id,
-                'fpp_id' => $fppId
+                'fpp_id' => $fppId,
             ]);
         }
     }
@@ -94,7 +182,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 'item_sequence' => $key,
                 'obligation_request_id' => $obligationRequest->id,
                 'account_id' => $account['account_id'],
-                'amount' => !empty($account['amount']) ? $account['amount'] : 0,
+                'amount' => ! empty($account['amount']) ? $account['amount'] : 0,
             ]);
         }
     }
@@ -107,7 +195,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
             ->whereYear('created_at', $year)
             ->count() + 1;
 
-        return "{$year}-{$sequence}-{$month}";
+        return "101-{$year}-{$sequence}-{$month}";
     }
 
     public function print(array $pageConfig, string $obrId): array
@@ -133,7 +221,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 'fpps',
                 'fpps.fpp',
                 'accounts',
-                'accounts.account'
+                'accounts.account',
             ])->find($obrId);
 
             $filename = "OBR-{$obr->obr_no}.pdf";
@@ -172,25 +260,36 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $particulars = trim(str_replace("\r", '<br />', $data->particulars));
         $particulars = str_replace("\n", '<br />', $particulars);
         $fpps = implode(
-            '<br />', 
-            $data->fpps->map(fn($fpp) => $fpp->fpp->code)
-                ->toArray() 
+            '<br />',
+            $data->fpps->map(fn ($fpp) => $fpp->fpp->code)
+                ->toArray()
                 ?? []
         );
         $accounts = implode(
-            '<br />', 
-            $data->accounts->map(fn($account) => $account->account->code)
-                ->toArray() 
+            '<br />',
+            $data->accounts->map(fn ($account) => $account->account->code)
+                ->toArray()
                 ?? []
         );
+        $accountAmounts = $data->accounts->isNotEmpty()
+            ? implode(
+                '<br />',
+                $data->accounts->map(fn ($account) => number_format($account->amount, 2))
+                    ->toArray()
+            )
+            : number_format($data->total_amount, 2);
         $amount = number_format($data->total_amount, 2);
         $complianceStatus = $data->compliance_status;
         $headName = $data->signatory_head?->user?->fullname ?? '';
         $headPosition = $data->signatory_head?->detail?->position ?? '';
-        $headSignedDate = date_format(date_create($data->head_signed_date), 'F j, Y');
+        $headSignedDate = $data->head_signed_date
+            ? date_format(date_create($data->head_signed_date), 'F j, Y')
+            : '';
         $budgetName = $data->signatory_budget?->user?->fullname ?? '';
         $budgetPosition = $data->signatory_budget?->detail?->position ?? '';
-        $budgetSignedDate = date_format(date_create($data->budget_signed_date), 'F j, Y');
+        $budgetSignedDate = $data->budget_signed_date
+            ? date_format(date_create($data->budget_signed_date), 'F j, Y')
+            : '';
 
         $pdf = new TCPDF($pageConfig['orientation'], $pageConfig['unit'], $pageConfig['dimension']);
 
@@ -231,7 +330,8 @@ class ObligationRequestRepository implements ObligationRequestInterface
                     dpi: 500,
                 );
             }
-        } catch (\Throwable $th) {}
+        } catch (\Throwable $th) {
+        }
 
         if (config('app.enable_print_bagong_pilipinas_logo')) {
             try {
@@ -249,7 +349,8 @@ class ObligationRequestRepository implements ObligationRequestInterface
                         dpi: 500,
                     );
                 }
-            } catch (\Throwable $th) {}
+            } catch (\Throwable $th) {
+            }
         }
 
         $pdf->setXY($x + ($x * 15.4), $y + ($y * 0.1));
@@ -307,7 +408,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->Cell(0, 0, '', 'LRB', 1, 'C');
         $pdf->setCellHeightRatio(0.2);
         $pdf->Cell(0, 0, '', 'LRB', 1, 'C');
-        
+
         $pdf->setCellHeightRatio(1.6);
         $pdf->SetFont('Times', '', 10);
         $pdf->SetFont('Times', 'B', 20);
@@ -361,7 +462,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->Ln(0);
 
         $htmlTable = '
-            <table 
+            <table
                 style="border-left: 1px solid black; border-right: 1px solid black;"
                 cellpadding="2"
             ><tbody><tr>
@@ -369,25 +470,25 @@ class ObligationRequestRepository implements ObligationRequestInterface
                     style="border-right: 1px solid black"
                     width="13%"
                     align="center"
-                >'. $responsibilityCenter .'</td>
+                >'.$responsibilityCenter.'</td>
                 <td
                     style="border-right: 1px solid black"
                     width="40.72%"
-                >'. $particulars .'</td>
+                >'.$particulars.'</td>
                 <td
                     style="border-right: 1px solid black"
                     width="12.975%"
                     align="center"
-                >'. $fpps .'</td>
+                >'.$fpps.'</td>
                 <td
                     style="border-right: 1px solid black"
                     width="14.785%"
                     align="center"
-                >'. $accounts .'</td>
+                >'.$accounts.'</td>
                 <td
                     width="18.52%"
-                    align="center"
-                >'. $amount .'</td>
+                    align="right"
+                >'.$accountAmounts.'</td>
             </tr>
             <tr>
                 <td
@@ -417,7 +518,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->Ln(0);
 
         $htmlTable = '
-            <table 
+            <table
                 style="border-left: 1px solid black; border-right: 1px solid black;"
                 cellpadding="2"
             ><tbody><tr>
@@ -444,8 +545,8 @@ class ObligationRequestRepository implements ObligationRequestInterface
                 <td
                     style="border-top: 2px solid black; border-bottom: 2px solid black;"
                     width="18.52%"
-                    align="center"
-                >P'. $amount .'</td>
+                    align="right"
+                >P'.$amount.'</td>
             </tr></tbody></table>
         ';
 
@@ -455,7 +556,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->Ln(0);
 
         $htmlTable = '
-            <table 
+            <table
                 style="border-left: 1px solid black; border-right: 1px solid black; border-bottom: 1px solid black;"
                 cellpadding="2"
             ><tbody><tr>
@@ -488,7 +589,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
 
         $pdf->SetFont($this->fontArial, '', 10);
         $pdf->Cell($pageWidth * 0.025, 0, 'A', 'LRB', 0, 'C');
-        $pdf->Cell($pageWidth * 0.5122, 0, " Certified:", 'L', 0);
+        $pdf->Cell($pageWidth * 0.5122, 0, ' Certified:', 'L', 0);
         $pdf->Cell($pageWidth * 0.025, 0, 'B', 'LRB', 0, 'C');
         $pdf->Cell(0, 0, ' Certified:', 'LR', 1);
 
@@ -531,7 +632,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->Cell($pageWidth * 0.12975, 0, 'Signature:', 'LB', 0);
         $pdf->Cell(0, 0, '', 'LRB', 1);
 
-         // Measure max height needed for signatory name
+        // Measure max height needed for signatory name
         $pdf->SetFont($this->fontArialBold, 'B', 14);
         $deptHeight = max(
             $pdf->getStringHeight($pageWidth * 0.4072, $headName),
@@ -582,7 +683,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->MultiCell(
             $w1,
             $positionCellDepthHeight,
-            "Position:",
+            'Position:',
             1,
             'L',
             0,
@@ -605,7 +706,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->MultiCell(
             $w3,
             $positionCellDepthHeight,
-            "Position:",
+            'Position:',
             1,
             'L',
             0,
@@ -630,7 +731,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->MultiCell(
             $w2,
             $deptSignatoryTitleHeight,
-            "Head, Requesting Office/Authorized Representative",
+            'Head, Requesting Office/Authorized Representative',
             'T',
             'C',
             0,
@@ -643,7 +744,7 @@ class ObligationRequestRepository implements ObligationRequestInterface
         $pdf->MultiCell(
             $w4,
             $deptSignatoryTitleHeight,
-            "Head, Budget Unit/Authorized Representative",
+            'Head, Budget Unit/Authorized Representative',
             'TR',
             'C',
             0,

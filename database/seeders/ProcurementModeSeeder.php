@@ -18,7 +18,7 @@ class ProcurementModeSeeder extends Seeder
         'Small Value Procurement',
         'Negotiated Procurement',
         'Direct Sales',
-        'Direct Procurement for Science, Technology, and Innovation'
+        'Direct Procurement for Science, Technology, and Innovation',
     ];
 
     /**

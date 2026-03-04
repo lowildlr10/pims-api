@@ -3,49 +3,47 @@
 namespace App\Http\Controllers\V1\Account;
 
 use App\Http\Controllers\Controller;
-use App\Models\Designation;
-use Illuminate\Http\JsonResponse;
+use App\Http\Resources\DesignationResource;
+use App\Services\DesignationService;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Account - Designations
+ * APIs for managing designations
+ */
 class DesignationController extends Controller
 {
+    public function __construct(
+        protected DesignationService $service
+    ) {}
+
     /**
-     * Display a listing of the resource.
+     * List Designations
+     *
+     * Retrieve a paginated list of designations.
+     *
+     * @queryParam search string Search by designation name.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam column_sort string Sort field. Default designation_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'designation_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'column_sort',
+            'sort_direction',
+        ]);
 
-        $designations = Designation::query();
+        $designations = $this->service->getAll($filters);
 
-        if (! empty($search)) {
-            $designations = $designations->where(function ($query) use ($search) {
-                $query->where('designation_name', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            $designations = $designations->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $designations->paginate($perPage);
-        } else {
-            if ($showAll) {
-                $designations = $designations->get();
-            } else {
-                $designations = $designations->limit($perPage)->get();
-            }
-
-            return response()->json([
-                'data' => $designations,
-            ]);
-        }
+        return DesignationResource::collection($designations);
     }
 }

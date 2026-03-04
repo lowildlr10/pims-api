@@ -26,7 +26,7 @@ class ObligationRequestAccount extends Model
         'item_sequence',
         'obligation_request_id',
         'account_id',
-        'amount'
+        'amount',
     ];
 
     /**

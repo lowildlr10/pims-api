@@ -13,12 +13,12 @@ return new class extends Migration
     {
         Schema::create('accounts', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('classification_id');
+            $table->uuid('classification_id')->index();
             $table->foreign('classification_id')
                 ->references('id')
                 ->on('account_classifications');
             $table->string('account_title');
-            $table->string('code');
+            $table->string('code')->index();
             $table->text('description')->nullable();
             $table->boolean('active')->default(true);
             $table->timestamps();

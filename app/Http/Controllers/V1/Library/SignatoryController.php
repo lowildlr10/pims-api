@@ -3,118 +3,71 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\Designation;
-use App\Models\Signatory;
-use App\Models\SignatoryDetail;
-use App\Models\User;
-use App\Repositories\LogRepository;
+use App\Http\Resources\SignatoryResource;
+use App\Services\SignatoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Signatories
+ * APIs for managing signatories
+ */
 class SignatoryController extends Controller
 {
-    private LogRepository $logRepository;
-
-    public function __construct(LogRepository $logRepository)
-    {
-        $this->logRepository = $logRepository;
-    }
+    public function __construct(protected SignatoryService $service) {}
 
     /**
-     * Display a listing of the resource.
+     * List Signatories
+     *
+     * Retrieve a paginated list of signatories or filtered by document and type.
+     *
+     * @queryParam search string Search by user name or position.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items. Default false.
+     * @queryParam show_inactive boolean Show inactive. Default false.
+     * @queryParam column_sort string Sort field. Default fullname.
+     * @queryParam sort_direction string Sort direction. Default desc.
+     * @queryParam document string Filter by document type.
+     * @queryParam signatory_type string Filter by signatory type.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     *
+     * @response 200 {"data": [...], "meta": {...}}
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'fullname');
-        $sortDirection = $request->get('sort_direction', 'desc');
+        $filters = $request->only([
+            'search', 'per_page', 'show_all', 'show_inactive',
+            'column_sort', 'sort_direction', 'paginated',
+        ]);
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
         $document = $request->get('document', '');
         $signatoryType = $request->get('signatory_type', '');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
 
         if (! empty($document) && ! empty($signatoryType)) {
-            $signatories = SignatoryDetail::with('signatory')
-                ->where('document', $document)
-                ->where('signatory_type', $signatoryType);
+            $signatories = $this->service->getByDocumentAndType($document, $signatoryType, $filters);
 
-            if (! $showInactive) {
-                $signatories = $signatories->whereRelation('signatory', 'active', true);
-            }
-
-            $signatories = $showAll
-                ? $signatories->get()
-                : $signatories = $signatories->limit($perPage)->get();
-
-            foreach ($signatories ?? [] as $signatory) {
-                $user = User::find($signatory->signatory->user_id);
-                $signatory->fullname_designation = "{$user->fullname} ({$signatory->position})";
-            }
-
-            return response()->json([
-                'data' => $signatories,
-            ]);
+            return response()->json(['data' => $signatories]);
         }
 
-        $signatories = Signatory::query()->with([
-            'details' => function ($query) {
-                $query->orderBy('document');
-            },
-            'user:id,firstname,middlename,lastname',
-        ]);
+        $signatories = $this->service->getAll($filters);
 
-        if (! empty($search)) {
-            $signatories = $signatories->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhereRelation('user', 'firstname', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('user', 'middlename', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('user', 'lastname', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('details', 'position', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'fullname':
-                    // $columnSort = 'user.firstname';
-                    $columnSort = '';
-                    $signatories = $signatories->orderBy(
-                        User::select('firstname')->whereColumn('users.id', 'signatories.user_id')
-                    );
-                    break;
-                default:
-                    break;
-            }
-
-            if ($columnSort) {
-                $signatories = $signatories->orderBy($columnSort, $sortDirection);
-            }
-        }
-
-        if ($paginated) {
-            return $signatories->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $signatories = $signatories->where('active', true);
-            }
-
-            $signatories = $showAll
-                ? $signatories->get()
-                : $signatories = $signatories->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $signatories,
-            ]);
-        }
+        return SignatoryResource::collection($signatories);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Create Signatory
+     *
+     * @bodyParam user_id string required The user ID.
+     * @bodyParam details string required JSON array of signatory details.
+     * @bodyParam active boolean required Whether active. Default true.
+     *
+     * @response 201 {"data": {"id": "uuid", ...}, "message": "Signatory created successfully."}
      */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'user_id' => 'required|unique:signatories,user_id',
@@ -122,138 +75,70 @@ class SignatoryController extends Controller
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $details = json_decode($validated['details']);
+            $signatory = $this->service->create($validated);
 
-            $signatory = Signatory::create($validated);
-
-            foreach ($details ?? [] as $detail) {
-                if (! empty($detail->position)) {
-                    $designation = Designation::updateOrCreate([
-                        'designation_name' => $detail->position,
-                    ], [
-                        'designation_name' => $detail->position,
-                    ]);
-
-                    SignatoryDetail::create([
-                        'signatory_id' => $signatory->id,
-                        'document' => $detail->document,
-                        'signatory_type' => $detail->signatory_type,
-                        'position' => $detail->position,
-                    ]);
-                }
-            }
-
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new SignatoryResource($signatory),
                 'message' => 'Signatory created successfully.',
-                'log_id' => $signatory->id,
-                'log_module' => 'lib-signatory',
-                'data' => $signatory,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Signatory creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-signatory',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Signatory creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Signatory creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $signatory,
-                'message' => 'Signatory created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Signatory
+     *
+     * @urlParam id string required The UUID.
+     *
+     * @response 200 {"data": {"id": "uuid", ...}}
      */
-    public function show(Signatory $signatory)
+    public function show(string $id): JsonResponse
     {
-        $signatory->load([
-            'details' => function ($query) {
-                $query->orderBy('document');
-            },
-            'user:id,firstname,middlename,lastname',
-        ]);
+        $signatory = $this->service->getById($id);
 
-        return response()->json([
-            'data' => [
-                'data' => $signatory,
-            ],
-        ]);
+        if (! $signatory) {
+            return response()->json(['message' => 'Signatory not found.'], 404);
+        }
+
+        return response()->json(['data' => new SignatoryResource($signatory)]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Signatory
+     *
+     * @urlParam id string required The UUID.
+     *
+     * @bodyParam details string required JSON array of signatory details.
+     * @bodyParam active boolean required Whether active.
+     *
+     * @response 200 {"data": {...}, "message": "Signatory updated successfully."}
      */
-    public function update(Request $request, Signatory $signatory)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
             'details' => 'required|string',
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $details = json_decode($validated['details']);
+            $signatory = $this->service->update($id, $validated);
 
-            $signatory->update($validated);
-
-            SignatoryDetail::where('signatory_id', $signatory->id)
-                ->delete();
-
-            foreach ($details ?? [] as $detail) {
-                if (! empty($detail->position)) {
-                    $designation = Designation::updateOrCreate([
-                        'designation_name' => $detail->position,
-                    ], [
-                        'designation_name' => $detail->position,
-                    ]);
-
-                    SignatoryDetail::create([
-                        'signatory_id' => $signatory->id,
-                        'document' => $detail->document,
-                        'signatory_type' => $detail->signatory_type,
-                        'position' => $detail->position,
-                    ]);
-                }
-            }
-
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new SignatoryResource($signatory),
                 'message' => 'Signatory updated successfully.',
-                'log_id' => $signatory->id,
-                'log_module' => 'lib-signatory',
-                'data' => $signatory,
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Signatory update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $signatory->id,
-                'log_module' => 'lib-signatory',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Signatory update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Signatory update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $signatory,
-                'message' => 'Signatory updated successfully.',
-            ],
-        ]);
     }
 }

@@ -2,211 +2,151 @@
 
 namespace App\Http\Controllers\V1\Procurement;
 
-use App\Enums\DisbursementVoucherStatus;
-use App\Enums\PurchaseOrderStatus;
-use App\Enums\PurchaseRequestStatus;
-use App\Helpers\StatusTimestampsHelper;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\DisbursementVoucherResource;
 use App\Models\DisbursementVoucher;
-use App\Models\PurchaseOrder;
-use App\Models\PurchaseRequest;
-use App\Models\Supplier;
-use App\Repositories\DisbursementVoucherRepository;
-use App\Repositories\LogRepository;
+use App\Services\DisbursementVoucherService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Disbursement Vouchers
+ * APIs for managing disbursement vouchers
+ */
 class DisbursementVoucherController extends Controller
 {
-    private LogRepository $logRepository;
-
-    private DisbursementVoucherRepository $disbursementVoucherRepository;
-    
     public function __construct(
-        LogRepository $logRepository,
-        DisbursementVoucherRepository $disbursementVoucherRepository
-    ) {
-        $this->logRepository = $logRepository;
-        $this->disbursementVoucherRepository = $disbursementVoucherRepository;
-    }
+        protected DisbursementVoucherService $service
+    ) {}
 
     /**
-     * Display a listing of the resource.
+     * List Disbursement Vouchers
+     *
+     * Retrieve a paginated list of disbursement vouchers.
+     *
+     * @queryParam search string Search by DV number, payee, etc.
+     * @queryParam per_page int Number of items per page. Default: 50.
+     * @queryParam show_all boolean Show all results without pagination. Default: false.
+     * @queryParam column_sort string Sort field. Default: dv_no.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default: desc.
+     * @queryParam paginated boolean Return paginated results. Default: true.
+     * @queryParam status string Filter by status (comma-separated).
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "links": {...},
+     *   "meta": {...}
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
-        $user = Auth::user();
-        
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 50);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'dv_no');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-        $status = $request->get('status', '');
-        $statusFilters = !empty($status) ? explode(',', $status) : [];
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+            'status',
+        ]);
 
-        $disbursementVouchers = DisbursementVoucher::query()
-            ->select([
-                'id',
-                'purchase_order_id',
-                'payee_id',
-                'dv_no',
-                'explanation',
-                'status',
-            ])
-            ->with([
-                'purchase_order:id,po_no',
-                'payee:id,supplier_name'
-            ]);
-
-        if ($user->tokenCan('super:*')
-            || $user->tokenCan('head:*')
-            || $user->tokenCan('supply:*')
-            || $user->tokenCan('budget:*')
-            || $user->tokenCan('accountant:*')
-            || $user->tokenCan('cashier:*')
-        ) {
-        } else {
-            $disbursementVouchers = $disbursementVouchers
-                ->whereRelation('purchase_request', function ($query) use ($user) {
-                $query->where('requested_by_id', $user->id);
-            });
-        }
-        
-        if (! empty($search)) {
-            $disbursementVouchers->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('dv_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('office', 'ILIKE', "%{$search}%")
-                    ->orWhere('address', 'ILIKE', "%{$search}%")
-                    ->orWhere('explanation', 'ILIKE', "%{$search}%")
-                    ->orWhere('status', 'ILIKE', "%{$search}%")
-                    ->orWhereRelation('purchase_request', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search]);
-                    })
-                    ->orWhereRelation('purchase_order', function ($query) use ($search) {
-                        $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                            ->orWhere('po_no', 'ILIKE',"%$search%");
-                    })
-                    ->orWhereRelation('payee', function ($query) use ($search) {
-                        $query->where('supplier_name', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('responsibility_center', function ($query) use ($search) {
-                        $query->where('code', 'ILIKE', "%{$search}%")
-                            ->orWhere('description', 'ILIKE',"%$search%");
-                    })
-                    ->orWhereRelation('signatory_accountant.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_treasurer.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    })
-                    ->orWhereRelation('signatory_head.user', function ($query) use ($search) {
-                        $query->where('firstname', 'ILIKE', "%{$search}%")
-                            ->orWhere('lastname', 'ILIKE', "%{$search}%");
-                    });
-            });
-        }
-
-        if (count($statusFilters) > 0) {
-            $disbursementVouchers = $disbursementVouchers->whereIn('status', $statusFilters);
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'dv_no':
-                    $disbursementVouchers = $disbursementVouchers->orderByRaw("CAST(REPLACE(dv_no, '-', '') AS INTEGER) {$sortDirection}");
-                    break;
-
-                case 'po_no':
-                    $disbursementVouchers = $disbursementVouchers->orderBy(
-                        PurchaseOrder::select('po_no')->whereColumn('purchase_orders.id', 'disbursement_vouchers.purchase_order_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'explanation_formatted':
-                    $disbursementVouchers = $disbursementVouchers->orderBy('status', $sortDirection);
-                    break;
-
-                case 'payee_name':
-                    $disbursementVouchers = $disbursementVouchers->orderBy(
-                        Supplier::select('supplier_name')->whereColumn('suppliers.id', 'disbursement_vouchers.payee_id'),
-                        $sortDirection
-                    );
-                    break;
-
-                case 'status_formatted':
-                    $disbursementVouchers = $disbursementVouchers->orderBy('status', $sortDirection);
-                    break;
-
-                default:
-                    $disbursementVouchers = $disbursementVouchers->orderBy($columnSort, $sortDirection);
-                    break;
-            }
-        }
+        $paginated = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+        $result = $this->service->getAll($filters);
 
         if ($paginated) {
-            return $disbursementVouchers->paginate($perPage);
-        } else {
-            $disbursementVouchers = $showAll
-                ? $disbursementVouchers->get()
-                : $disbursementVouchers = $disbursementVouchers->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $disbursementVouchers,
-            ]);
+            return DisbursementVoucherResource::collection($result);
         }
+
+        return response()->json([
+            'data' => DisbursementVoucherResource::collection($result),
+        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Get Disbursement Voucher
+     *
+     * Display the specified disbursement voucher.
+     *
+     * @urlParam id string required The disbursement voucher UUID.
+     *
+     * @response 200 {
+     *   "data": {...}
+     * }
      */
     public function show(DisbursementVoucher $disbursementVoucher): JsonResponse
     {
-         $disbursementVoucher->load([
-            'payee:id,supplier_name,tin_no',
-            'responsibility_center:id,code',
-            'purchase_order:id,po_no,total_amount',
-            'obligation_request:id,obr_no',
-            'signatory_accountant:id,user_id',
-            'signatory_accountant.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_accountant.detail' => function ($query) {
-                $query->where('document', 'dv')
-                    ->where('signatory_type', 'accountant');
-            },
-            'signatory_treasurer:id,user_id',
-            'signatory_treasurer.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_treasurer.detail' => function ($query) {
-                $query->where('document', 'dv')
-                    ->where('signatory_type', 'treasurer');
-            },
-            'signatory_head:id,user_id',
-            'signatory_head.user:id,firstname,middlename,lastname,allow_signature,signature',
-            'signatory_head.detail' => function ($query) {
-                $query->where('document', 'dv')
-                    ->where('signatory_type', 'head');
-            }
-        ]);
-
         return response()->json([
-            'data' => [
-                'data' => $disbursementVoucher,
-            ],
+            'data' => new DisbursementVoucherResource($disbursementVoucher->load([
+                'payee:id,supplier_name,tin_no',
+                'tax_withholding',
+                'responsibility_center:id,code',
+                'purchase_order:id,po_no,total_amount',
+                'obligation_request:id,obr_no',
+                'signatory_accountant:id,user_id',
+                'signatory_accountant.user:id,firstname,middlename,lastname,allow_signature,signature',
+                'signatory_accountant.detail' => function ($query) {
+                    $query->where('document', 'dv')
+                        ->where('signatory_type', 'accountant');
+                },
+                'signatory_treasurer:id,user_id',
+                'signatory_treasurer.user:id,firstname,middlename,lastname,allow_signature,signature',
+                'signatory_treasurer.detail' => function ($query) {
+                    $query->where('document', 'dv')
+                        ->where('signatory_type', 'treasurer');
+                },
+                'signatory_head:id,user_id',
+                'signatory_head.user:id,firstname,middlename,lastname,allow_signature,signature',
+                'signatory_head.detail' => function ($query) {
+                    $query->where('document', 'dv')
+                        ->where('signatory_type', 'head');
+                },
+            ])),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Disbursement Voucher
+     *
+     * Update the specified disbursement voucher.
+     *
+     * @urlParam id string required The disbursement voucher UUID.
+     *
+     * @bodyParam mode_payment string nullable The mode of payment.
+     * @bodyParam office string nullable The office.
+     * @bodyParam address string nullable The address.
+     * @bodyParam responsibility_center_id string required The responsibility center ID.
+     * @bodyParam explanation string required The explanation.
+     * @bodyParam total_amount float required The total amount.
+     * @bodyParam accountant_certified_choices array nullable The accountant certified choices.
+     * @bodyParam sig_accountant_id string required The accountant signatory ID.
+     * @bodyParam accountant_signed_date date nullable The accountant signed date.
+     * @bodyParam sig_treasurer_id string required The treasurer signatory ID.
+     * @bodyParam treasurer_signed_date date nullable The treasurer signed date.
+     * @bodyParam sig_head_id string required The head signatory ID.
+     * @bodyParam head_signed_date date nullable The head signed date.
+     * @bodyParam check_no string nullable The check number.
+     * @bodyParam bank_name string nullable The bank name.
+     * @bodyParam check_date date nullable The check date.
+     * @bodyParam received_name string nullable The received name.
+     * @bodyParam received_date date nullable The received date.
+     * @bodyParam or_other_document string nullable The OR/other document.
+     * @bodyParam jev_no string nullable The JEV number.
+     * @bodyParam jev_date date nullable The JEV date.
+     * @bodyParam tax_withholding_id string nullable The tax withholding ID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Disbursement voucher updated successfully."
+     * }
+     * @response 422 {
+     *   "message": "Disbursement voucher update failed."
+     * }
      */
     public function update(Request $request, DisbursementVoucher $disbursementVoucher): JsonResponse
     {
         $validated = $request->validate([
+            'dv_no' => 'required|unique:disbursement_vouchers,dv_no,'.$disbursementVoucher->id,
             'mode_payment' => 'nullable',
             'office' => 'nullable|string',
             'address' => 'nullable|string',
@@ -220,7 +160,6 @@ class DisbursementVoucherController extends Controller
             'treasurer_signed_date' => 'nullable',
             'sig_head_id' => 'required',
             'head_signed_date' => 'nullable',
-            'fpps' => 'nullable|array',
             'check_no' => 'nullable',
             'bank_name' => 'nullable',
             'check_date' => 'nullable',
@@ -229,391 +168,160 @@ class DisbursementVoucherController extends Controller
             'or_other_document' => 'nullable',
             'jev_no' => 'nullable',
             'jev_date' => 'nullable',
+            'tax_withholding_id' => 'nullable',
         ]);
 
-
         try {
-            $currentStatus = DisbursementVoucherStatus::from($disbursementVoucher->status);
-            $status = $currentStatus;
-
-            if ($currentStatus === DisbursementVoucherStatus::DRAFT
-                || $currentStatus === DisbursementVoucherStatus::DISAPPROVED) {
-                $status = DisbursementVoucherStatus::DRAFT;
-            }
-
-            $this->disbursementVoucherRepository->storeUpdate(
-                array_merge($validated, [
-                    'status' => $status,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'draft_at', null
-                    ),
-                ]), 
-                $disbursementVoucher
-            );
-
-            $message = 'Disbursement voucher updated successfully';
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ]);
+            $dv = $this->service->update($disbursementVoucher, $validated);
+            $dv->load('tax_withholding');
 
             return response()->json([
-                'data' => [
-                    'data' => $disbursementVoucher,
-                    'message' => $message,
-                ],
+                'data' => new DisbursementVoucherResource($dv),
+                'message' => 'Disbursement voucher updated successfully.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Disbursement voucher update failed.';
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Disbursement voucher update failed.', $th, $validated);
 
             return response()->json([
-                'message' => "$message Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Mark as Pending for Disbursement
+     *
+     * Mark the disbursement voucher as pending for disbursement.
+     *
+     * @urlParam id string required The disbursement voucher UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Disbursement voucher successfully marked as pending for disbursement."
+     * }
+     * @response 422 {
+     *   "message": "Failed to set the disbursement voucher to pending for disbursement."
+     * }
      */
     public function pending(DisbursementVoucher $disbursementVoucher): JsonResponse
     {
         try {
-            $currentStatus = DisbursementVoucherStatus::from($disbursementVoucher->status);
-
-            if ($currentStatus !== DisbursementVoucherStatus::DRAFT) {
-                $message =
-                    'Failed to set the disbursement voucher to pending for disbursement. '.
-                    'It may already be set to pending or processing status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $disbursementVoucher->id,
-                    'log_module' => 'dv',
-                    'data' => $disbursementVoucher,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder = PurchaseOrder::find($disbursementVoucher->purchase_order_id);
-
-            if ($purchaseOrder) {
-                $purchaseOrder->update([
-                    'status' => PurchaseOrderStatus::FOR_DISBURSEMENT,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'inspected_at', $purchaseOrder->status_timestamps
-                    ),
-                ]);
-
-                $this->logRepository->create([
-                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                        ' order successfully marked as for disbursement.',
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ]);
-            }
-
-            $disbursementVoucher->update([
-                'disapproved_reason' => null,
-                'status' => DisbursementVoucherStatus::PENDING,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'pending_at', $disbursementVoucher->status_timestamps
-                ),
-            ]);
-
-            $message = 'Disbursement voucher successfully marked as pending for obligation.';
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ]);
+            $dv = $this->service->pending($disbursementVoucher);
 
             return response()->json([
-                'data' => [
-                    'data' => $disbursementVoucher,
-                    'message' => $message,
-                ],
+                'data' => new DisbursementVoucherResource($dv),
+                'message' => 'Disbursement voucher successfully marked as pending for disbursement.',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Disbursement voucher failed to marked as pending for disbursement.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ], isError: true);
+            $this->service->logError('Disbursement voucher failed to mark as pending for disbursement.', $th, $disbursementVoucher->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Disapprove Disbursement Voucher
+     *
+     * Mark the disbursement voucher as disapproved.
+     *
+     * @urlParam id string required The disbursement voucher UUID.
+     *
+     * @bodyParam disapproved_reason string nullable The reason for disapproval.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Disbursement voucher successfully marked as Disapproved."
+     * }
+     * @response 422 {
+     *   "message": "Failed to set the disbursement voucher to Disapproved."
+     * }
      */
     public function disapprove(Request $request, DisbursementVoucher $disbursementVoucher): JsonResponse
     {
-         try {
-            $validated = $request->validate([
-                'disapproved_reason' => 'nullable|string',
-            ]);
+        $validated = $request->validate([
+            'disapproved_reason' => 'nullable|string',
+        ]);
 
-            $currentStatus = DisbursementVoucherStatus::from($disbursementVoucher->status);
-
-            if ($currentStatus !== DisbursementVoucherStatus::PENDING) {
-                $message =
-                    'Failed to set the disbursement voucher to "Disapproved". '.
-                    'It may already be obligated or still in draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $disbursementVoucher->id,
-                    'log_module' => 'dv',
-                    'data' => $disbursementVoucher,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $disbursementVoucher->update([
-                'disapproved_reason' => $validated['disapproved_reason'] ?? null,
-                'status' => DisbursementVoucherStatus::DISAPPROVED,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'disapproved_at', $disbursementVoucher->status_timestamps
-                ),
-            ]);
-
-            $message = 'Disbursement voucher successfully marked as "Disapproved".';
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ]);
+        try {
+            $dv = $this->service->disapprove($disbursementVoucher, $validated['disapproved_reason'] ?? null);
 
             return response()->json([
-                'data' => [
-                    'data' => $disbursementVoucher,
-                    'message' => $message,
-                ],
+                'data' => new DisbursementVoucherResource($dv),
+                'message' => 'Disbursement voucher successfully marked as "Disapproved".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Disbursement voucher disapproval failed.';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ], isError: true);
+            $this->service->logError('Disbursement voucher disapproval failed.', $th, $disbursementVoucher->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Mark as For Payment
+     *
+     * Mark the disbursement voucher as for payment.
+     *
+     * @urlParam id string required The disbursement voucher UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Disbursement voucher successfully marked as For Payment."
+     * }
+     * @response 422 {
+     *   "message": "Failed to set the Disbursement Voucher to For Payment."
+     * }
      */
     public function disburse(DisbursementVoucher $disbursementVoucher): JsonResponse
     {
         try {
-            $currentStatus = DisbursementVoucherStatus::from($disbursementVoucher->status);
-
-            if ($currentStatus !== DisbursementVoucherStatus::PENDING) {
-                $message =
-                    'Failed to set the Disbursement Voucher to "For Payment". '.
-                    'It may already be set to payment or still in draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $disbursementVoucher->id,
-                    'log_module' => 'dv',
-                    'data' => $disbursementVoucher,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $purchaseOrder = PurchaseOrder::find($disbursementVoucher->purchase_order_id);
-
-            if ($purchaseOrder) {
-                $purchaseOrder->update([
-                    'status' => PurchaseOrderStatus::FOR_PAYMENT,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'for_payment_at', $purchaseOrder->status_timestamps
-                    ),
-                ]);
-
-                $this->logRepository->create([
-                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                        ' order successfully marked as "For Payment".',
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ]);
-            }
-
-            $disbursementVoucher->update([
-                'status' => DisbursementVoucherStatus::FOR_PAYMENT,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'for_payment_at', $disbursementVoucher->status_timestamps
-                ),
-            ]);
-
-            $message = 'Disbursement voucher successfully marked as "For Payment".';
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ]);
+            $dv = $this->service->disburse($disbursementVoucher);
 
             return response()->json([
-                'data' => [
-                    'data' => $disbursementVoucher,
-                    'message' => $message,
-                ],
+                'data' => new DisbursementVoucherResource($dv),
+                'message' => 'Disbursement voucher successfully marked as "For Payment".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Disbursement voucher failed to marked as "For Payment".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ], isError: true);
+            $this->service->logError('Disbursement voucher failed to mark as For Payment.', $th, $disbursementVoucher->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }
 
     /**
-     * Update the status of the specified resource in storage.
+     * Mark as Paid
+     *
+     * Mark the disbursement voucher as paid.
+     *
+     * @urlParam id string required The disbursement voucher UUID.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Disbursement voucher successfully marked as Paid."
+     * }
+     * @response 422 {
+     *   "message": "Failed to set the Disbursement Voucher to Paid."
+     * }
      */
     public function paid(DisbursementVoucher $disbursementVoucher): JsonResponse
     {
         try {
-            $currentStatus = DisbursementVoucherStatus::from($disbursementVoucher->status);
-
-            if ($currentStatus !== DisbursementVoucherStatus::FOR_PAYMENT) {
-                $message =
-                    'Failed to set the Disbursement Voucher to "Paid". '.
-                    'It may already be paid or still in draft status.';
-                $this->logRepository->create([
-                    'message' => $message,
-                    'log_id' => $disbursementVoucher->id,
-                    'log_module' => 'dv',
-                    'data' => $disbursementVoucher,
-                ], isError: true);
-
-                return response()->json([
-                    'message' => $message,
-                ], 422);
-            }
-
-            $disbursementVoucher->update([
-                'status' => DisbursementVoucherStatus::PAID,
-                'status_timestamps' => StatusTimestampsHelper::generate(
-                    'paid_at', $disbursementVoucher->status_timestamps
-                ),
-            ]);
-
-            $message = 'Disbursement voucher successfully marked as "Paid".';
-            $this->logRepository->create([
-                'message' => $message,
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ]);
-
-            $purchaseOrder = PurchaseOrder::find($disbursementVoucher->purchase_order_id);
-
-            if ($purchaseOrder) {
-                $purchaseOrder->update([
-                    'status' => PurchaseOrderStatus::COMPLETED,
-                    'status_timestamps' => StatusTimestampsHelper::generate(
-                        'completed_at', $purchaseOrder->status_timestamps
-                    ),
-                ]);
-
-                $this->logRepository->create([
-                    'message' => ($purchaseOrder->document_type === 'po' ? 'Purchase' : 'Job').
-                        ' order successfully marked as "Completed".',
-                    'log_id' => $purchaseOrder->id,
-                    'log_module' => 'po',
-                    'data' => $purchaseOrder,
-                ]);
-            }
-
-            $po = PurchaseOrder::selectRaw('
-                COUNT(*) as po_total_count,
-                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as po_completed_count
-            ', [PurchaseOrderStatus::COMPLETED])
-            ->where('purchase_request_id', $disbursementVoucher->purchase_request_id)
-            ->first();
-
-            if ($po->po_total_count === $po->po_completed_count) {
-                $purchaseRequest = PurchaseRequest::find($disbursementVoucher->purchase_request_id);
-
-                if (!empty($purchaseRequest)) {
-                    $purchaseRequest->update([
-                        'status' => PurchaseRequestStatus::COMPLETED,
-                        'status_timestamps' => StatusTimestampsHelper::generate(
-                            'completed_at', $purchaseRequest->status_timestamps
-                        ),
-                    ]);
-                    $this->logRepository->create([
-                        'message' => 'Purchase request successfully marked as "Completed"',
-                        'log_id' => $purchaseRequest->id,
-                        'log_module' => 'pr',
-                        'data' => $purchaseRequest,
-                    ]);
-                }
-            }
+            $dv = $this->service->paid($disbursementVoucher);
 
             return response()->json([
-                'data' => [
-                    'data' => $disbursementVoucher,
-                    'message' => $message,
-                ],
+                'data' => new DisbursementVoucherResource($dv),
+                'message' => 'Disbursement voucher successfully marked as "Paid".',
             ]);
         } catch (\Throwable $th) {
-            $message = 'Disbursement voucher failed to marked as "Paid".';
-
-            $this->logRepository->create([
-                'message' => $message,
-                'details' => $th->getMessage(),
-                'log_id' => $disbursementVoucher->id,
-                'log_module' => 'dv',
-                'data' => $disbursementVoucher,
-            ], isError: true);
+            $this->service->logError('Disbursement voucher failed to mark as Paid.', $th, $disbursementVoucher->toArray());
 
             return response()->json([
-                'message' => "{$message} Please try again.",
+                'message' => $th->getMessage(),
             ], 422);
         }
     }

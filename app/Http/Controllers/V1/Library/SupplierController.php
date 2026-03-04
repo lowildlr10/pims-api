@@ -3,82 +3,84 @@
 namespace App\Http\Controllers\V1\Library;
 
 use App\Http\Controllers\Controller;
-use App\Models\Supplier;
-use App\Repositories\LogRepository;
+use App\Http\Resources\SupplierResource;
+use App\Services\SupplierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
+/**
+ * @group Library - Suppliers
+ * APIs for managing suppliers
+ */
 class SupplierController extends Controller
 {
-    private LogRepository $logRepository;
+    public function __construct(
+        protected SupplierService $service
+    ) {}
 
-    public function __construct(LogRepository $logRepository)
+    /**
+     * List Suppliers
+     *
+     * Retrieve a paginated list of suppliers.
+     *
+     * @queryParam search string Search by supplier name, address, TIN, phone, etc.
+     * @queryParam per_page int Number of items per page. Default 50.
+     * @queryParam show_all boolean Show all items without pagination. Default false.
+     * @queryParam show_inactive boolean Show inactive suppliers. Default false.
+     * @queryParam column_sort string Sort field. Default supplier_name.
+     * @queryParam sort_direction string Sort direction (asc/desc). Default desc.
+     * @queryParam paginated boolean Return paginated results. Default true.
+     *
+     * @response 200 {
+     *   "data": [...],
+     *   "meta": {...}
+     * }
+     */
+    public function index(Request $request): AnonymousResourceCollection
     {
-        $this->logRepository = $logRepository;
+        $filters = $request->only([
+            'search',
+            'per_page',
+            'show_all',
+            'show_inactive',
+            'column_sort',
+            'sort_direction',
+            'paginated',
+        ]);
+
+        $filters['show_all'] = filter_var($filters['show_all'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        $filters['paginated'] = filter_var($filters['paginated'] ?? true, FILTER_VALIDATE_BOOLEAN);
+
+        $suppliers = $this->service->getAll($filters);
+
+        return SupplierResource::collection($suppliers);
     }
 
     /**
-     * Display a listing of the resource.
+     * Create Supplier
+     *
+     * Create a new supplier.
+     *
+     * @bodyParam supplier_name string required The supplier name.
+     * @bodyParam address string optional The address.
+     * @bodyParam tin_no string optional The TIN number.
+     * @bodyParam phone string optional The phone number.
+     * @bodyParam telephone string optional The telephone number.
+     * @bodyParam vat_no string optional The VAT number.
+     * @bodyParam contact_person string optional The contact person.
+     * @bodyParam active boolean required Whether the supplier is active. Default true.
+     *
+     * @response 201 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "supplier_name": "Supplier Name"
+     *   },
+     *   "message": "Supplier created successfully."
+     * }
      */
-    public function index(Request $request): JsonResponse|LengthAwarePaginator
-    {
-        $search = trim($request->get('search', ''));
-        $perPage = $request->get('per_page', 5);
-        $showAll = filter_var($request->get('show_all', false), FILTER_VALIDATE_BOOLEAN);
-        $showInactive = filter_var($request->get('show_inactive', false), FILTER_VALIDATE_BOOLEAN);
-        $columnSort = $request->get('column_sort', 'supplier_name');
-        $sortDirection = $request->get('sort_direction', 'desc');
-        $paginated = filter_var($request->get('paginated', true), FILTER_VALIDATE_BOOLEAN);
-
-        $suppliers = Supplier::query();
-
-        if (! empty($search)) {
-            $suppliers = $suppliers->where(function ($query) use ($search) {
-                $query->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('supplier_name', 'ILIKE', "%{$search}%")
-                    ->orWhere('address', 'ILIKE', "%{$search}%")
-                    ->orWhere('tin_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('phone', 'ILIKE', "%{$search}%")
-                    ->orWhere('telephone', 'ILIKE', "%{$search}%")
-                    ->orWhere('vat_no', 'ILIKE', "%{$search}%")
-                    ->orWhere('contact_person', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if (in_array($sortDirection, ['asc', 'desc'])) {
-            switch ($columnSort) {
-                case 'supplier_name_formatted':
-                    $columnSort = 'supplier_name';
-                    break;
-                default:
-                    break;
-            }
-
-            $suppliers = $suppliers->orderBy($columnSort, $sortDirection);
-        }
-
-        if ($paginated) {
-            return $suppliers->paginate($perPage);
-        } else {
-            if (! $showInactive) {
-                $suppliers = $suppliers->where('active', true);
-            }
-
-            $suppliers = $showAll
-                ? $suppliers->get()
-                : $suppliers = $suppliers->limit($perPage)->get();
-
-            return response()->json([
-                'data' => $suppliers,
-            ]);
-        }
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'supplier_name' => 'required|unique:suppliers,supplier_name',
@@ -91,57 +93,74 @@ class SupplierController extends Controller
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $supplier = Supplier::create($validated);
+            $supplier = $this->service->create($validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new SupplierResource($supplier),
                 'message' => 'Supplier created successfully.',
-                'log_id' => $supplier->id,
-                'log_module' => 'lib-supplier',
-                'data' => $supplier,
-            ]);
+            ], 201);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Supplier creation failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_module' => 'lib-supplier',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Supplier creation failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Supplier creation failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $supplier,
-                'message' => 'Supplier created successfully.',
-            ],
-        ]);
     }
 
     /**
-     * Display the specified resource.
+     * Show Supplier
+     *
+     * Get a specific supplier by ID.
+     *
+     * @urlParam id string required The supplier UUID.
+     *
+     * @response 200 {
+     *   "data": {
+     *     "id": "uuid",
+     *     "supplier_name": "Supplier Name"
+     *   }
+     * }
      */
-    public function show(Supplier $supplier)
+    public function show(string $id): JsonResponse
     {
+        $supplier = $this->service->getById($id);
+
+        if (! $supplier) {
+            return response()->json(['message' => 'Supplier not found.'], 404);
+        }
+
         return response()->json([
-            'data' => [
-                'data' => $supplier,
-            ],
+            'data' => new SupplierResource($supplier),
         ]);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Update Supplier
+     *
+     * Update an existing supplier.
+     *
+     * @urlParam id string required The supplier UUID.
+     *
+     * @bodyParam supplier_name string required The supplier name.
+     * @bodyParam address string optional The address.
+     * @bodyParam tin_no string optional The TIN number.
+     * @bodyParam phone string optional The phone number.
+     * @bodyParam telephone string optional The telephone number.
+     * @bodyParam vat_no string optional The VAT number.
+     * @bodyParam contact_person string optional The contact person.
+     * @bodyParam active boolean required Whether the supplier is active.
+     *
+     * @response 200 {
+     *   "data": {...},
+     *   "message": "Supplier updated successfully."
+     * }
      */
-    public function update(Request $request, Supplier $supplier)
+    public function update(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'supplier_name' => 'required|unique:suppliers,supplier_name,'.$supplier->id,
+            'supplier_name' => 'required|unique:suppliers,supplier_name,'.$id,
             'address' => 'nullable',
             'tin_no' => 'nullable',
             'phone' => 'nullable',
@@ -151,36 +170,19 @@ class SupplierController extends Controller
             'active' => 'required|boolean',
         ]);
 
-        $validated['active'] = filter_var($validated['active'], FILTER_VALIDATE_BOOLEAN);
-
         try {
-            $supplier->update($validated);
+            $supplier = $this->service->update($id, $validated);
 
-            $this->logRepository->create([
+            return response()->json([
+                'data' => new SupplierResource($supplier),
                 'message' => 'Supplier updated successfully.',
-                'log_id' => $supplier->id,
-                'log_module' => 'lib-supplier',
-                'data' => $supplier,
             ]);
         } catch (\Throwable $th) {
-            $this->logRepository->create([
-                'message' => 'Supplier update failed. Please try again.',
-                'details' => $th->getMessage(),
-                'log_id' => $supplier->id,
-                'log_module' => 'lib-supplier',
-                'data' => $validated,
-            ], isError: true);
+            $this->service->logError('Supplier update failed.', $th, $validated);
 
             return response()->json([
                 'message' => 'Supplier update failed. Please try again.',
             ], 422);
         }
-
-        return response()->json([
-            'data' => [
-                'data' => $supplier,
-                'message' => 'Supplier updated successfully.',
-            ],
-        ]);
     }
 }

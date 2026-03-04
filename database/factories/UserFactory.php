@@ -5,9 +5,7 @@ namespace Database\Factories;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Position;
-use App\Models\Role;
 use App\Models\Section;
-use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -38,7 +36,7 @@ class UserFactory extends Factory
 
         return [
             'id' => (string) Str::uuid(),
-            'employee_id' => strtoupper('EMP-' . Str::random(6)),
+            'employee_id' => strtoupper('EMP-'.Str::random(6)),
             'firstname' => $this->faker->firstName($sex),
             'middlename' => $this->faker->optional()->lastName(),
             'lastname' => $this->faker->lastName(),

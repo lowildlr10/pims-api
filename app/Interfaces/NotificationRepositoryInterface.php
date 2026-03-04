@@ -6,5 +6,5 @@ use App\Enums\NotificationType;
 
 interface NotificationRepositoryInterface
 {
-    public function notify(NotificationType $notificationType, array $data): void ;
+    public function notify(NotificationType $notificationType, array $data): void;
 }

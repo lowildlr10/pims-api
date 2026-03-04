@@ -13,16 +13,16 @@ return new class extends Migration
     {
         Schema::create('abstract_quotation_details', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('abstract_quotation_id');
+            $table->uuid('abstract_quotation_id')->index();
             $table->foreign('abstract_quotation_id')
                 ->references('id')
                 ->on('abstract_quotations');
-            $table->uuid('aoq_item_id');
+            $table->uuid('aoq_item_id')->index();
             $table->foreign('aoq_item_id')
                 ->references('id')
                 ->on('abstract_quotation_items')
                 ->onDelete('cascade');
-            $table->uuid('supplier_id');
+            $table->uuid('supplier_id')->index();
             $table->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');

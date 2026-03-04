@@ -12,7 +12,6 @@ use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
-use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\HttpKernel\Exception\NotAcceptableHttpException;
@@ -37,28 +36,28 @@ return Application::configure(basePath: dirname(__DIR__))
         // Handling NotFoundHttpException
         $exceptions->render(function (NotFoundHttpException $e, Request $request) {
             return response()->json([
-                'message' => 'Resource not found.'
+                'message' => 'Resource not found.',
             ], 404);
         });
 
         // Handling MethodNotAllowedHttpException
         $exceptions->render(function (MethodNotAllowedHttpException $e, Request $request) {
             return response()->json([
-                'message' => 'Method not allowed.'
+                'message' => 'Method not allowed.',
             ], 405);
         });
 
         // Handling AuthenticationException (unauthenticated)
         $exceptions->render(function (AuthenticationException $e, Request $request) {
             return response()->json([
-                'message' => 'Unauthenticated.'
+                'message' => 'Unauthenticated.',
             ], 401);
         });
 
         // Handling AuthorizationException (unauthorized access)
         $exceptions->render(function (AuthorizationException $e, Request $request) {
             return response()->json([
-                'message' => 'Unauthorized access.'
+                'message' => 'Unauthorized access.',
             ], 403);
         });
 

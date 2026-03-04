@@ -13,26 +13,26 @@ return new class extends Migration
     {
         Schema::create('request_quotations', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id');
+            $table->uuid('purchase_request_id')->index();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
             $table->enum('signed_type', ['bac', 'lce']);
             $table->string('rfq_no');
             $table->date('rfq_date');
-            $table->uuid('supplier_id')->nullable();
+            $table->uuid('supplier_id')->nullable()->index();
             $table->foreign('supplier_id')
                 ->references('id')
                 ->on('suppliers');
             $table->dateTime('opening_dt')->nullable();
-            $table->uuid('sig_approval_id')->nullable();
+            $table->uuid('sig_approval_id')->nullable()->index();
             $table->foreign('sig_approval_id')
                 ->references('id')
                 ->on('signatories');
             $table->boolean('vat_registered')->nullable();
             $table->tinyInteger('batch')->default(1);
             $table->decimal('grand_total_cost', 20, 2)->default(0.00);
-            $table->string('status');
+            $table->string('status')->index();
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });

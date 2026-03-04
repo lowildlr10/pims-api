@@ -13,15 +13,15 @@ return new class extends Migration
     {
         Schema::create('abstract_quotations', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('purchase_request_id');
+            $table->uuid('purchase_request_id')->index();
             $table->foreign('purchase_request_id')
                 ->references('id')
                 ->on('purchase_requests');
-            $table->uuid('bids_awards_committee_id')->nullable();
+            $table->uuid('bids_awards_committee_id')->nullable()->index();
             $table->foreign('bids_awards_committee_id')
                 ->references('id')
                 ->on('bids_awards_committees');
-            $table->uuid('mode_procurement_id')->nullable();
+            $table->uuid('mode_procurement_id')->nullable()->index();
             $table->foreign('mode_procurement_id')
                 ->references('id')
                 ->on('procurement_modes');
@@ -30,39 +30,39 @@ return new class extends Migration
             $table->date('opened_on')->nullable();
             $table->string('abstract_no');
             $table->text('bac_action')->nullable();
-            $table->uuid('sig_twg_chairperson_id')->nullable();
+            $table->uuid('sig_twg_chairperson_id')->nullable()->index();
             $table->foreign('sig_twg_chairperson_id')
                 ->references('id')
                 ->on('signatories');
-            $table->uuid('sig_twg_member_1_id')->nullable();
+            $table->uuid('sig_twg_member_1_id')->nullable()->index();
             $table->foreign('sig_twg_member_1_id')
                 ->references('id')
                 ->on('signatories');
-            $table->uuid('sig_twg_member_2_id')->nullable();
+            $table->uuid('sig_twg_member_2_id')->nullable()->index();
             $table->foreign('sig_twg_member_2_id')
                 ->references('id')
                 ->on('signatories');
-            $table->uuid('sig_chairman_id')->nullable();
+            $table->uuid('sig_chairman_id')->nullable()->index();
             $table->foreign('sig_chairman_id')
                 ->references('id')
                 ->on('signatories');
-            $table->uuid('sig_vice_chairman_id')->nullable();
+            $table->uuid('sig_vice_chairman_id')->nullable()->index();
             $table->foreign('sig_vice_chairman_id')
                 ->references('id')
                 ->on('signatories');
-            $table->uuid('sig_member_1_id')->nullable();
+            $table->uuid('sig_member_1_id')->nullable()->index();
             $table->foreign('sig_member_1_id')
                 ->references('id')
                 ->on('signatories');
-            $table->uuid('sig_member_2_id')->nullable();
+            $table->uuid('sig_member_2_id')->nullable()->index();
             $table->foreign('sig_member_2_id')
                 ->references('id')
                 ->on('signatories');
-            $table->uuid('sig_member_3_id')->nullable();
+            $table->uuid('sig_member_3_id')->nullable()->index();
             $table->foreign('sig_member_3_id')
                 ->references('id')
                 ->on('signatories');
-            $table->string('status');
+            $table->string('status')->index();
             $table->json('status_timestamps')->default(json_encode(new \stdClass));
             $table->timestamps();
         });

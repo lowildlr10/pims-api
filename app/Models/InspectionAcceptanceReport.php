@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\InspectionAcceptanceReportStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,7 +44,11 @@ class InspectionAcceptanceReport extends Model
     protected function casts(): array
     {
         return [
+            'status' => InspectionAcceptanceReportStatus::class,
             'status_timestamps' => 'array',
+            'iar_date' => 'datetime',
+            'inspected_date' => 'datetime',
+            'received_date' => 'datetime',
         ];
     }
 

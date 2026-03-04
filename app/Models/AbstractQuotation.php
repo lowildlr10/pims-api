@@ -46,6 +46,7 @@ class AbstractQuotation extends Model
     protected function casts(): array
     {
         return [
+            'status' => \App\Enums\AbstractQuotationStatus::class,
             'status_timestamps' => 'array',
         ];
     }

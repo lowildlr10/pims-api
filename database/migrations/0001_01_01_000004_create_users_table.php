@@ -18,19 +18,19 @@ return new class extends Migration
             $table->string('middlename')->nullable();
             $table->string('lastname');
             $table->enum('sex', ['male', 'female']);
-            $table->uuid('department_id');
+            $table->uuid('department_id')->index();
             $table->foreign('department_id')
                 ->references('id')
                 ->on('departments');
-            $table->uuid('section_id')->nullable();
+            $table->uuid('section_id')->nullable()->index();
             $table->foreign('section_id')
                 ->references('id')
                 ->on('sections');
-            $table->uuid('position_id');
+            $table->uuid('position_id')->index();
             $table->foreign('position_id')
                 ->references('id')
                 ->on('positions');
-            $table->uuid('designation_id')->nullable();
+            $table->uuid('designation_id')->nullable()->index();
             $table->foreign('designation_id')
                 ->references('id')
                 ->on('designations');
@@ -49,7 +49,8 @@ return new class extends Migration
         Schema::table('departments', function (Blueprint $table) {
             $table->uuid('department_head_id')
                 ->after('department_name')
-                ->nullable();
+                ->nullable()
+                ->index();
             $table->foreign('department_head_id')
                 ->references('id')
                 ->on('users');
@@ -58,7 +59,8 @@ return new class extends Migration
         Schema::table('sections', function (Blueprint $table) {
             $table->uuid('section_head_id')
                 ->after('department_id')
-                ->nullable();
+                ->nullable()
+                ->index();
             $table->foreign('section_head_id')
                 ->references('id')
                 ->on('users');

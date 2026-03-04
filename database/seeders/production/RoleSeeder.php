@@ -12,7 +12,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Agency Head',
             'permissions' => [
                 'head:*',
-                
+
                 'pr:view,approve,disapprove,print',
                 'rfq:view,print',
                 'aoq:view,print',
@@ -24,7 +24,7 @@ class RoleSeeder extends Seeder
                 'account-department:view',
                 'account-section:view',
                 'account-user:view',
-                
+
                 'inv-supply:view',
                 'inv-issuance:view,print',
 
@@ -40,6 +40,7 @@ class RoleSeeder extends Seeder
                 'lib-signatory:view',
                 'lib-supplier:view',
                 'lib-unit-issue:view',
+                'lib-tax-withholding:view',
 
                 'company:*',
                 'system-log:*',
@@ -51,7 +52,7 @@ class RoleSeeder extends Seeder
                 'user:*',
 
                 'pr:view,create,update,submit,issue-rfq,cancel,print',
-                'rfq:view,create,update,issue,cancel,print',
+                'rfq:view,print',
                 'aoq:view,print',
                 'po:view,print',
                 'iar:view,print',
@@ -61,7 +62,7 @@ class RoleSeeder extends Seeder
                 'account-department:view',
                 'account-section:view',
                 'account-user:view',
-                
+
                 'lib-account:view',
                 'lib-bid-committee:view',
                 'lib-fpp:view',
@@ -80,7 +81,7 @@ class RoleSeeder extends Seeder
             'role_name' => 'Administrator',
             'permissions' => [
                 'super:*',
-                
+
                 'pr:*',
                 'rfq:*',
                 'aoq:*',
@@ -92,7 +93,7 @@ class RoleSeeder extends Seeder
                 'account-department:*',
                 'account-section:*',
                 'account-user:*',
-                
+
                 'inv-supply:*',
                 'inv-issuance:*',
 
@@ -108,6 +109,7 @@ class RoleSeeder extends Seeder
                 'lib-signatory:*',
                 'lib-supplier:*',
                 'lib-unit-issue:*',
+                'lib-tax-withholding:*',
 
                 'company:*',
                 'system-log:*',
@@ -129,7 +131,7 @@ class RoleSeeder extends Seeder
                 'account-department:view',
                 'account-section:view',
                 'account-user:view',
-                
+
                 'inv-supply:*',
                 'inv-issuance:*',
 
@@ -153,9 +155,9 @@ class RoleSeeder extends Seeder
             'permissions' => [
                 'budget:*',
 
-                'pr:view,approve-cash-available,print',
+                'pr:view,approve-cash-available,disapprove,print',
                 'rfq:view,print',
-                'aoq:view,print',
+                'aoq:view,approve,print',
                 'po:view,print',
                 'iar:view,print',
                 'obr:*',
@@ -164,7 +166,7 @@ class RoleSeeder extends Seeder
                 'account-department:view',
                 'account-section:view',
                 'account-user:view',
-                
+
                 'lib-account-class:*',
                 'lib-account:*',
                 'lib-fpp:*',
@@ -175,7 +177,8 @@ class RoleSeeder extends Seeder
                 'lib-signatory:view',
                 'lib-supplier:view',
                 'lib-unit-issue:view',
-                
+                'lib-tax-withholding:*',
+
                 'system-log:*',
             ],
         ],
@@ -195,7 +198,7 @@ class RoleSeeder extends Seeder
                 'account-department:view',
                 'account-section:view',
                 'account-user:view',
-                
+
                 'lib-account-class:*',
                 'lib-account:*',
                 'lib-fpp:*',
@@ -206,14 +209,15 @@ class RoleSeeder extends Seeder
                 'lib-signatory:view',
                 'lib-supplier:view',
                 'lib-unit-issue:view',
+                'lib-tax-withholding:*',
 
                 'system-log:*',
             ],
         ],
         [
-            'role_name' => 'Cashier',
+            'role_name' => 'Treasurer',
             'permissions' => [
-                'cashier:*',
+                'treasurer:*',
 
                 'pr:view,approve-cash-available,print',
                 'rfq:view,print',
@@ -221,12 +225,12 @@ class RoleSeeder extends Seeder
                 'po:view,print',
                 'iar:view,print',
                 'obr:view,print',
-                'dv:view,uodate,paid,print',
+                'dv:view,update,paid,print',
 
                 'account-department:view',
                 'account-section:view',
                 'account-user:view',
-                
+
                 'lib-account-class:*',
                 'lib-account:*',
                 'lib-fpp:*',

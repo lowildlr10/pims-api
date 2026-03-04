@@ -46,7 +46,6 @@ class DisapprovedNotification extends Notification implements ShouldQueue
         ];
     }
 
-
     /**
      * Get the notification's database type.
      */

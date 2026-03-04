@@ -33,6 +33,7 @@ class UserRepository implements UserRepositoryInterface
         $columnSort = $filters['column_sort'] ?? 'firstname';
         $sortDirection = $filters['sort_direction'] ?? 'desc';
         $showInactive = $filters['show_inactive'] ?? false;
+        $sectionId = $filters['section_id'] ?? null;
 
         if (! empty($search)) {
             $query->where(function ($query) use ($search) {
@@ -73,6 +74,10 @@ class UserRepository implements UserRepositoryInterface
 
         if (! $showInactive) {
             $query->where('restricted', false);
+        }
+
+        if ($sectionId) {
+            $query->where('section_id', $sectionId);
         }
 
         return $query->paginate($perPage);

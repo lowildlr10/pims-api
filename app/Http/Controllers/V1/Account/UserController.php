@@ -102,7 +102,7 @@ class UserController extends Controller
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'employee_id' => 'required|string',
+            'employee_id' => 'required|string|unique:users,employee_id',
             'firstname' => 'required|string',
             'middlename' => 'nullable|string',
             'lastname' => 'required|string',
@@ -213,7 +213,7 @@ class UserController extends Controller
 
             default:
                 $validated = $request->validate([
-                    'employee_id' => 'required|string',
+                    'employee_id' => 'required|string|unique:users,employee_id,'.$id,
                     'firstname' => 'required|string',
                     'middlename' => 'nullable|string',
                     'lastname' => 'required|string',

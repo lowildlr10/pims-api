@@ -22,6 +22,16 @@ class UserService
     {
         $filters['show_inactive'] = filter_var($filters['show_inactive'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
+        $user = auth()->user();
+        if ($user) {
+            $higherRoles = ['super:*', 'head:*', 'supply:*', 'budget:*', 'accountant:*', 'treasurer:*'];
+            $isEndUserOnly = $user->tokenCan('user:*') && ! collect($higherRoles)->some(fn ($role) => $user->tokenCan($role));
+
+            if ($isEndUserOnly && $user->section_id) {
+                $filters['section_id'] = $user->section_id;
+            }
+        }
+
         return $this->repository->getAll($filters);
     }
 

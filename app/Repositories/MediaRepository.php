@@ -213,8 +213,6 @@ class MediaRepository implements MediaRepositoryInterface
                             $type = mime_content_type($path);
                             $data = base64_encode(file_get_contents($path));
                         }
-                    } else {
-                        return 'favicon.ico';
                     }
                     break;
 
@@ -246,6 +244,10 @@ class MediaRepository implements MediaRepositoryInterface
 
                 default:
                     break;
+            }
+
+            if (empty($data) && $type === FileUploadType::FAVICON) {
+                return 'favicon.ico';
             }
 
             if (empty($data)) {

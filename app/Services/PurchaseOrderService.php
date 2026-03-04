@@ -60,6 +60,7 @@ class PurchaseOrderService
             && ! $user->tokenCan('supply:*')
             && ! $user->tokenCan('budget:*')
             && ! $user->tokenCan('accountant:*')
+            && ! $user->tokenCan('treasurer:*')
         ) {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
         }

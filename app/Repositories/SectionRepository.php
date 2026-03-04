@@ -27,6 +27,11 @@ class SectionRepository implements SectionRepositoryInterface
         $columnSort = $filters['column_sort'] ?? 'section_name';
         $sortDirection = $filters['sort_direction'] ?? 'desc';
         $filterByDepartment = $filters['filter_by_department'] ?? false;
+        $restrictToId = $filters['restrict_to_id'] ?? null;
+
+        if ($restrictToId) {
+            $query->where('id', $restrictToId);
+        }
         $departmentId = $filters['department_id'] ?? '';
 
         if (! empty($search)) {

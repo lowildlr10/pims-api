@@ -22,7 +22,6 @@ class TaxWithholdingSeeder extends Seeder
         $entries = [
             [
                 'name' => 'Non-VAT Goods',
-                'type' => 'non_vat_goods',
                 'is_vat' => false,
                 'ewt_rate' => 0.0100,
                 'ptax_rate' => 0.0300,
@@ -30,7 +29,6 @@ class TaxWithholdingSeeder extends Seeder
             ],
             [
                 'name' => 'Non-VAT Services',
-                'type' => 'non_vat_services',
                 'is_vat' => false,
                 'ewt_rate' => 0.0200,
                 'ptax_rate' => 0.0300,
@@ -38,7 +36,6 @@ class TaxWithholdingSeeder extends Seeder
             ],
             [
                 'name' => 'VAT Goods',
-                'type' => 'vat_goods',
                 'is_vat' => true,
                 'ewt_rate' => 0.0100,
                 'ptax_rate' => 0.0500,
@@ -46,7 +43,6 @@ class TaxWithholdingSeeder extends Seeder
             ],
             [
                 'name' => 'VAT Services',
-                'type' => 'vat_services',
                 'is_vat' => true,
                 'ewt_rate' => 0.0200,
                 'ptax_rate' => 0.0500,
@@ -55,7 +51,7 @@ class TaxWithholdingSeeder extends Seeder
         ];
 
         foreach ($entries as $entry) {
-            TaxWithholding::firstOrCreate(['type' => $entry['type']], $entry);
+            TaxWithholding::create($entry);
         }
     }
 }

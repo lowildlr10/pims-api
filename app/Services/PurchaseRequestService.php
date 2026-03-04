@@ -42,6 +42,7 @@ class PurchaseRequestService
             $user->tokenCan('supply:*'),
             $user->tokenCan('budget:*'),
             $user->tokenCan('accountant:*'),
+            $user->tokenCan('treasurer:*'),
         ]);
 
         $userId = $user->id;
@@ -267,7 +268,7 @@ class PurchaseRequestService
             $user->tokenCan('supply:*'),
             $user->tokenCan('budget:*'),
             $user->tokenCan('accountant:*'),
-            $user->tokenCan('cashier:*'),
+            $user->tokenCan('treasurer:*'),
             $user->tokenCan('pr:*'),
             $user->tokenCan('pr:approve-cash-available'),
         ]);

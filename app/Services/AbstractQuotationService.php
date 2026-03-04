@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\AbstractQuotationStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Enums\RequestQuotationStatus;
+use App\Helpers\RequiredFieldsValidationHelper;
 use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\AbstractQuotationRepositoryInterface;
 use App\Models\AbstractQuotation;
@@ -64,6 +65,7 @@ class AbstractQuotationService
             && ! $user->tokenCan('supply:*')
             && ! $user->tokenCan('budget:*')
             && ! $user->tokenCan('accountant:*')
+            && ! $user->tokenCan('treasurer:*')
         ) {
             $purchaseRequests = $purchaseRequests->where('requested_by_id', $user->id);
         }
@@ -174,6 +176,28 @@ class AbstractQuotationService
 
         if ($currentStatus !== AbstractQuotationStatus::DRAFT) {
             throw new \Exception('Failed to set the abstract of bids and quotation to pending. It is already pending or approved or awarded.');
+        }
+
+        $requiredFields = [
+            'bids_awards_committee_id' => 'Bids and Awards Committee',
+            'mode_procurement_id' => 'Mode of Procurement',
+            'solicitation_no' => 'Solicitation No.',
+            'solicitation_date' => 'Solicitation Date',
+            'opened_on' => 'Opened On',
+            'bac_action' => 'BAC Action',
+        ];
+
+        $missingFields = RequiredFieldsValidationHelper::getMissingFields($requiredFields, $abstractQuotation);
+
+        if (! empty($missingFields)) {
+            $this->logRepository->create([
+                'message' => 'Cannot set abstract of bids and quotation to pending. Missing required fields.',
+                'log_id' => $abstractQuotation->id,
+                'log_module' => 'aoq',
+                'data' => ['missing_fields' => $missingFields],
+            ], isError: true);
+
+            throw new \Exception('Cannot set abstract of bids and quotation to pending. Please fill out the following fields first: '.implode(', ', $missingFields));
         }
 
         $abstractQuotation->update([

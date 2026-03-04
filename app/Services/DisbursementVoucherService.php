@@ -32,7 +32,7 @@ class DisbursementVoucherService
             $user->tokenCan('supply:*'),
             $user->tokenCan('budget:*'),
             $user->tokenCan('accountant:*'),
-            $user->tokenCan('cashier:*'),
+            $user->tokenCan('treasurer:*'),
         ]);
 
         return $this->repository->getAll($filters, $hasFullAccess ? null : $user->id);

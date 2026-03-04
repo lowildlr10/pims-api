@@ -17,6 +17,14 @@ class DepartmentService
 
     public function getAll(array $filters): LengthAwarePaginator
     {
+        $user = auth()->user();
+        $higherRoles = ['super:*', 'head:*', 'supply:*', 'budget:*', 'accountant:*', 'treasurer:*'];
+        $isEndUserOnly = $user->tokenCan('user:*') && ! collect($higherRoles)->some(fn ($role) => $user->tokenCan($role));
+
+        if ($isEndUserOnly && $user->department_id) {
+            $filters['restrict_to_id'] = $user->department_id;
+        }
+
         return $this->repository->getAll($filters);
     }
 

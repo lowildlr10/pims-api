@@ -32,6 +32,11 @@ class DepartmentRepository implements DepartmentRepositoryInterface
         $perPage = $filters['per_page'] ?? 50;
         $columnSort = $filters['column_sort'] ?? 'department_name';
         $sortDirection = $filters['sort_direction'] ?? 'desc';
+        $restrictToId = $filters['restrict_to_id'] ?? null;
+
+        if ($restrictToId) {
+            $query->where('id', $restrictToId);
+        }
 
         if (! empty($search)) {
             $query->where(function ($query) use ($search) {

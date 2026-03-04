@@ -16,7 +16,6 @@ class TaxWithholding extends Model
      */
     protected $fillable = [
         'name',
-        'type',
         'is_vat',
         'ewt_rate',
         'ptax_rate',

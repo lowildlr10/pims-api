@@ -215,9 +215,9 @@ class RoleSeeder extends Seeder
             ],
         ],
         [
-            'role_name' => 'Cashier',
+            'role_name' => 'Treasurer',
             'permissions' => [
-                'cashier:*',
+                'treasurer:*',
 
                 'pr:view,approve-cash-available,print',
                 'rfq:view,print',

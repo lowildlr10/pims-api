@@ -21,8 +21,7 @@ class TaxWithholdingRepository implements TaxWithholdingRepositoryInterface
         $query = TaxWithholding::query()
             ->when($search, function ($q) use ($search) {
                 $q->whereRaw('CAST(id AS TEXT) = ?', [$search])
-                    ->orWhere('name', 'ILIKE', "%{$search}%")
-                    ->orWhere('type', 'ILIKE', "%{$search}%");
+                    ->orWhere('name', 'ILIKE', "%{$search}%");
             })
             ->orderBy($columnSort, $sortDirection);
 

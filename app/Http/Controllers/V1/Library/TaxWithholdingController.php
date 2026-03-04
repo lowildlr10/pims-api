@@ -81,7 +81,6 @@ class TaxWithholdingController extends Controller
      * Store a newly created tax withholding in storage.
      *
      * @bodyParam name string required The display name.
-     * @bodyParam type string required Unique identifier type (e.g. vat_goods).
      * @bodyParam is_vat boolean required Whether VAT computation applies.
      * @bodyParam ewt_rate number required Expanded Withholding Tax rate (e.g. 0.01).
      * @bodyParam ptax_rate number required Percentage Tax rate (e.g. 0.03).
@@ -96,7 +95,6 @@ class TaxWithholdingController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string',
-            'type' => 'required|string|unique:tax_withholdings,type',
             'is_vat' => 'required|boolean',
             'ewt_rate' => 'required|numeric|min:0|max:1',
             'ptax_rate' => 'required|numeric|min:0|max:1',

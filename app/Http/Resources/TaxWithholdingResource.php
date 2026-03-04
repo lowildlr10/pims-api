@@ -12,7 +12,6 @@ class TaxWithholdingResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'type' => $this->type,
             'is_vat' => $this->is_vat,
             'ewt_rate' => (float) $this->ewt_rate,
             'ptax_rate' => (float) $this->ptax_rate,

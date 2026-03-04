@@ -171,7 +171,7 @@ Route::prefix('v1')->group(function () {
                 ->middleware('ability:super:*,supply:*,pr:*,pr:submit')
                 ->name('submit');
             Route::put('/{purchaseRequest}/approve-cash-availability', [ProcurementControllers\PurchaseRequestController::class, 'approveForCashAvailability'])
-                ->middleware('ability:super:*,supply:*,cashier:*,budget:*,accountant:*,pr:*,pr:approve-cash-available')
+                ->middleware('ability:super:*,supply:*,treasurer:*,budget:*,accountant:*,pr:*,pr:approve-cash-available')
                 ->name('approve_for_cash_availability');
             Route::put('/{purchaseRequest}/approve', [ProcurementControllers\PurchaseRequestController::class, 'approve'])
                 ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:approve')
@@ -336,7 +336,7 @@ Route::prefix('v1')->group(function () {
                 ->middleware('ability:super:*,accountant:*,dv:*,dv:disburse')
                 ->name('disburse');
             Route::put('/{disbursementVoucher}/paid', [ProcurementControllers\DisbursementVoucherController::class, 'paid'])
-                ->middleware('ability:super:*,accountant:*,dv:*,dv:paid')
+                ->middleware('ability:super:*,accountant:*,treasurer:*,dv:*,dv:paid')
                 ->name('paid');
         });
 

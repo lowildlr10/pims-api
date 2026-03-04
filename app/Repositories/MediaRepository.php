@@ -213,6 +213,8 @@ class MediaRepository implements MediaRepositoryInterface
                             $type = mime_content_type($path);
                             $data = base64_encode(file_get_contents($path));
                         }
+                    } else {
+                        return 'favicon.ico';
                     }
                     break;
 

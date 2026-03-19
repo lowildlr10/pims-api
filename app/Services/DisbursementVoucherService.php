@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\DisbursementVoucherStatus;
+use App\Enums\NotificationType;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Helpers\RequiredFieldsValidationHelper;
@@ -12,6 +13,7 @@ use App\Models\DisbursementVoucher;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Repositories\LogRepository;
+use App\Repositories\NotificationRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
@@ -19,7 +21,8 @@ class DisbursementVoucherService
 {
     public function __construct(
         protected DisbursementVoucherInterface $repository,
-        protected LogRepository $logRepository
+        protected LogRepository $logRepository,
+        protected NotificationRepository $notificationRepository
     ) {}
 
     public function getAll(array $filters): LengthAwarePaginator
@@ -211,6 +214,8 @@ class DisbursementVoucherService
                 'log_module' => 'po',
                 'data' => $purchaseOrder,
             ]);
+
+            $this->notificationRepository->notify(NotificationType::PO_FOR_PAYMENT, ['po' => $purchaseOrder]);
         }
 
         $dv->update([
@@ -226,6 +231,8 @@ class DisbursementVoucherService
             'log_module' => 'dv',
             'data' => $dv,
         ]);
+
+        $this->notificationRepository->notify(NotificationType::DV_FOR_PAYMENT, ['dv' => $dv]);
 
         return $dv;
     }
@@ -299,6 +306,8 @@ class DisbursementVoucherService
                 'log_module' => 'po',
                 'data' => $purchaseOrder,
             ]);
+
+            $this->notificationRepository->notify(NotificationType::PO_COMPLETED, ['po' => $purchaseOrder]);
         }
 
         $po = PurchaseOrder::selectRaw('
@@ -323,6 +332,9 @@ class DisbursementVoucherService
                     'log_id' => $purchaseRequest->id,
                     'log_module' => 'pr',
                     'data' => $purchaseRequest,
+                ]);
+                $this->notificationRepository->notify(NotificationType::PR_COMPLETED, [
+                    'pr' => $purchaseRequest,
                 ]);
             }
         }

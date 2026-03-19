@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Enums\ObligationRequestStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\TransactionType;
@@ -12,6 +13,7 @@ use App\Models\ObligationRequest;
 use App\Models\PurchaseOrder;
 use App\Repositories\DisbursementVoucherRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\NotificationRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 
@@ -20,7 +22,8 @@ class ObligationRequestService
     public function __construct(
         protected ObligationRequestInterface $repository,
         protected LogRepository $logRepository,
-        protected DisbursementVoucherRepository $dvRepository
+        protected DisbursementVoucherRepository $dvRepository,
+        protected NotificationRepository $notificationRepository
     ) {}
 
     public function getAll(array $filters): LengthAwarePaginator
@@ -153,6 +156,8 @@ class ObligationRequestService
                 'log_module' => 'po',
                 'data' => $purchaseOrder,
             ]);
+
+            $this->notificationRepository->notify(NotificationType::PO_FOR_OBLIGATION, ['po' => $purchaseOrder]);
         }
 
         $obr->update([
@@ -249,6 +254,8 @@ class ObligationRequestService
             'data' => $disbursementVoucher,
         ]);
 
+        $this->notificationRepository->notify(NotificationType::DV_CREATED, ['dv' => $disbursementVoucher]);
+
         $purchaseOrder = PurchaseOrder::find($obr->purchase_order_id);
 
         if ($purchaseOrder) {
@@ -265,6 +272,8 @@ class ObligationRequestService
                 'log_module' => 'po',
                 'data' => $purchaseOrder,
             ]);
+
+            $this->notificationRepository->notify(NotificationType::PO_OBLIGATED, ['po' => $purchaseOrder]);
         }
 
         $obr->update([

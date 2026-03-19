@@ -17,6 +17,8 @@ class PurchaseRequestItemResource extends JsonResource
             'unit_issue_id' => $this->unit_issue_id,
             'description' => $this->description,
             'stock_no' => $this->stock_no,
+            'estimated_cost' => $this->estimated_cost,
+            'estimated_cost_formatted' => $this->estimated_cost_formatted,
             'estimated_unit_cost' => $this->estimated_unit_cost,
             'estimated_unit_cost_formatted' => $this->when($this->estimated_unit_cost, fn () => '₱'.number_format($this->estimated_unit_cost, 2)),
             'estimated_total_cost' => $this->estimated_total_cost,

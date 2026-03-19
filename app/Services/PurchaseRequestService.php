@@ -492,6 +492,10 @@ class PurchaseRequestService
                     'canvassing_at', $purchaseRequest->status_timestamps
                 ),
             ]);
+
+            $this->notificationRepository->notify(NotificationType::PR_CAMVASSING, [
+                'pr' => $purchaseRequest, 'rfq' => $rfqDraft->first(),
+            ]);
         }
 
         return $rfqDraft;
@@ -769,6 +773,128 @@ class PurchaseRequestService
 
         $this->logRepository->create([
             'message' => "Purchase request successfully marked as {$statusLabel}.",
+            'log_id' => $purchaseRequest->id,
+            'log_module' => 'pr',
+            'data' => $purchaseRequest,
+        ]);
+
+        return $purchaseRequest;
+    }
+
+    public function recreatePurchaseOrders(PurchaseRequest $purchaseRequest): PurchaseRequest
+    {
+        $currentStatus = $purchaseRequest->status instanceof PurchaseRequestStatus
+            ? $purchaseRequest->status
+            : PurchaseRequestStatus::from($purchaseRequest->status);
+
+        if (! in_array($currentStatus, [PurchaseRequestStatus::AWARDED, PurchaseRequestStatus::PARTIALLY_AWARDED])) {
+            $message = 'Cannot recreate Purchase Orders for a Purchase Request that is not in "Awarded" or "Partially Awarded" status.';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest,
+            ], isError: true);
+
+            throw new \Exception($message);
+        }
+
+        $existingPos = $purchaseRequest->pos()->with([
+            'inspection_acceptance_report',
+            'issuances',
+            'obligation_request',
+            'disbursement_voucher',
+        ])->get();
+
+        $hasDownstream = $existingPos->some(function ($po) {
+            return $po->inspection_acceptance_report->isNotEmpty()
+                || $po->issuances->isNotEmpty()
+                || $po->obligation_request !== null
+                || $po->disbursement_voucher !== null;
+        });
+
+        if ($hasDownstream) {
+            $message = 'Cannot recreate Purchase Orders because one or more already have linked documents (IAR, Issuances, OBR, or DV).';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+                'data' => $purchaseRequest,
+            ], isError: true);
+
+            throw new \Exception($message);
+        }
+
+        foreach ($existingPos as $po) {
+            $po->items()->delete();
+            $po->delete();
+        }
+
+        $aoqAwarded = AbstractQuotation::with('items')
+            ->where('purchase_request_id', $purchaseRequest->id)
+            ->where('status', AbstractQuotationStatus::AWARDED)
+            ->get();
+
+        if ($aoqAwarded->isEmpty()) {
+            $message = 'No awarded Abstract of Quotation(s) found for this Purchase Request.';
+            $this->logRepository->create([
+                'message' => $message,
+                'log_id' => $purchaseRequest->id,
+                'log_module' => 'pr',
+            ], isError: true);
+
+            throw new \Exception($message);
+        }
+
+        foreach ($aoqAwarded as $aoq) {
+            $poData = [];
+            $poItems = [];
+
+            foreach ($aoq->items ?? [] as $item) {
+                if (empty($item->awardee_id)) {
+                    continue;
+                }
+
+                $prItem = PurchaseRequestItem::find($item->pr_item_id);
+                $aorItemDetail = AbstractQuotationDetail::where('abstract_quotation_id', $aoq->id)
+                    ->where('aoq_item_id', $item->id)
+                    ->where('supplier_id', $item->awardee_id)
+                    ->first();
+
+                $poItems[$item->awardee_id][$item->document_type][] = [
+                    'pr_item_id' => $prItem->id,
+                    'brand_model' => $aorItemDetail->brand_model,
+                    'description' => $aorItemDetail->brand_model
+                        ? "{$prItem->description}\n{$aorItemDetail->brand_model}"
+                        : $prItem->description,
+                    'unit_cost' => $aorItemDetail->unit_cost,
+                    'total_cost' => $aorItemDetail->total_cost,
+                ];
+
+                $poData[$item->awardee_id][$item->document_type] = [
+                    'purchase_request_id' => $purchaseRequest->id,
+                    'mode_procurement_id' => $aoq->mode_procurement_id,
+                    'supplier_id' => $item->awardee_id,
+                    'document_type' => $item?->document_type ?? 'po',
+                    'items' => $poItems[$item->awardee_id][$item->document_type],
+                ];
+            }
+
+            foreach ($poData ?? [] as $poDocs) {
+                foreach ($poDocs as $data) {
+                    $purchaseOrder = $this->purchaseOrderRepository->storeUpdate($data);
+                    $this->logRepository->create([
+                        'message' => 'Purchase Order recreated successfully.',
+                        'log_id' => $purchaseOrder->id,
+                        'log_module' => 'po',
+                        'data' => $purchaseOrder,
+                    ]);
+                }
+            }
+        }
+
+        $this->logRepository->create([
+            'message' => 'Purchase Orders recreated successfully.',
             'log_id' => $purchaseRequest->id,
             'log_module' => 'pr',
             'data' => $purchaseRequest,

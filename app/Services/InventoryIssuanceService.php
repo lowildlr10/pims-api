@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Enums\InventoryIssuanceStatus;
+use App\Enums\NotificationType;
 use App\Helpers\StatusTimestampsHelper;
 use App\Interfaces\InventoryIssuanceRepositoryInterface;
 use App\Models\InventoryIssuance;
 use App\Models\InventorySupply;
 use App\Repositories\LogRepository;
+use App\Repositories\NotificationRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -15,7 +17,8 @@ class InventoryIssuanceService
 {
     public function __construct(
         protected InventoryIssuanceRepositoryInterface $repository,
-        protected LogRepository $logRepository
+        protected LogRepository $logRepository,
+        protected NotificationRepository $notificationRepository
     ) {}
 
     public function getAll(array $filters): LengthAwarePaginator|Collection
@@ -198,6 +201,10 @@ class InventoryIssuanceService
             'log_id' => $inventoryIssuance->id,
             'log_module' => 'inv-issuance',
             'data' => $inventoryIssuance,
+        ]);
+
+        $this->notificationRepository->notify(NotificationType::INV_ISSUANCE_ISSUED, [
+            'issuance' => $inventoryIssuance,
         ]);
 
         return $inventoryIssuance;

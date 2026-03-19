@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\InspectionAcceptanceReportStatus;
+use App\Enums\NotificationType;
 use App\Enums\PurchaseOrderStatus;
 use App\Helpers\RequiredFieldsValidationHelper;
 use App\Helpers\StatusTimestampsHelper;
@@ -11,6 +12,7 @@ use App\Models\InspectionAcceptanceReport;
 use App\Models\PurchaseOrder;
 use App\Repositories\InventorySupplyRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\NotificationRepository;
 use App\Repositories\ObligationRequestRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
@@ -21,7 +23,8 @@ class InspectionAcceptanceReportService
         protected InspectionAcceptanceReportInterface $repository,
         protected LogRepository $logRepository,
         protected InventorySupplyRepository $inventorySupplyRepository,
-        protected ObligationRequestRepository $obligationRequestRepository
+        protected ObligationRequestRepository $obligationRequestRepository,
+        protected NotificationRepository $notificationRepository
     ) {}
 
     public function getAll(array $filters): LengthAwarePaginator
@@ -125,6 +128,8 @@ class InspectionAcceptanceReportService
                 'log_module' => 'po',
                 'data' => $purchaseOrder,
             ]);
+
+            $this->notificationRepository->notify(NotificationType::PO_FOR_INSPECTION, ['po' => $purchaseOrder]);
         }
 
         $iar->update([
@@ -220,6 +225,8 @@ class InspectionAcceptanceReportService
             'data' => $obligationRequest,
         ]);
 
+        $this->notificationRepository->notify(NotificationType::OBR_CREATED, ['obr' => $obligationRequest]);
+
         $purchaseOrder = PurchaseOrder::find($iar->purchase_order_id);
 
         if ($purchaseOrder) {
@@ -236,6 +243,8 @@ class InspectionAcceptanceReportService
                 'log_module' => 'po',
                 'data' => $purchaseOrder,
             ]);
+
+            $this->notificationRepository->notify(NotificationType::PO_INSPECTED, ['po' => $purchaseOrder]);
         }
 
         $iar->update([

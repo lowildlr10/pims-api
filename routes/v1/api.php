@@ -191,6 +191,9 @@ Route::prefix('v1')->group(function () {
             Route::put('/{purchaseRequest}/award-abstract-quotations', [ProcurementControllers\PurchaseRequestController::class, 'awardAbstractQuotations'])
                 ->middleware('ability:super:*,head:*,supply:*,pr:*,pr:award-aoq')
                 ->name('award_abstract_quotations');
+            Route::put('/{purchaseRequest}/recreate-purchase-orders', [ProcurementControllers\PurchaseRequestController::class, 'recreatePurchaseOrders'])
+                ->middleware('ability:super:*,supply:*,pr:*,pr:award-aoq')
+                ->name('recreate_purchase_orders');
         });
 
         // Request Quotations

@@ -471,4 +471,22 @@ class PurchaseRequestController extends Controller
             ], 422);
         }
     }
+
+    public function recreatePurchaseOrders(Request $request, PurchaseRequest $purchaseRequest): JsonResponse
+    {
+        try {
+            $purchaseRequest = $this->service->recreatePurchaseOrders($purchaseRequest);
+
+            return response()->json([
+                'data' => new PurchaseRequestResource($purchaseRequest),
+                'message' => 'Purchase Orders recreated successfully.',
+            ]);
+        } catch (\Throwable $th) {
+            $this->service->logError('Failed to recreate Purchase Orders.', $th, $purchaseRequest->toArray());
+
+            return response()->json([
+                'message' => $th->getMessage(),
+            ], 422);
+        }
+    }
 }

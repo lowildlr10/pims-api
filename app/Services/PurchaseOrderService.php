@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\NotificationType;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Helpers\RequiredFieldsValidationHelper;
@@ -14,6 +15,7 @@ use App\Models\PurchaseRequestItem;
 use App\Models\User;
 use App\Repositories\InspectionAcceptanceReportRepository;
 use App\Repositories\LogRepository;
+use App\Repositories\NotificationRepository;
 use Illuminate\Pagination\LengthAwarePaginator;
 
 class PurchaseOrderService
@@ -21,7 +23,8 @@ class PurchaseOrderService
     public function __construct(
         protected PurchaseOrderRepositoryInterface $repository,
         protected LogRepository $logRepository,
-        protected InspectionAcceptanceReportRepository $iarRepository
+        protected InspectionAcceptanceReportRepository $iarRepository,
+        protected NotificationRepository $notificationRepository
     ) {}
 
     public function getAll(array $filters, ?User $user = null): LengthAwarePaginator
@@ -206,6 +209,8 @@ class PurchaseOrderService
             'data' => $purchaseOrder,
         ]);
 
+        $this->notificationRepository->notify(NotificationType::PO_PENDING, ['po' => $purchaseOrder]);
+
         return $purchaseOrder;
     }
 
@@ -230,6 +235,8 @@ class PurchaseOrderService
             'log_module' => 'po',
             'data' => $purchaseOrder,
         ]);
+
+        $this->notificationRepository->notify(NotificationType::PO_APPROVED, ['po' => $purchaseOrder]);
 
         return $purchaseOrder;
     }
@@ -256,6 +263,8 @@ class PurchaseOrderService
             'data' => $purchaseOrder,
         ]);
 
+        $this->notificationRepository->notify(NotificationType::PO_ISSUED, ['po' => $purchaseOrder]);
+
         return $purchaseOrder;
     }
 
@@ -280,6 +289,8 @@ class PurchaseOrderService
             'log_module' => 'po',
             'data' => $purchaseOrder,
         ]);
+
+        $this->notificationRepository->notify(NotificationType::PO_FOR_DELIVERY, ['po' => $purchaseOrder]);
 
         return $purchaseOrder;
     }
@@ -324,6 +335,8 @@ class PurchaseOrderService
             'log_module' => 'po',
             'data' => $purchaseOrder,
         ]);
+
+        $this->notificationRepository->notify(NotificationType::PO_DELIVERED, ['po' => $purchaseOrder]);
 
         return $purchaseOrder;
     }
